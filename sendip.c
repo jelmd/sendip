@@ -36,9 +36,9 @@
 #include <ctype.h> /* isprint */
 #include "sendip_module.h"
 
-#ifdef __sun__  /* for EVILNESS workaround */
+#ifdef __sun  /* for EVILNESS workaround */
 #include "ipv4.h"
-#endif /* __sun__ */
+#endif /* __sun */
 
 /* Use our own getopt to ensure consistant behaviour on all platforms */
 #include "gnugetopt.h"
@@ -159,7 +159,7 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 		decrease the total length of the packet accordingly
 		I'm sure this *shouldn't* work.  But it does.
 	*/
-#ifdef __sun__
+#ifdef __sun
 	if((*((char *)(data->data))&0x0F) != 5) {
 		ip_header *iphdr = (ip_header *)data->data;
 
@@ -178,7 +178,7 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 			return -2;
 		}
 	}
-#endif /* __sun__ */
+#endif /* __sun */
 
 	/* Send the packet */
 	sent = sendto(s, (char *)data->data, data->alloc_len, 0, (void *)to, tolen);
@@ -484,7 +484,11 @@ int main(int argc, char *const argv[]) {
 	/* Do the get opt */
 	gnuopterr=1;
 	gnuoptind=0;
-	while(EOF != (optc=getopt_long_only(argc,argv,"p:vd:hf:",opts,&longindex))) {
+	/* Like getopt_long, but '-' as well as '--' can indicate a long option.
+	   If an option that starts with '-' (not '--') doesn't match a long option,
+	   but does match a short option, it is parsed as a short option instead.
+	 */
+	while(EOF != (optc=_getopt_internal(argc,argv,"p:vd:hf:",opts,&longindex,1))) {
 		
 		switch(optc) {
 		case 'p':

@@ -15,7 +15,7 @@ typedef int bool;
 #endif
 
 /* Solaris doesn't define these */
-#ifdef __sun__
+#ifdef __sun
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint8_t  u_int8_t;
@@ -23,7 +23,7 @@ typedef uint8_t  u_int8_t;
 /* disable ipv6 on solaris */
 #define gethostbyname2(x,y) gethostbyname(x)
 
-#endif /* __sun__ */
+#endif /* __sun */
 
 /* for things that *really* don't know about ipv6, ... */
 #ifndef AF_INET6

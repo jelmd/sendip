@@ -30,7 +30,7 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
    *   UDP
    *     RIP
    *     NTP
-   * IPv6 (except on solaris)
+   * IPv6
    *   ICMPv6
    *   TCP
    *   UDP
@@ -55,28 +55,22 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
 4. Installation
 
    make ; make install should work.
-   You MUST use GNU make.
-   On Solaris you need to use gcc-3.x or above, and GNU binutils.
-   On other platforms, you probably need gcc-2.x or above.
+   You MUST use GNU make (on Solaris & friends it is called gmake).
 
-   If you have install problems on Solaris, try:
-     make install INSTALL=/usr/ucb/install
+   If you have install problems, try GNU install from GNU coreutils, e.g.:
+     make install INSTALL=gnu-install
 
    If  you can't persuade it to compile or install, mail me with details of
    what goes wrong, and what system you are trying to install it on.
    By this I mean at least:
-   - output of make -k veryclean all install
+   - output of make -k distclean all install
    - OS, including version
-   - version of make, gcc, etc
-   - version of sendip
+   - version of GNU make, compiler, etc.
+   - version/commit of sendip
    - anything else you think might be relevant
 
    You can change where it installs by changing BINDIR and/or PREFIX at the
-   top of the Makefile.
-
-	A .spec file is included to build RPMS, and source and binary RPMS are
-	also available from the web page.  Debian packages are also available, and
-	sendip is included in the FreeBSD ports collection.
+   top of the Makefile or by setting the corresponding env variables.
 
 5. Problems, Bugs, and Comments
 
@@ -98,6 +92,8 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
    The email address I currently use is mike@earth.li
 
    I am interested in any feedback in order to improve SendIP.
+
+   You may also contribute directly to https://github.com/jelmd/sendip/.
 
 6. License
 

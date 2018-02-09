@@ -18,8 +18,10 @@
 
 # Executables
 *.out
+sendip
 
 # Misc
+*.spec
 *.orig
 *.orig.*
 *.bak
@@ -29,3 +31,4 @@
 *~
 .nfs*
 *.tmp
+*.rej

@@ -122,11 +122,6 @@ struct option
    `getopt'.  */
 
 extern int gnugetopt (int __argc, char *const *__argv, const char *__shortopts);
-extern int getopt_long (int __argc, char *const *__argv, const char *__shortopts,
-		        const struct option *__longopts, int *__longind);
-extern int getopt_long_only (int __argc, char *const *__argv,
-			     const char *__shortopts,
-		             const struct option *__longopts, int *__longind);
 
 /* Internal only.  Users should not call this directly.  */
 extern int _getopt_internal (int __argc, char *const *__argv,
