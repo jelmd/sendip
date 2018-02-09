@@ -1,0 +1,534 @@
+.TH "SENDIP" "1" "February 09, 2018" "sendip 2.5.0"
+
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.SH "NAME"
+sendip \- a tool to send arbitrary IP packets
+
+.SH "SYNOPSIS"
+.HP
+\fBsendip\fR [\-h] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-p\ \fImodule] [\fImodule_options] \fIhostname\fR
+
+.SH "DESCRIPTION"
+.PP
+SendIP is a command-line tool to send arbitrary IP packets. It has a large
+number of options to specify the content of every header of a RIP, RIPng, BGP,
+TCP, UDP, ICMP, or raw IPv4/IPv6 packet. It also allows any data to be added
+to the packet. Checksums can be calculated automatically, but if you wish to
+send out wrong checksums, that is supported too.
+.PP
+Modules are loaded in the order the -p options appear.  The headers from
+each module are put immediately inside the headers from the previous module
+in the final packet.  For example, to embed bgp inside tcp inside ipv4, do
+sendip -p ipv4 -p tcp -p bgp ...\ \. If no module is given, the \-d\ \fIdata\fR
+or \-f\ \fIfile\fR option must be used to set the payload (in this case it
+is assumed, that the packet is of type \fBAFINET\fR, i.e. IPv4). Otherwise
+either \fBipv4\fR or \fBipv6\fR must be the first module given via CLI options.
+
+.SH "OPTIONS"
+.PP
+Beside the module specific options the following general options are recognized by \fBsendip\fR:
+.TP
+\-h
+Print a a short help message and exit.
+.TP
+\-p\ \fImodule\fR
+Load the given \fImodule\fR.
+.TP
+\-v
+Be verbose.
+.TP
+\-d\ \fIdata\fR
+Use the given \fIdata\fR as payload. If \fIdata\fR starts with \fBr\fIN\fR,
+\fIN\fR random bytes get generated and used as payload. 
+
+If \fIdata\fR starts with a \fB0\fR (digit zero) followed by the letter \fBx\fR
+or \fBX\fR, the first two charcaters are ignored and all others are
+interpreted as hex representation of the data to use. Non-digits are handled
+in a case-insensitive manner.
+
+If \fIdata\fR starts with a \fB0\fR (digit zero) followed by a digit in the
+range of \fB0\fR..\fB7\fR, the first character gets ignored and all others
+are interpreted as octal representation of the data to use.
+
+Otherwise the \fIdata\fR string is used "as is".
+
+.TP
+\-f\ \fIfile\fR
+Read the given \fIfile\fR and use its contents as payload.
+
+.SS "ipv6 MODULE OPTIONS"
+.TP
+\-6v\ \fInum\fR
+Set IPv6 \fBversion\fR to \fInum\fR {0..15}.
+You almost definitely don't want to change this. Default: 6
+.TP
+\-6p\ \fInum\fR
+Set the IPv6 \fBpriority\fR to \fInum\fR {0..15}. This is actually the first nibble
+of the traffic class field. Default: 0
+.TP
+\-6t\ \fInum\fR
+Set the IPv6 \fBtraffic class\fR to \fInum\fR {0..15}. This is actually the second
+nibble of the traffic class field. Default: 0
+.TP
+\-6f\ \fInum\fR
+Set the IPv6 \fBflow label\fR to \fInum\fR {0..0xfffff). Default: 0
+.TP
+\-6l\ \fInum\fR
+Set the IPv6 \fBpayload length\fR to \fInum\fR {0..255}. Default: auto
+.TP
+\-6n\ \fInum\fR
+Set the IPv6 \fBnext header\fR field to \fInum\fR {0..255}. Default: 59 (IPv6-NoNxt)
+.TP
+\-6h\ \fInum\fR
+Set the IPv6 \fBhop limit\fR to \fInum\fR {0..255}. Default: 32
+.TP
+\-6s\ \fIsrc\fR
+Set the \fBsource IPv6\fR address to \fIsrc\fR. Default: ::1
+.TP
+\-6d\ \fIdst\fR
+Set the \fBdestination IPv6\fR address to \fIdst\fR.
+Default: \fIhostname\fR operand
+
+
+.SS "ipv4 MODULE OPTIONS"
+.TP
+\-iv\ \fInum\fR
+Set the IP \fBversion\fR to \fInum\fR {0..15}.
+You almost definitely don't want to change this. Default: 4
+.TP
+\-ih\ \fInum\fR
+Set the IP \fBheader length\fR to \fInum\fR {0..15}. Default: auto
+.TP
+\-iy\ \fInum\fR
+Set the type of service (\fBTOS\fR) to \fInum\fR {0..255}. Default: 0
+.TP
+\-il\ \fInum\fR
+Set the total IP \fBpacket length\fR to \fInum\fR {0..0xffff}.  Default: auto
+.TP
+\-ii\ \fInum\fR
+Set the IP packet \fBID\fR to \fInum\fR {0..0xffff}.  Default: random
+.TP
+\-ifm\ \fInum\fR
+Set the IP \fBmore fragments\fR flag to \fInum\fR {0|1}. Default: 0
+.TP
+\-ifd\ \fInum\fR
+Set the IP \fBdon't fragment\fR flag to \fInum\fR {0|1}. Default: 0
+.TP
+\-ifr\ \fInum\fR
+Set the IP \fBreserved\fR flag to \fInum\fR {0|1}. Default: 0
+.TP
+\-if\ \fInum\fR
+Set the IP \fBfragment offset\fR to \fInum\fR {0..0x1fff}. Default: 0
+.TP
+\-it\ \fInum\fR
+Set the IP \fBtime to live\fR to \fInum\fR {0..255}. Default: 255
+.TP
+\-ip\ \fInum\fR
+Set the IP \fBprotcol\fR to \fInum\fR {0..255}.
+Default: 0, or set by underlying protocol.
+.TP
+\-ic\ \fInum\fR
+Set the IP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
+.TP
+\-is\ \fIsrc\fR
+Set the \fBsource IP\fR address to \fIsrc\fR. Default: 127.0.0.1
+.TP
+\-id\ \fIdst\fR
+Set the \fBdestination IP\fR address to \fIdst\fR.
+Default: \fIhostname\fR operand
+
+.TP
+\-ionum\ \fIhex\fR
+Set the IP \fBoption\fR to the value given as the \fIhex\fR string (length is
+always correct). Do not use a 0x or 0X prefix!  Default: (no options)
+.TP
+\-ioeol
+Set IP option \fBend of list\fR.
+.TP
+\-ionop
+Set IP option \fBno-op\fR.
+.TP
+\-iosid\ \fIID\fR
+Set IP option \fBstream identifier\fR to \fIID\fR {0..0xffff}.
+.TP
+\-iots\ \fIpointer\fB:\fIoverflow\fB:\fIflag\fR[[\fB:\fIip\fR]\fB:\fIts\fR]...
+Set IP option \fBtimestamp\fR. \fIpointer\fR is hex {00..ff}, \fIoverflow\fR
+is {0..15}, \fIflag\fR is {0|3}, \fIip\fR a normal IPv4 address and the
+timestamp \fIts\fR {0..0xffff}.
+.TP
+\-iorr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
+Set IP option \fBrecord route\fR. \fIpointer\fR is hex {00..ff},
+and \fIaddr\fR is a normal IPv4 address.
+.TP
+\-iolsr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
+Set IP option \fBloose source route\fR. \fIpointer\fR is hex {00..ff},
+and \fIaddr\fR is a normal IPv4 address.
+.TP
+\-iossr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
+Set IP option \fBstrict source route\fR. \fIpointer\fR is hex {00..ff}, 
+and \fIaddr\fR is a normal IPv4 address.
+
+.TP
+.B
+NOTES
+.RS 2
+Many operating systems rewrite some or all of the IP header when sending
+packets.  Exactly which headers get rewritten depends on the OS.  There is
+no portable way to bypass this that the author is aware of. So some IP options
+do not work on some operating systems.  Below is a list with known limitations.
+This list is not by any means complete and what is here may not be accurate.
+If you have more information, please contact the author of this software or
+your OS vendor.
+\" Common problems
+.HP 2
+\- IP source address is rewritten if it is zero.
+.HP
+\- IP packet ID is rewritten (to a randomish value) if it is zero.
+.HP
+\- IP checksum is always rewritten to the correct value.
+.HP
+\- Total packet length is always rewritten to the number of bytes sent.
+\" Solaris start
+.HP
+\- IP header length works provided that the length given is not greater
+than the number of bytes in the packet.  If it is, sendip will segfault.
+.HP
+\- IP don't fragment flag always set, other IP flags always cleared.
+\" Solaris end
+.HP
+\- All other headers work as expected.
+.RE
+
+.SS "icmp MODULE OPTIONS"
+.TP
+\-ct\ \fInum\fR
+Set ICMP \fBmessage type\fR to \fInum\fR {0..255}.  Default: ICMP_ECHO (8), or
+ICMP6_ECHO_REQUEST (128) if embedded in an IPv6 packet.
+.TP
+\-cd\ \fInum\fR
+Set ICMP \fBcode\fR to \fInum\fR {0..255}. Default: 0
+.TP
+\-cc\ \fInum\fR
+Set ICMP \fBchecksum\fR to \fInum\fR {0.0xffff}.  Default: auto
+
+
+.SS "udp MODULE OPTIONS"
+.TP
+\-us\ \fInum\fR
+Set the UDP \fBsource port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-ud\ \fInum\fR
+Set the UDP \fBdestination port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-ul\ \fInum\fR
+Set the UDP \fBpacket length\fR to \fInum\fR {0..0xffff}. Default: auto
+.TP
+\-uc\ \fInum\fR
+Set the UDP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
+
+
+.SS "rip MODULE OPTIONS"
+.TP
+\-rc\ \fInum\fR
+Set the RIP command {0..15} with 1=request, 2=response, 3=traceon (obsolete), 4=traceoff (obsolete), 5=poll (undocumented), and 6=poll entry (undocumented). Default: 1
+.TP
+\-rv\ \fInum\fR
+Set the RIP \fBversion\fR to \fInum\fR {0..15}. Default: 2
+.TP
+\-ra\ \fIpassword\fR
+Generate a RIP \fBauthentication packet\fR with the given \fIpassword\fR (max.
+16 characters).  Do not use any other RIP options on this RIP header.
+.TP
+\-re\ \fIfamily\fB:\fIroute_tag\fB:\fIaddress\fB:\fIsubnet_mask\fB:\fInext_hop\fB:\fImetric\fR
+Add a \fBRIP entry\fR using the given information. If a field is missing (empty
+string), a default value will be used instead.
+.RS
+.TP
+\fIfamily\fR
+The family value to set {0..0xffff}. Should be 0xffff for authentication entry,
+2 otherwise. Default: 2
+.TP
+\fIroute_tag\fR
+The route tag to set {0..0xffff}. Default: 0
+.TP
+\fIaddress\fR
+A normal inet address. Default: 0.0.0.0
+.TP
+\fIsubnet_mask\fR
+The subnet mask for the \fIaddress\fR. Default: 255.255.255.0
+.TP
+\fInext_hop\fR
+The inet address of the next hop. Default: 0.0.0.0
+.TP
+\fImetric\fR
+The distance indicator to set {0..0xffffffff}. Default: 16
+.RE
+.TP
+\-rd
+Populate all fields with values for a default RIP request: get router's entire
+routing table, do not use any other RIP options on this RIP header. Same as
+\-rc\ 1 \-re\ 0\fB:\fR0\fB:\fR0.0.0.0\fB:\fR0.0.0.0\fB:\fR16
+
+
+.SS "ntp MODULE OPTIONS"
+The \fItimestamp\fR argument used below is a 64-bit value in the range
+of {0..0xffffffff[.0xffffffff]}.
+.TP
+-nl\ \fInum\fR
+Set the NTP \fBLeap Indicator\fR to \fInum\fR {0..3}. Default: 0 (no warning)
+.TP
+-ns\ \fInum\fR
+Set the NTP \fBstatus\fR to \fInum\fR {0..0x3f} OR NTP version (3 bit) and
+mode (3 bit). Default: 0 (clock operating OK)
+.TP
+-nt\ \fInum\fR
+Set the NTP \fBtype\fR OR \fBstratum\fR to \fInum\fR {0..255}.
+Default: 0 (unspecified)
+.TP
+-np\ \fInum\fR
+Set the NTP \fBprecision\fR field to \fInum\fR {0..255}. Default: 0
+.TP
+-ne\ \fIdouble\fR
+Set the NTP \fBestimated error\fR (root delay) to the given \fIdouble\fR value.
+Default: 0.0
+.TP
+-nd\ \fIdouble\fR
+Set the NTP \fBestimated drift\fR rate (root dispersion) to the
+given \fIdouble\fR value. Default: 0.0
+.TP
+-nr\ \fIaddr\fR|\fIID\fR
+Set the NTP \fBreference clock\fR to the given IP \fIaddr\fRess
+or \fIID\fR (string with max. 4 characters not starting with a digit).
+Default: 0
+.TP
+-nf\ \fItimestamp\fR
+Set the NTP \fBreference\fR \fItimestamp\fR. Default: 0.0
+.TP
+-no\ \fItimestamp\fR
+Set the NTP \fBoriginate\fR \fItimestamp\fR. Default: 0.0
+.TP
+-na\ \fItimestamp\fR
+Set the NTP \fBarrival (receive)\fR \fItimestamp\fR. Default: 0.0
+.TP
+-nx\ \fItimestamp\fR
+Set the NTP \fBxmit (transmit)\fR \fItimestamp\fR. Default: 0.0
+
+
+.SS "tcp MODULE OPTIONS"
+.TP
+\-ts\ \fInum\fR
+Set the TCP \fBsource port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-td\ \fInum\fR
+Set the TCP \fBdestination port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-tn\ \fInum\fR
+Set the TCP \fBsequence number\fR to \fInum\fR {0..0xffffffff}. Default: random
+.TP
+\-ta\ \fInum\fR
+Set the TCP \fBACK sequence number\fR to \fInum\fR {0..0xffffffff}. Default: 0
+.TP
+\-tt\ \fInum\fR
+Set the TCP \fBdata offset\fR to \fInum\fR {0..15}. Default: auto
+.TP
+\-tr\ \fInum\fR
+Set the TCP header \fBreserved field\fR EXCLUDING ECN and CWR bits
+to \fInum\fR {0..15}. Default: 0
+.TP
+\-tfe\ \fInum\fR
+Set the TCP \fBECN bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+.TP
+\-tfc\ \fInum\fR
+Set the TCP \fBCWR bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+.TP
+\-tfu\ \fInum\fR
+Set the TCP \fBURG bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -tu specified
+.TP
+\-tfa\ \fInum\fR
+Set the TCP \fBACK bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -ta specified
+.TP
+\-tfp\ \fInum\fR
+Set the TCP \fBPSH bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tfr\ \fInum\fR
+Set the TCP \fBRST bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tfs\ \fInum\fR
+Set the TCP \fBSYN bit\fR to \fInum\fR {0|1}. Default: 1
+.TP
+\-tff\ \fInum\fR
+Set the TCP \fBFIN bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tw\ \fInum\fR
+Set the TCP \fBwindow size\fR to \fInum\fR {0..0xffff}. Default: 65535
+.TP
+\-tc\ \fInum\fR
+Set the TCP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
+.TP
+\-tu\ \fInum\fR
+Set the TCP \fBurgent pointer\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-tonum\ \fIhex\fR
+Set the \fBTCP option\fR as string of \fIhex\fR bytes (length: auto).
+Do not prefix with 0x or 0X!
+.TP
+\-toeol
+Set the TCP option \fBend of list\fR.
+.TP
+\-tonop
+Set the TCP option \fBno op\fR.
+.TP
+\-tomss\ \fInum\fR
+Set the TCP option \fBmaximum segment size\fR to \fInum\fR {0..0xffff}.
+.TP
+\-towscale\ \fInum\fR
+Set the TCP option \fBwindow scale\fR to \fInum\fR {0..255} (rfc1323).
+.TP
+\-tosackok
+Set the TCP option \fBallow selective ack\fR (rfc2018).
+.TP
+\-tosack\ \fIl_edge\fB:\fIr_edge\fR[\fB,\fIl_edge\fB:\fIr_edge\fR]...
+Set the TCP option \fBselective ack\fR (rfc2018) to the given value(s).
+The left and right edge are in the range of {0..0xffff}.
+.TP
+\-tots\ \fIval\fB:\fIsecr\fR
+Set the TCP option \fBtimestamp\fR (rfc1323) to \fIval\fR and \fIsecr\fR,
+both in the range of {0..0xffff}.
+
+
+.SS "bgp MODULE OPTIONS"
+.TP
+\-bm\ \fIhex\fR[\fB:\fIhex\fR]...
+Set the \fBBGP Marker\fR field to the given value. Each \fIhex\fR value
+represents 8 bits so {0..ff}. Not more than 16 \fIhex\fR values will be read!
+Default:\ FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF
+.TP
+\-bl\ \fInum\fR
+Set the total \fBMessage Length\fR to \fInum\fR {0..65535}. Default: auto
+.TP
+\-bt\ \fInum\fR
+Set the \fBMessage Type\fR to \fInum\fR {0..255} (1 OPEN, 2 UPDATE,
+3 NOTIFICATION, 4 KEEPALIVE). Default: 4 (KEEPALIVE)
+.TP
+\-bo\ \fIversion\fB:\fIAS_number\fB:\fIhold_time\fB:\fIID\fB:\fIolength\fR
+Append the given \fBOPEN\fR message parameters to the message. Any parameter
+can be omitted (empty string) to get the default. The parameters are:
+.RS
+.TP
+\fIversion\fR
+BGP version {0..255}. Default: 4
+.TP
+\fIAS_number\fR
+Autonomous System number {0..0xffff}. Default: 1
+.TP
+\fIhold_time\fR
+Hold Timer value in seconds {0..0xffff}. Default: 90
+.TP
+\fIID\fR
+BGP Identifier. It can be a normal IP address or a number in the
+range of {0..0xffffffff}. Default:\ 127.0.0.1
+.TP
+\fIolength\fR
+The length of the Optional Parameters field {0..255}.  Default: auto
+.RE
+
+.TP
+\-boo\ \fItype\fB:\fR[\fIlength\fR]\fB:\fIvalue\fR
+Append the given \fBOptional parameter\fR to the OPEN message. The parameters
+are:
+.RS
+.TP
+\fItype\fR
+The parameter type {0..255}.
+.TP
+\fIlength\fR
+The length in octest of the parameter value. If omitted its
+value gets determined autmatically.
+.TP
+\fIvalue\fR
+A sequence of max. 255 bytes given as \fIhex\fR values separated by a
+colon ('\fB:\fR').
+.RE
+
+.TP
+\-bul\ \fInum\fR
+Append the total length of \fBWithdrawn routes\fR {0..0xffff} to the UPDATE
+message. Default: auto
+.TP
+\-buw\ \fIprefix\fR[\fB:\fIlength\fR]
+Append the given \fBWithdrawn route\fR to the UPDATE message. The parameters
+are:
+.RS
+.TP
+\fIprefix\fB
+An IP address prefix in CIDR notation, i.e. x.x.x.x/n .
+.TP
+\fIlength\fR
+The length of the prefix in octets {0..255}. Default: auto.
+.RE
+
+.TP
+\-bus\ \fInum\fR
+Set the \fBAttributes length\fR to \fInum\fR {0..0xffffffff} for the UPDATE
+message.  Default: auto
+.TP
+\-bua\ \fIflags\fB:\fItype\fB:\fR[\fIlength\fR]\fB:\fIdata\fR
+Append the given \fBAttribute\fR to the UPDATE message. The parameters are:
+.RS
+.TP
+\fIflags\fR
+The flags for the attribute entry {0..255}.
+.TP
+\fItype\fR
+The attribute type {0..255}.
+.TP
+\fIlength\fR
+The length of the attribute data in octets, depending on flags {0..255}
+or {0..0xffff}. Default: auto
+.TP
+\fIdata\fR
+The attribute data to set represented as sequence of \fIhex\fR bytes separated
+by a colon ('\fB:\fR'). Depending on flags max. 255 or 0xffff bytes will be
+read.
+.RE
+
+.TP
+\-bun\ \fIprefix\fR[\fB:\fIlength\fR]
+Append the Network Layer Reachability Information (\fBNLRI\fR) to the UPDATE
+message. The parameters are the same as for \fB-buw\fR.
+
+.TP
+\-bn\ \fIcode\fB:\fIsubcode\fB:\fR[\fIdata\fR]
+Append the given \fBNotification\fR to the message. The parameters are:
+.RS
+.TP
+\fIcode\fB
+The error code to set {0..255}.
+.TP
+\fIsubcode\fR
+The error subcode to set {0..255}.
+.TP
+\fIdata\fR
+The reason for the notification. Omit for no data.
+.RE
+
+.SH OPERANDS
+.TP
+\fIhostname\fR
+The default destination to use.
+
+.SH AUTHOR
+.TP
+\fBMike Ricketts\fR <mike@earth.li>
+.TP
+\fBJens Elkner\fR <jel+sendip@cs.ovgu.de> (man page and fixes)
+.TP
+Debian maintainers (fixes).
+
+.SH NOTES
+The source for this version can be obtained
+via https://github.com/jelmd/sendip/. The initial version of it (v2.5) can be
+found on http://www.earth.li/projectpurple/progs/sendip.html as well.

@@ -37,18 +37,14 @@ TCPPROTOS= bgp.so
 PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS)
 GLOBALOBJS= csum.o compact.o
 
-all:	$(GLOBALOBJS) sendip $(PROTOS) sendip.1 sendip.spec
+all:	$(GLOBALOBJS) sendip $(PROTOS) sendip.spec
 
 sendip:	sendip.o	gnugetopt.o compact.o
 	$(CC) -o $@ $+ $(LDFLAGS)
 
-sendip.1:	./help2man $(PROGS) $(PROTOS) VERSION
-			./help2man -n "Send arbitrary IP packets" -N >sendip.1
-
 sendip.spec:	sendip.spec.in VERSION
-			echo -n '%define ver ' >sendip.spec
-			cat VERSION >>sendip.spec
-			cat sendip.spec.in >>sendip.spec
+			printf '%%define ver ' >sendip.spec
+			cat VERSION sendip.spec.in >>sendip.spec
 
 %.so: %.c $(GLOBALOBJS)
 			$(CC) -o $@ $+ $(LIBCFLAGS)
@@ -59,7 +55,7 @@ clean:
 			rm -f *.o *~ *.so $(PROTOS) $(PROGS) core gmon.out
 
 distclean: clean
-			rm -f sendip.spec sendip.1
+			rm -f sendip.spec
 
 install:		all
 			$(INSTALL) -d $(DESTDIR)$(LIBDIR)

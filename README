@@ -45,12 +45,8 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
 
 3. Usage instructions
 
-   SendIP can take a huge number of commandline parameters.  For this reason,
-   future versions may have some sort of user interface...
-
-	Please read the man page or sendip -h for details.  They are not documented
-	here because they change often between versions and I can't be bothered to
-	keep this up to date.
+   SendIP can take a huge number of commandline parameters.
+   Please read the man page or check sendip -h for details.
 
 4. Installation
 
