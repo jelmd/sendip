@@ -42,6 +42,7 @@
 
 /* Use our own getopt to ensure consistant behaviour on all platforms */
 #include "gnugetopt.h"
+#include "c_origin.h"
 
 typedef struct _s_m {
 	struct _s_m *next;
@@ -214,6 +215,10 @@ static void unload_modules(bool freeit, int verbosity) {
 }
 
 static bool load_module(char *modname) {
+	static char *libdir = NULL;
+	if (libdir == NULL) {
+		libdir = get_origin_rel(1, "lib/sendip", SENDIP_LIBS);
+	}
 	sendip_module *newmod = malloc(sizeof(sendip_module));
 	sendip_module *cur;
 	int (*n_opts)(void);
@@ -227,17 +232,17 @@ static bool load_module(char *modname) {
 			goto out;
 		}
 	}
-	newmod->name=malloc(strlen(modname)+strlen(SENDIP_LIBS)+strlen(".so")+2);
+	newmod->name=malloc(strlen(modname)+strlen(libdir)+strlen(".so")+2);
 	strcpy(newmod->name,modname);
 	if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
 		char *error0=strdup(dlerror());
 		sprintf(newmod->name,"./%s.so",modname);
 		if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
 			char *error1=strdup(dlerror());
-			sprintf(newmod->name,"%s/%s.so",SENDIP_LIBS,modname);
+			sprintf(newmod->name,"%s/%s.so",libdir,modname);
 			if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
 				char *error2=strdup(dlerror());
-				sprintf(newmod->name,"%s/%s",SENDIP_LIBS,modname);
+				sprintf(newmod->name,"%s/%s",libdir,modname);
 				if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
 					char *error3=strdup(dlerror());
 					fprintf(stderr,"Couldn't open module %s, tried:\n",modname);

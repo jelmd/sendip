@@ -20,7 +20,7 @@ CFLAGS ?=  -m$(MACH) $(CFLAGS_$(CC))
 CFLAGS += -DSENDIP_LIBS=\"$(LIBDIR)\"
 
 LIBS_SunOS = -lsocket -lnsl -lm
-LIBS_Linux = -ldl -lm
+LIBS_Linux = -ldl -lm -lbsd
 LIBS ?= $(LIBS_$(OS))
 
 LDFLAGS_cc = -zdefs -Bdirect -zdiscard-unused=dependencies $(LIBS)
@@ -39,7 +39,7 @@ GLOBALOBJS= csum.o compact.o
 
 all:	$(GLOBALOBJS) sendip $(PROTOS) sendip.spec
 
-sendip:	sendip.o	gnugetopt.o compact.o
+sendip:	sendip.o	gnugetopt.o compact.o c_origin.o
 	$(CC) -o $@ $+ $(LDFLAGS)
 
 sendip.spec:	sendip.spec.in VERSION
