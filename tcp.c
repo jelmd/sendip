@@ -204,8 +204,8 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				fprintf(stderr,"Out of memory!\n");
 				return FALSE;
 			}
-			sprintf(data,"0x%s",arg);
-			len = compact_string(data);
+			sprintf((char*)data,"0x%s",arg);
+			len = compact_string((char*)data);
 			if(len==1)
 				addoption(*data,1,NULL,pack);
 			else
@@ -230,7 +230,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 			addoption(4,2,NULL,pack);
 		} else if (!strcmp(opt+2, "sack")) {
 		   /* Selective Acknowledge rfc1323 */
-			unsigned char *next;
+			char *next;
 			u_int32_t le, re;
 			u_int8_t *comb, *c;
 			int count=0;
