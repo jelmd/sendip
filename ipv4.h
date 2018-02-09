@@ -63,7 +63,7 @@ typedef struct {
  */
 sendip_option ip_opts[] = {
 	{"s",1,"Source IP address (see README)","127.0.0.1"},
-	{"d",1,"Desitnation IP address","Correct"},
+	{"d",1,"Destination IP address","Correct"},
 	{"h",1,"IP header length (see README)","Correct"},
 	{"v",1,"IP version (you almost definately don't want to change this)","4"},
 	{"y",1,"IP type of service","0"},
