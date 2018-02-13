@@ -237,7 +237,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				free(data);
 				return FALSE;
 			} else {
-				addoption(0,0,7,len+2,(unsigned char*)data,pack);
+				addoption(0,0,7,len+2,(u_int8_t *)data,pack);
 				free(data);
 			}
 		} else if(!strcmp(opt+2, "ts")) {
@@ -352,7 +352,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				data_in = next;
 			}
 
-			addoption(0,2,4,data_out-data+2,(unsigned char*)data,pack);
+			addoption(0,2,4,data_out-data+2,(u_int8_t *)data,pack);
 			free(data);
 			/* End of timestamp parsing */
 
@@ -377,7 +377,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				free(data);
 				return FALSE;
 			} else {
-				addoption(1,0,3,len+2,(unsigned char*)data,pack);
+				addoption(1,0,3,len+2,(u_int8_t *)data,pack);
 				free(data);
 			}
 		} else if(!strcmp(opt+2, "sid")) {
@@ -399,7 +399,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				free(data);
 				return FALSE;
 			} else {
-				addoption(1,0,9,len+2,(unsigned char*)data,pack);
+				addoption(1,0,9,len+2,(u_int8_t *)data,pack);
 				free(data);
 			}
 		} else {
@@ -417,7 +417,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
+bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack) {
 	ip_header *iph = (ip_header *)pack->data;
 
@@ -443,6 +443,10 @@ bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
 	}
 	if(!(pack->modified & IP_MOD_CHECK)) {
 		ipcsum(pack);
+	}
+	if(!(pack->modified&IP_MOD_PROTOCOL)) {
+		/* the actual type of following header */
+		iph->protocol = header_type(hdrs[index+1]);
 	}
 	return TRUE;
 }

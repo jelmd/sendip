@@ -27,9 +27,17 @@ or \-f\ \fIfile\fR option must be used to set the payload (in this case it
 is assumed, that the packet is of type \fBAFINET\fR, i.e. IPv4). Otherwise
 either \fBipv4\fR or \fBipv6\fR must be the first module given via CLI options.
 
+Modules may be repeated to create multiple instances of a given header type.
+For example, to create an ipip tunneled packet (ipv4 inside ipv4), do
+sendip\ -p\ ipv4\ \fIouter-header-arguments\fR -p\ ipv4\ \fIinner-header-arguments\fR\ ...
+
+In the case of repeated modules, arguments are applied to the closest matching
+module in the command line.
+
 .SH "OPTIONS"
 .PP
-Beside the module specific options the following general options are recognized by \fBsendip\fR:
+Beside the module specific options the following general options are recognized
+by \fBsendip\fR:
 .TP
 \-h
 Print a a short help message and exit.
@@ -41,11 +49,14 @@ Load the given \fImodule\fR.
 Be verbose.
 .TP
 \-d\ \fIdata\fR
-Use the given \fIdata\fR as payload. If \fIdata\fR starts with \fBr\fIN\fR,
-\fIN\fR random bytes get generated and used as payload. 
+Use the given \fIdata\fR as payload. The format of the data (incl. header
+parameter) may vary. Often th following formats are understood:
 
-If \fIdata\fR starts with a \fB0\fR (digit zero) followed by the letter \fBx\fR
-or \fBX\fR, the first two charcaters are ignored and all others are
+If \fIdata\fR starts with \fBr\fIN\fR, \fIN\fR random bytes get generated and
+used as payload.
+
+If \fIdata\fR starts with a \fB0x\fR or \fB0X\fR (digit zero followed by the
+letter x or X), the first two charcaters are ignored and all others are
 interpreted as hex representation of the data to use. Non-digits are handled
 in a case-insensitive manner.
 
@@ -53,7 +64,9 @@ If \fIdata\fR starts with a \fB0\fR (digit zero) followed by a digit in the
 range of \fB0\fR..\fB7\fR, the first character gets ignored and all others
 are interpreted as octal representation of the data to use.
 
-Otherwise the \fIdata\fR string is used "as is".
+Decimal numbers are usually used for decimal digits.
+
+Otherwise the \fIdata\fR string is taken literally.
 
 .TP
 \-f\ \fIfile\fR
@@ -79,8 +92,10 @@ Set the IPv6 \fBflow label\fR to \fInum\fR {0..0xfffff). Default: 0
 \-6l\ \fInum\fR
 Set the IPv6 \fBpayload length\fR to \fInum\fR {0..255}. Default: auto
 .TP
-\-6n\ \fInum\fR
-Set the IPv6 \fBnext header\fR field to \fInum\fR {0..255}. Default: 59 (IPv6-NoNxt)
+\-6n\ \fInum\fR|\fIproto\fR
+Set the IPv6 \fBnext header\fR field to \fInum\fR {0..255}. If a \fIproto\fRcol
+name is given, sendip tries to determine the corresponding number automatically.
+Default: auto
 .TP
 \-6h\ \fInum\fR
 Set the IPv6 \fBhop limit\fR to \fInum\fR {0..255}. Default: 32
@@ -91,6 +106,164 @@ Set the \fBsource IPv6\fR address to \fIsrc\fR. Default: ::1
 \-6d\ \fIdst\fR
 Set the \fBdestination IPv6\fR address to \fIdst\fR.
 Default: \fIhostname\fR operand
+
+
+.SS "ah MODULE OPTIONS"
+.TP
+\-as\ \fInum\fR
+Set the AH Security Parameters Index (\fBSPI\fR) to \fInum\fR (0..0xffff).
+Default:\ 1
+.TP
+\-aq\ \fInum\fR
+Set the AH \fBSequence Number\fR to \fInum\fR (0..0xffff). Default:\ 1
+.TP
+\-ad\ \fIdata\fR
+Append the AH \fBAuthentication Data\fR.  \fIdata\fR has a variable length,
+can be either a user-provided string (in hex, octal, decimal, or raw), or rN
+for N random bytes. Default:\ 0
+.TP
+\-an\ \fInum\fR|\fIproto\fR
+Set the AH \fBNext Header\fR field to \fInum\fR {0..0xffff}. If a \fIproto\fRcol
+name is given, sendip tries to determine the corresponding number automatically.
+Default:\ auto
+
+
+.SS "esp MODULE OPTIONS"
+.TP
+\-es\ \fInum\fR
+Set the ESP Security Parameters Index (\fBSPI\fR) \fInum\fR (0..0xffff).
+Default:\ 0
+.TP
+\-eq\ \fInum\fR
+Set the ESP \fBSequence Number\fR to \fInum\fR (0..0xffff). Default:\ 0
+.TP
+\-ep\ \fInum\fR
+Set the ESP \fBPadding Length\fR to \fInum\fR {0.255} (the minimum needed for
+alignment). Default:\ auto
+.TP
+\-en\ \fInum\fR|\fIproto\fR
+Set the ESP \fBNext Header\fR field to \fInum\fR {0..0xffff}. If
+a \fIproto\fRcol name is given, sendip tries to determine the corresponding
+number automatically.  Default:\ auto
+.TP
+\-ei\ \fIdata\fR
+Set the ESP \fBIV\fR \fIdata\fR (string or rN for N random bytes) - max. 8192
+bytes.  Default:\ none
+.TP
+\-eI\ \fInum\fR
+Set the ESP \fBICV\fR \fIdata\fR (string or rN for N random bytes) - max. 8192
+bytes.  Default:\ none
+.TP
+\-ek\ \fInum\fR
+Set the ESP \fBKey\fR (not transmitted string, for now silently ignored).
+Default:\ none
+
+
+.SS "frag MODULE OPTIONS"
+.TP
+\-Fn\ \fInum\fR
+Set the Fragment \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+.TP
+\-Fr\ \fInum\fR
+Set the Fragment \fBreserved\fR field to \fInum\fR (0..255}. Default:\ 0
+.TP
+\-Fo\ \fInum\fR
+Set the Fragment \fBoffset\fR to \fInum\fR (0..0x1ffff). Default:\ 0
+.TP
+\-Ff\ \fInum\fR
+Set the Fragment \fBflags\fR to \fInum\fR {0..7} (3 bits, lsb=more fragments).
+Default:\ 0
+.TP
+\-Fi\ \fInum\fR
+Set the Fragment \fBidentification\fR to \fInum\fR (0..0xffffffff). Default:\ 0
+
+
+.SS "gre MODULE OPTIONS"
+.TP
+\-gc\ \fInum\fR
+Set the GRE \fBsupplied checksum\fR to \fInum\fR (0..0xffff). Default:\ none
+.TP
+\-gC
+Add the \fBactual checksum\fR.
+.TP
+\-gr\ \fInum\fR
+Set the GRE \fBrouting\fR field to \fInum\fR (0..0xffffffff). Default:\ 0
+.TP
+\-gk\ \fInum\fR
+Set the GRE \fBkey\fR field to \fInum\fR (0..0xffffffff). Default:\ none
+.TP
+\-gs\ \fInum\fR
+Set the GRE \fBsequence number\fR to \fInum\fR (0..0xffffffff). Default:\ none
+.TP
+\-gS
+Turn the GRE \fBstrict source routing\fR flag on.
+.TP
+\-ge\ \fInum\fR
+Set the GRE \fBrecursion encapsulation limit\fR to \fInum\fR (0..7}. Default:\ 0
+.TP
+\-gv\ \fInum\fR
+Set the GRE \fBversion number\fR to \fInum\fR (0..7}. Default:\ 0
+.TP
+\-gp\ \fInum\fR
+Set the GRE \fBencapsulated protocol\fR to \fInum\fR (0..0xffff).
+Default:\ auto (if known)
+.TP
+\-go\ \fInum\fR
+Set the GRE \fBoffset\fR to \fInum\fR (0..0xffff). Default:\ none
+
+
+.SS "hop-by-hop MODULE OPTIONS"
+.TP
+\-Hn\ \fInum\fR
+Set the Option \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+.TP
+\-H0
+Set the Option \fBpad 0\fR (use 1 byte padding).
+.TP
+\-Hp\ \fInum\fR
+Set the Option \fBpad N bytes\fR to \fInum\fR (2..257). Default:\ 2
+.TP
+\-Hr\ \fInum\fR
+Set the Option \fBrouter alert\fR to \fInum\fR (0..0xffff). Default:\ 0
+.TP
+\-Hj\ \fInum\fR
+Set the Option \fBjumbo frame length\fR to \fInum\fR (0..0xffff).
+Note that actual production of jumbo frames requires interface support.
+Default:\ 0
+.TP
+\-Hh\ \fIv6addr\fR
+Set the Option (Destination) \fBhome address\fR to the IP \fIv6addr\fRess.
+Default:\ ::1
+.TP
+\-Ht\ \fItype\fB.\fIlength\fB.\fIvalue\fR
+Set the Option \fBarbitrary TLV option\fR according to the given parameters.
+Each parameter can be specified in the usual way as hex, octal, decimal,
+literal, or rN for N random bytes.
+Default:\ 0.0.0
+
+
+.SS "dst MODULE OPTIONS"
+.P
+This module takes the same option and arguments as the \fBhop-by-hop\fR module,
+but uses \fBd\fR as the first option letter instead of \fBH\fR.
+
+
+.SS "route MODULE OPTIONS"
+.TP
+\-on\ \fInum\fR
+Set the Routing \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+.TP
+\-ot\ \fInum\fR
+Set the Routing \fBheader type\fR to \fInum\fR (0..7). Default:\ 0
+.TP
+\-os\ \fInum\fR
+Set the Routing \fBsegments left\fR  to \fInum\fR (0..7). Default:\ 0
+.TP
+\-or\ \fInum\fR
+Set the Routing \fBreserved\fR field to \fInum\fR (0..0xffffffff). Default:\ 0
+.TP
+\-oa\ \fIaddr\fR[\fB,\fIaddr\fR]...
+Set the Routing \fBlist of addresses\fR. Default:\ none
 
 
 .SS "ipv4 MODULE OPTIONS"
@@ -128,7 +301,7 @@ Set the IP \fBtime to live\fR to \fInum\fR {0..255}. Default: 255
 .TP
 \-ip\ \fInum\fR
 Set the IP \fBprotcol\fR to \fInum\fR {0..255}.
-Default: 0, or set by underlying protocol.
+Default: auto, or set by underlying protocol.
 .TP
 \-ic\ \fInum\fR
 Set the IP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
@@ -521,14 +694,18 @@ The reason for the notification. Omit for no data.
 The default destination to use.
 
 .SH AUTHOR
-.TP
+.PP
 \fBMike Ricketts\fR <mike@earth.li>
-.TP
+.br
+\fBMark Carson\fR (NIST)
+.br
 \fBJens Elkner\fR <jel+sendip@cs.ovgu.de> (man page and fixes)
-.TP
-Debian maintainers (fixes).
+.br
+Debian maintainers and many others (fixes).
 
 .SH NOTES
-The source for this version can be obtained
-via https://github.com/jelmd/sendip/. The initial version of it (v2.5) can be
-found on http://www.earth.li/projectpurple/progs/sendip.html as well.
+The source code (GPLv2) for this version can be obtained
+via https://github.com/jelmd/sendip/. The initial version of it (v2.5) should
+be available on http://www.earth.li/projectpurple/progs/sendip.html, and the
+contributions made by Mark Carson (NIST) on
+https://www\-x.antd.nist.gov/ipv6/sendip.html as well.

@@ -55,6 +55,11 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		hdr->ip6_flow |= htonl((u_int32_t)strtoul(arg, (char **)NULL, 0) & 0xFFF00000);
 		pack->modified |= IPV6_MOD_FLOW;
 		break;
+	case 't':
+		/* TODO : This looks byte-order dependant */
+		hdr->ip6_flow |= htonl(((u_int32_t)strtoul(arg, (char **)NULL, 0) << 20) & 0x0F000000);
+		pack->modified |= IPV6_MOD_FLOW;
+		break;
 	case 'v':
 		hdr->ip6_vfc &= 0x0F;
 		hdr->ip6_vfc |= (u_int8_t)(strtoul(arg, (char **)NULL, 0) &0x0F) << 4;
@@ -65,11 +70,6 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		hdr->ip6_vfc |= (u_int8_t)strtoul(arg, (char **)NULL, 0) & 0x0F;
 		pack->modified |= IPV6_MOD_PRIORITY;
 		break;
-	case 't':
-		/* TODO : This looks byte-order dependant */
-		hdr->ip6_flow |= htonl(((u_int32_t)strtoul(arg, (char **)NULL, 0) << 20) & 0x0F000000);
-		pack->modified |= IPV6_MOD_FLOW;
-		break;
 	case 'l':
 		hdr->ip6_plen = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
 		pack->modified |= IPV6_MOD_PLEN;
@@ -79,7 +79,8 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		pack->modified |= IPV6_MOD_HLIM;
 		break;
 	case 'n':
-		hdr->ip6_nxt = (u_int8_t)strtoul(arg, (char **)NULL, 0);
+		/* allow use of protocol names */
+		hdr->ip6_nxt = name_to_proto(arg);
 		pack->modified |= IPV6_MOD_NXT;
 		break;
 	case 's':
@@ -99,7 +100,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
+bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack) {
 	ipv6_header *ipv6 = (ipv6_header *)pack->data;
 
@@ -111,7 +112,8 @@ bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
 		ipv6->ip6_plen = htons(data->alloc_len);
 	}
 	if(!(pack->modified&IPV6_MOD_NXT)) {
-		ipv6->ip6_nxt = (u_int8_t)IPPROTO_NONE;
+		/* the actual type of following header */
+		ipv6->ip6_nxt = header_type(hdrs[index+1]);
 	}
 	if(!(pack->modified&IPV6_MOD_HLIM)) {
 		ipv6->ip6_hlim = 32;

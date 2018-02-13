@@ -99,24 +99,23 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
+bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack) {
 	icmp_header *icp = (icmp_header *)pack->data;
-	int i=strlen(hdrs)-1;
 
-	/* Find enclosing IP header and do the checksum */
-	if(hdrs[i]=='i') {
-		// ipv4
-		if(!(headers[i]->modified&IP_MOD_PROTOCOL)) {
-			((ip_header *)(headers[i]->data))->protocol=IPPROTO_ICMP;
-			headers[i]->modified |= IP_MOD_PROTOCOL;
-		}
-	} else if(hdrs[i]=='6') {
-	   // ipv6
-		if(!(headers[i]->modified&IPV6_MOD_NXT)) {
-			((ipv6_header *)(headers[i]->data))->ip6_nxt=IPPROTO_ICMPV6;
-			headers[i]->modified |= IPV6_MOD_NXT;
-		}
+	/* Search backward for the first v4 or v6 header and use that. */
+	int i = outer_header(hdrs, index, "i6");
+	if (i < 0) {
+		usage_error("Can't find ip header\n");
+		return FALSE;
+	}
+
+	/* Check the enclosing IPv4 header for type. For IPv6 the next header
+	 * type gets determined in the ipv6 module.
+	 */
+	if(hdrs[i]=='i' && !(headers[i]->modified&IP_MOD_PROTOCOL)) {
+		((ip_header *)(headers[i]->data))->protocol=IPPROTO_ICMP;
+		headers[i]->modified |= IP_MOD_PROTOCOL;
 	}
 		
 	if(!(pack->modified&ICMP_MOD_TYPE)) {
@@ -127,6 +126,7 @@ bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
 		}
 	}
 
+	/* Do the checksum */
 	if(!(pack->modified&ICMP_MOD_CHECK)) {
 		if (hdrs[i] == '6') {
 			// ipv6

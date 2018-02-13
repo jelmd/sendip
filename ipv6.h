@@ -38,25 +38,25 @@ typedef struct {
 
 /* Defines for which parts have been modified
  */
-#define IPV6_MOD_FLOW     1
-#define IPV6_MOD_VERSION  1<<1
-#define IPV6_MOD_PRIORITY 1<<2
-#define IPV6_MOD_PLEN     1<<3
-#define IPV6_MOD_HLIM     1<<4
-#define IPV6_MOD_NXT      1<<5
-#define IPV6_MOD_SRC      1<<6
-#define IPV6_MOD_DST      1<<7
+#define IPV6_MOD_FLOW     (1)
+#define IPV6_MOD_VERSION  (1<<1)
+#define IPV6_MOD_PRIORITY (1<<2)
+#define IPV6_MOD_PLEN     (1<<3)
+#define IPV6_MOD_HLIM     (1<<4)
+#define IPV6_MOD_NXT      (1<<5)
+#define IPV6_MOD_SRC      (1<<6)
+#define IPV6_MOD_DST      (1<<7)
 
 /* Options
  */
 sendip_option ipv6_opts[] = {
 	{"f",1,"IPv6 flow ID","32"},
-	{"t",1,"IPv6 traffic class","0"},
-	{"l",1,"IPv6 payload length","Correct"},
-	{"n",1,"IPv6 next header","IPPROTO_NONE"},
-	{"h",1,"IPv6 hop limit","32"},
-	{"v",1,"IP version (you probably don't want to change this"},
+	{"t",1,"IPv6 traffic class","0"},	/* also in flow label*/
+	{"v",1,"IP version (you probably don't want to change this)"},
 	{"p",1,"IPv6 priority","0"},
+	{"l",1,"IPv6 payload length","Correct"},
+	{"h",1,"IPv6 hop limit","32"},
+	{"n",1,"IPv6 next header","Correct"},
 	{"s",1,"IPv6 source address","::1"},
 	{"d",1,"IPv6 destination address","Correct"}
 };

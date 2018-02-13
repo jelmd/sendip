@@ -312,9 +312,10 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
+bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack) {
 	tcp_header *tcp = (tcp_header *)pack->data;
+	int i;
 	
 	/* Set relevant fields */
 	if(!(pack->modified&TCP_MOD_SEQ)) {
@@ -331,8 +332,8 @@ bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
 	}
 
 	/* Find enclosing IP header and do the checksum */
-	if(hdrs[strlen(hdrs)-1]=='i') {
-		int i = strlen(hdrs)-1;
+	i = outer_header(hdrs, index, "i6");/*@@*/
+	if(hdrs[i]=='i') {
 		if(!(headers[i]->modified&IP_MOD_PROTOCOL)) {
 			((ip_header *)(headers[i]->data))->protocol=IPPROTO_TCP;
 			headers[i]->modified |= IP_MOD_PROTOCOL;
@@ -340,12 +341,8 @@ bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
 		if(!(pack->modified&TCP_MOD_CHECK)) {
 			tcpcsum(headers[i],pack,data);
 		}
-	} else if(hdrs[strlen(hdrs)-1]=='6') {
-		int i = strlen(hdrs)-1;
-		if(!(headers[i]->modified&IPV6_MOD_NXT)) {
-			((ipv6_header *)(headers[i]->data))->ip6_nxt=IPPROTO_TCP;
-			headers[i]->modified |= IPV6_MOD_NXT;
-		}
+	} else if(hdrs[i]=='6') {
+		/* next header type gets determined in the ipv6 module */
 		if(!(pack->modified&TCP_MOD_CHECK)) {
 			tcp6csum(headers[i],pack,data);
 		}

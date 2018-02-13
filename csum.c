@@ -35,3 +35,26 @@ u_int16_t csum (u_int16_t *packet, int packlen) {
 
 	return (u_int16_t) ~sum;
 }
+
+/* Checksum a vector of blocks of data */
+u_int16_t csumv (u_int16_t *packet[], int packlen[]) {
+	register unsigned long sum = 0;
+	int i;
+
+	for (i=0; packlen[i]; ++i) {
+		while (packlen[i] > 1) {
+			sum+= *(packet[i]++);
+			packlen[i]-=2;
+		}
+
+		if (packlen[i] > 0)
+			sum += *(unsigned char *)packet[i];
+	}
+
+	/* TODO: this depends on byte order */
+
+	while (sum >> 16)
+		sum = (sum & 0xffff) + (sum >> 16);
+
+	return (u_int16_t) ~sum;
+}

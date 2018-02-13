@@ -40,7 +40,7 @@
 #include "ipv4.h"
 #endif /* __sun */
 
-/* Use our own getopt to ensure consistant behaviour on all platforms */
+/* Use our own getopt to ensure consistent behaviour on all platforms */
 #include "gnugetopt.h"
 #include "c_origin.h"
 
@@ -53,8 +53,8 @@ typedef struct _s_m {
 	bool (*do_opt)(const char *optstring, const char *optarg, 
 						sendip_data *pack);
 	bool (*set_addr)(char *hostname, sendip_data *pack);
-	bool (*finalize)(char *hdrs, sendip_data *headers[], sendip_data *data, 
-						  sendip_data *pack);
+	bool (*finalize)(char *hdrs, sendip_data *headers[], int index,
+		sendip_data *data, sendip_data *pack);
 	sendip_data *pack;
 	void *handle;
 	sendip_option *opts;
@@ -221,6 +221,7 @@ static bool load_module(char *modname) {
 	}
 	sendip_module *newmod = malloc(sizeof(sendip_module));
 	sendip_module *cur;
+
 	int (*n_opts)(void);
 	sendip_option * (*get_opts)(void);
 	char (*get_optchar)(void);
@@ -319,27 +320,45 @@ out:
 static void print_usage(void) {
 	sendip_module *mod;
 	int i;
-	printf("Usage: %s [-v] [-d data] [-h] [-f datafile] [-p module] [module options] hostname\n",progname);
-	printf(" -d data\tadd this data as a string to the end of the packet\n");
-	printf("\t\tData can be:\n");
-	printf("\t\trN to generate N random(ish) data bytes;\n");
-	printf("\t\t0x or 0X followed by hex digits;\n");
-	printf("\t\t0 followed by octal digits;\n");
-	printf("\t\tany other stream of bytes\n");
-	printf(" -f datafile\tread packet data from file\n");
-	printf(" -h\t\tprint this message\n");
-	printf(" -p module\tload the specified module (see below)\n");
-	printf(" -v\t\tbe verbose\n");
-
-	printf("\n\nModules are loaded in the order the -p option appears.  The headers from\n");
-	printf("each module are put immediately inside the headers from the previos model in\n");
-	printf("the final packet.  For example, to embed bgp inside tcp inside ipv4, do\n");
-	printf("sendip -p ipv4 -p tcp -p bgp ....\n");
-
-	printf("\n\nModules available at compile time:\n");
-	printf("\tipv4 ipv6 icmp tcp udp bgp rip ntp\n\n");
+	printf("Usage: %s [-v] [-d data] [-h] [-f datafile] "
+		"[-p module] [module options] hostname\n", progname);
+	printf(
+"  -d data\tadd this data as a string to the end of the packet\n"
+"  -f datafile\tread packet data from file\n"
+"  -h\t\tprint this message\n"
+"  -p module\tload the specified module (see below)\n"
+"  -v\t\tbe verbose\n"
+"\n\n"
+"Packet data, and argument values for many header fields, may\n"
+"specified as\n"
+"rN to generate N random(ish) data bytes;\n"
+"0x or 0X followed by hex digits;\n"
+"0 followed by octal digits;\n"
+"decimal number for decimal digits;\n"
+"any other stream of bytes, taken literally.\n"
+"\n\n"
+"Modules are loaded in the order the -p option appears.  The headers from\n"
+"each module are put immediately inside the headers from the previous module\n"
+"in the final packet.  For example, to embed bgp inside tcp inside ipv4, do\n"
+"sendip -p ipv4 -p tcp -p bgp ...\n"
+"\n\n"
+"Modules may be repeated to create multiple instances of a given header\n"
+"type. For example, to create an ipip tunneled packet (ipv4 inside ipv4), do\n"
+"sendip -p ipv4 <outer header arguments> -p ipv4 <inner header arguments> ...\n"
+"In the case of repeated modules, arguments are applied to the closest matching\n"
+"module in the command line.\n"
+"\n\n"
+"Modules available at compile time:\n"
+"    ipv4 ipv6 icmp tcp udp bgp rip ripng ntp ah dest esp frag gre hop route.\n"
+"\n");
 	for(mod=first;mod!=NULL;mod=mod->next) {
-		printf("\n\nArguments for module %s:\n",mod->name);
+		char *shortname = strrchr(mod->name, '/');
+
+		if (!shortname)
+			shortname = mod->name;
+		else
+			++shortname;
+		printf("\n\nArguments for module %s:\n", shortname);
 		for(i=0;i<mod->num_opts;i++) {
 			printf("   -%c%s %c\t%s\n",mod->optchar,
 					  mod->opts[i].optname,mod->opts[i].arg?'x':' ',
@@ -365,7 +384,7 @@ int main(int argc, char *const argv[]) {
 	int datalen=0;
 	bool randomflag=FALSE;
 
-	sendip_module *mod;
+	sendip_module *mod, *currentmod;
 	int optc;
 
 	int num_modules=0;
@@ -486,17 +505,23 @@ int main(int argc, char *const argv[]) {
 		mod->pack=mod->initialize();
 	}
 
-	/* Do the get opt */
+	/* Get opt like getopt_long, but '-' as well as '--' can indicate a long
+	 * option. If an option that starts with '-' (not '--') doesn't match a
+	 * long option, but does match a short option, it is parsed as a short
+	 * option instead.
+	 *
+	 * Apply options to the most recently invoked module first to allow
+	 * separate arguments for multiply-invoked modules, e.g. for creating ipip
+	 * tunneled packets.
+	 */
 	gnuopterr=1;
 	gnuoptind=0;
-	/* Like getopt_long, but '-' as well as '--' can indicate a long option.
-	   If an option that starts with '-' (not '--') doesn't match a long option,
-	   but does match a short option, it is parsed as a short option instead.
-	 */
+	currentmod = NULL;
 	while(EOF != (optc=_getopt_internal(argc,argv,"p:vd:hf:",opts,&longindex,1))) {
-		
 		switch(optc) {
 		case 'p':
+			currentmod = (currentmod) ? currentmod->next : first;
+			break;
 		case 'v':
 		case 'd':
 		case 'f':
@@ -513,24 +538,31 @@ int main(int argc, char *const argv[]) {
 			fprintf(stderr,"Option starting %c not recognized\n",gnuoptopt);
 			break;
 		default:
-			for(mod=first;mod!=NULL;mod=mod->next) {
-				if(mod->optchar==optc) {
-					
-					/* Random option arguments */
-					if(gnuoptarg != NULL && !strcmp(gnuoptarg,"r")) {
-						/* need a 32 bit number, but random() is signed and
-							nonnegative so only 31bits - we simply repeat one */
-						unsigned long r = (unsigned long)random()<<1;
-						r+=(r&0x00000040)>>6;
-						sprintf(rbuff,"%lu",r);
-						gnuoptarg = rbuff;
-					}
-
-					if(!mod->do_opt(opts[longindex].name,gnuoptarg,mod->pack)) {
-						usage=TRUE;
-					}
+			/* check current mod first */
+			if (currentmod->optchar == optc)
+				mod = currentmod;
+			else {
+				for(mod=first;mod!=NULL;mod=mod->next) {
+					if(mod->optchar==optc)
+						break;
 				}
 			}
+			if (mod) {
+				/* Random option arguments */
+				if(gnuoptarg != NULL && !strcmp(gnuoptarg,"r")) {
+					/* need a 32 bit number, but random() is signed and
+						nonnegative so only 31bits - we simply repeat one */
+					unsigned long r = (unsigned long)random()<<1;
+					r+=(r&0x00000040)>>6;
+					sprintf(rbuff,"%lu",r);
+					gnuoptarg = rbuff;
+				}
+
+				if(!mod->do_opt(opts[longindex].name,gnuoptarg,mod->pack)) {
+					usage=TRUE;
+				}
+			}
+			break;
 		}
 	}
 
@@ -567,8 +599,17 @@ int main(int argc, char *const argv[]) {
 
 
 	/* EVIL EVIL EVIL! */
-	/* Stick all the bits together.  This means that finalize better not
-		change the size or location of any packet's data... */
+	/* Stick all the bits together - we allow finalize to shrink, but
+	 * not expand the packet size and not to change the data location.
+	 * Of course, any finalize which does so is responsible for pulling back
+	 * all the later packet data into the area that will be sent.
+	 *
+	 * All of this is to accommodate esp, which needs to put its trailer after
+	 * the packet data, with some padding for alignment. Since esp can't know
+	 * how much padding will be needed until the rest of the packet is filled
+	 * out, it preallocates an excess of padding first, and then trims in
+	 * finalize to the amount actually needed.
+	 */
 	packet.data = NULL;
 	packet.alloc_len = 0;
 	packet.modified = 0;
@@ -610,17 +651,21 @@ int main(int argc, char *const argv[]) {
 		for(i=num_modules-1,mod=last;mod!=NULL;mod=mod->prev,i--) {
 
 			if(verbosity) printf("Finalizing module %s\n",mod->name);
-
-			/* Remove this header from enclosing list */
-			hdrs[i]='\0';
+			/* Remove this header from enclosing list but don't erase the
+			 * header type, so that it's available to upper-level headers where
+			 * needed. Instead, we tell the upper-level headers where they are
+			 * in the list.
+			 */
 			headers[i] = NULL;
-
-			mod->finalize(hdrs, headers, &d, mod->pack);
+			mod->finalize(hdrs, headers, i, &d, mod->pack);
 
 			/* Get everything ready for the next call */
 			d.data=(char *)d.data-mod->pack->alloc_len;
 			d.alloc_len+=mod->pack->alloc_len;
 		}
+		/* Trim back the packet length if need be */
+		if (d.alloc_len < packet.alloc_len)
+			packet.alloc_len = d.alloc_len;
 	}
 
 	/* And send the packet */

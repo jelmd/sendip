@@ -3,6 +3,8 @@ Author:  Mike Ricketts <mike@earth.li>
 Web:     http://www.earth.li/projectpurple/progs/sendip.html
 Part of Project Purple. (http://www.earth.li/projectpurple/)
 
+Repository of this fork: https://github.com/jelmd/sendip/
+
 1. Introduction
 
    SendIP is a tool to send completely arbitrary packets out over the network.
@@ -22,7 +24,7 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
 
 2. Protocols
 
-   Here is a list of protocols that SendIP currently understands:
+   Here is the initial list of protocols that SendIP understands:
    * IPv4 (but see below section 7)
    *   TCP
    *     BGP
@@ -37,8 +39,9 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
    *     RIPng
    *     NTP?
 
-   Other protocols will be added in future versions, as and when I have time
-   to add them.
+   Since than other modules have been added, which allow more IP header
+   manipulations, support more protocols. Just have a look at the sendip(1)
+   man page or "sendip [-p module]... -h" to get more information.
 
    Of course, it is still possible to send packets using other protocols, but
    you have to construct the packet data and headers entirely by hand.
@@ -52,44 +55,34 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
 
    make ; make install should work.
    You MUST use GNU make (on Solaris & friends it is called gmake).
-
-   If you have install problems, try GNU install from GNU coreutils, e.g.:
-     make install INSTALL=gnu-install
-
-   If  you can't persuade it to compile or install, mail me with details of
-   what goes wrong, and what system you are trying to install it on.
-   By this I mean at least:
-   - output of make -k distclean all install
-   - OS, including version
-   - version of GNU make, compiler, etc.
-   - version/commit of sendip
-   - anything else you think might be relevant
+   You may also set your CC environment variable to 'gcc' to pull in GCC
+   support. If it is set to 'cc', Sun Studio Compiler is assumed and thus
+   will use GCC incompatible flags.
 
    You can change where it installs by changing BINDIR and/or PREFIX at the
    top of the Makefile or by setting the corresponding env variables.
 
+   If you have install problems, try GNU install from GNU coreutils, and check
+   whether this works, e.g.:
+     make install INSTALL=gnu-install CC=gcc DESTDIR=/tmp/foo
+
 5. Problems, Bugs, and Comments
 
-   If you have any comments, suggestions, or bug reports, please email me.
+   If you have any comments, suggestions, or bug reports, please file an issue
+   via https://github.com/jelmd/sendip/issues, describe there
+   what goes wrong, and what system you are trying to install it on.
 
-   Please, when sending bug reports include all the relevant information so
-   I have a hope of reproducing or fixing the bug.  I need at least:
-   - output of make -k veryclean all install (if you installed from source)
-   - OS, including version and platform
-   - glibc version if you are on linux
-   - sendip version
+   Providing the follwoing information may help to solve the problem faster:
+   - output of [g]make -k distclean all
+   - OS, including version
+   - version of GNU make, compiler, etc.
+   - the C compiler you use
+   - version/commit of sendip
    - exact command line that fails
    - exact error messages, if any
    - exactly what you expected to happen that didn't, or what didn't happen
      that you expected
-   - anything else that might be relevant
-   Make sure you have read section 7 of this README first.
-
-   The email address I currently use is mike@earth.li
-
-   I am interested in any feedback in order to improve SendIP.
-
-   You may also contribute directly to https://github.com/jelmd/sendip/.
+   - anything else you think might be relevant
 
 6. License
 
@@ -105,18 +98,13 @@ Part of Project Purple. (http://www.earth.li/projectpurple/)
    This list is not by any means complete and what is here may not be accurate,
    and I would welcome more information.
 
-   Linux, *BSD:
-   - IP source address is rewritten if it is zero.
-   - IP checksum is always rewritten to the correct value.
-   - IP packet ID is rewritten (to a randomish value) if it is zero.
-   - Total packet length is always rewritten to the number of bytes sent.
-   - All other headers work as expected.
-
    Solaris:
-   - IP source address is rewritten if it is zero.
    - IP header length works provided that the length given is not greater
      than the number of bytes in the packet.  If it is, sendip will segfault.
    - IP don't fragment flag always set, other IP flags always cleared.
+
+   Linux, *BSD, Solaris:
+   - IP source address is rewritten if it is zero.
    - IP checksum is always rewritten to the correct value.
    - IP packet ID is rewritten (to a randomish value) if it is zero.
    - Total packet length is always rewritten to the number of bytes sent.

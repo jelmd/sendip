@@ -3,6 +3,8 @@
  * ChangeLog since 2.0 release:
  * 02/12/2001: added num_opts, get_opts and get_optchar functions
  * 02/12/2001: added more helpful comments
+ * 03/25/2009: changed finalize to give better access to other headers
+ *             (Mark Carson)
  */
 
 /* To write a new sendip module:
@@ -56,14 +58,14 @@
  *      -arg contains any argument given
  *      -pack contains our headers
  *    - in the finalize function, fill in anything that needs to be computed
- *      after all the optoins are processed.  This function MUST NOT change
+ *      after all the options are processed.  This function MUST NOT change
  *      the length or location of the headers in memory, else bad things will
  *      happen.  Typical things that go in here are filling in the length
  *      field of the header if it hasn't been overriden, computing checksums,
  *      etc.  You may also which to check that your packet is enclosed in a
  *      sensible carrier.  tcp.c does all of the things.
  *      -hdrs is build by taking the opt_char for each packet in turn from the
- *      outside in, up to but not including this packet
+ *       outside in, up to this packet inclusive.
  *      -headers is an array of all the enclosing headers in the same order
  *      -data contains the data inside this set of headers.  This may include
  *       headers of underlying protocols, that will already have been
@@ -116,14 +118,14 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], sendip_data *data,
+bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack) {
 	//...
 	return TRUE;
 }
 
 int num_opts() {
-	return sizeof(dummy_opts)/sizeof(sendip_option); 
+	return sizeof(dummy_opts)/sizeof(sendip_option);
 }
 sendip_option *get_opts() {
 	return dummy_opts;

@@ -3,6 +3,9 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include "sendip_module.h"
 
 int compact_string(char *data_out) {
 	char *data_in = data_out;
@@ -62,5 +65,63 @@ int compact_string(char *data_out) {
 	} else {
 		/* String */
 		return strlen(data_in);
+	}
+}
+
+/* Functions for filling out several header data areas using the
+ * "string and/or rand" business.
+ *
+ * Note the handling of space is slightly screwy - compact_string
+ * above overwrites its argument in place, since it knows that
+ * no matter what, the string it produces can be no longer than
+ * its argument. randombytes, however, uses a static area, since
+ * the calling argument there (something like r32) will generally
+ * be much shorter than the string produced.
+ *
+ * In practice, in both cases the string returned will be immediately
+ * copied into an allocated area, so the differences in string handling
+ * don't matter. But this should be kept in mind if these routines
+ * are used elsewhere.
+ */
+/* @return a pointer to a string of random bytes. Note this is a
+ * static area which is overwritten at each call.
+ */
+u_int8_t *
+randombytes(int length)
+{
+	static u_int8_t answer[MAXRAND];
+	int i;
+
+	/* Sanity check */
+	if (length > MAXRAND) {
+		usage_error("Random data too long to be sane\n");
+		return NULL;
+	}
+	for (i=0; i < length; ++i)
+		answer[i] = (u_int8_t)random();
+	return answer;
+}
+
+/* Yes, well, not the world's most brilliant name, but this
+ * does the standard string argument handling. The output
+ * may either be the transformed input or a static area.
+ * @return The length of the output.
+ */
+int
+compact_or_rand(char *input, char **output)
+{
+	int length=0;
+
+	if (!input || !output) return 0;
+	switch (*input) {
+	case 'r':	/* rN - random data, N bytes */
+		length = atoi(input+1);
+		*output = (char *)randombytes(length);
+		if (!*output) return 0;
+		return length;
+	default:	/* read hex/octal/decimal/raw string */
+		length = compact_string(input);
+		*output = input;
+		return length;
 	}
 }

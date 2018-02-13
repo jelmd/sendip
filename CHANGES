@@ -130,3 +130,33 @@ Changes between sendip-2.4 and sendip-2.5
 * Fix compile bug on Solaris (found by Dave Gibelli <dgibelli@tiscali.co.uk>)
 * tcp.so
 - Fix -tonum bug found by Yaniv Kaul <ykaul@checkpoint.com>
+
+Changes between sendip-2.5 and sendip-2.5-jel
+* Debian 2.5-7 fixes merged (gcc4, gcc5, clang, spelling).
+* Makefile uncluttered + fixes for building on Solaris with Studio Compiler/gcc
+* add a real man page (no man2html pain anymore)
+* sendip is now relocatable wrt. install location.
+
+Changes between sendip-2.5-jel and sendip-2.5-mec-0
+  This release incorporates the following enhancements and fixes implemented by
+  Mark Carson (NIST) - see also https://www-x.antd.nist.gov/ipv6/sendip.html
+* add. header types, especially for IPv6
+  - AH (dummy only, IPv4 or v6)
+  - ESP (dummy only, IPv4 or v6)
+  - hop-by-hop or destination options (IPv6: pad0, padN, router alert, jumbo,
+    home address, (arbitrary))
+  - fragment (IPv6)
+  - GRE tunnel (IPv4 or v6)
+  - routing (types 0, 1, 2)
+  - IPIP (4in4), 4in6, 6in4 and 6in6 tunneling
+* new helper functions for random data generation, protocol name/number
+  conversion, and forward/back header lookup
+* allow multiple invocation of the same header type e.g. for ipip tunnels.
+  Argument processing changed to first attempt to apply arguments to the most
+  recently invoked header module.
+* allow header modules to trim (but not increase) the total packet size in
+  packet finalization to support e.g. ESP, which needs to pad out its trailer
+  for alignment.
+* new files: ah.c ah.h esp.c esp.h frag.c frag.h gre.c gre.h headers.c
+  hop.c hop.h ipv6ext.h parse.h parseargs.c protoname.c route.c route.h
+* pulled out bgp.h from bgp.c to get Makefile rules straight (jelmd)

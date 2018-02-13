@@ -24,7 +24,7 @@ typedef struct {
 sendip_option udp_opts[] = {
 	{"s",1,"UDP source port","0"},
 	{"d",1,"UDP destination port","0"},
-	{"l",1,"UDP packet legnth","Correct"},
+	{"l",1,"UDP packet length","Correct"},
 	{"c",1,"UDP checksum","Correct"}
 };
 

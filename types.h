@@ -1,4 +1,4 @@
-/* types.h - tpyes needed in sendip and not defined everywhere
+/* types.h - types needed in sendip and not defined everywhere
  * Author: Mike Ricketts <mike@earth.li>
  * ChangeLog since 2.1 release:
  * 03/02/2002 Added more defines/protos for non-IPv6 systems.
