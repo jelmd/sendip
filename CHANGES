@@ -160,3 +160,12 @@ Changes between sendip-2.5-jel and sendip-2.5-mec-0
 * new files: ah.c ah.h esp.c esp.h frag.c frag.h gre.c gre.h headers.c
   hop.c hop.h ipv6ext.h parse.h parseargs.c protoname.c route.c route.h
 * pulled out bgp.h from bgp.c to get Makefile rules straight (jelmd)
+
+Changes between sendip-2.5-mec-0 and sendip-2.5-mec-1
+  This release incorporates the following enhancements and fixes implemented by
+  Mark Carson (NIST) - see also https://www-x.antd.nist.gov/ipv6/sendip.html
+* Addition of Wrapped ESP (WESP) header (IPv4,6)
+* Support for external authentication and crypto modules for AH and ESP (IPv4,6)
+  (demo xorauth "authentication" and xorcrypto "encryption")
+* Extended uniform string argument handling
+* outsourced module loading to modload.* and stop copying module data (jelmd)

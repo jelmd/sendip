@@ -237,7 +237,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 		if (arg) {
 			++arg;
 
-			length = compact_or_rand(arg, &temp);
+			length = stringargument(arg, &temp);
 		} else {
 			temp = NULL;
 		}

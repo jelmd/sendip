@@ -34,7 +34,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <ctype.h> /* isprint */
+
 #include "sendip_module.h"
+#include "crypto_module.h"
+#include "modload.h"
 
 #ifdef __sun  /* for EVILNESS workaround */
 #include "ipv4.h"
@@ -42,24 +45,17 @@
 
 /* Use our own getopt to ensure consistent behaviour on all platforms */
 #include "gnugetopt.h"
-#include "c_origin.h"
 
-typedef struct _s_m {
-	struct _s_m *next;
-	struct _s_m *prev;
-	char *name;
-	char optchar;
-	sendip_data * (*initialize)(void);
-	bool (*do_opt)(const char *optstring, const char *optarg, 
-						sendip_data *pack);
-	bool (*set_addr)(char *hostname, sendip_data *pack);
-	bool (*finalize)(char *hdrs, sendip_data *headers[], int index,
-		sendip_data *data, sendip_data *pack);
+/* housekeeping for loaded modules and their packet data */
+typedef struct _sml {
+	struct _sml *next;
+	struct _sml *prev;
+	sendip_module *mod;
 	sendip_data *pack;
-	void *handle;
-	sendip_option *opts;
-	int num_opts;
-} sendip_module;
+	int num_opts;		/* number of options for the module to keep in mind */
+} sendip_mod_li;
+static sendip_mod_li *first;
+static sendip_mod_li *last;
 
 /* sockaddr_storage struct is not defined everywhere, so here is our own
 	nasty version
@@ -71,8 +67,6 @@ typedef struct {
 } _sockaddr_storage;
 
 static int num_opts=0;
-static sendip_module *first;
-static sendip_module *last;
 
 static char *progname;
 
@@ -198,127 +192,8 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 	return sent;
 }
 
-static void unload_modules(bool freeit, int verbosity) {
-	sendip_module *mod, *p;
-	p = NULL;
-	for(mod=first;mod!=NULL;mod=mod->next) {
-		if(verbosity) printf("Freeing module %s\n",mod->name);
-		if(p) free(p);
-		p = mod;
-		free(mod->name);
-		if(freeit) free(mod->pack->data);
-		free(mod->pack);
-		(void)dlclose(mod->handle);
-		/* Do not free options - TODO should we? */
-	}
-	if(p) free(p);
-}
-
-static bool load_module(char *modname) {
-	static char *libdir = NULL;
-	if (libdir == NULL) {
-		libdir = get_origin_rel(1, "lib/sendip", SENDIP_LIBS);
-	}
-	sendip_module *newmod = malloc(sizeof(sendip_module));
-	sendip_module *cur;
-
-	int (*n_opts)(void);
-	sendip_option * (*get_opts)(void);
-	char (*get_optchar)(void);
-
-	for(cur=first;cur!=NULL;cur=cur->next) {
-		if(!strcmp(modname,cur->name)) {
-			memcpy(newmod,cur,sizeof(sendip_module));
-			newmod->num_opts=0;
-			goto out;
-		}
-	}
-	newmod->name=malloc(strlen(modname)+strlen(libdir)+strlen(".so")+2);
-	strcpy(newmod->name,modname);
-	if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
-		char *error0=strdup(dlerror());
-		sprintf(newmod->name,"./%s.so",modname);
-		if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
-			char *error1=strdup(dlerror());
-			sprintf(newmod->name,"%s/%s.so",libdir,modname);
-			if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
-				char *error2=strdup(dlerror());
-				sprintf(newmod->name,"%s/%s",libdir,modname);
-				if(NULL==(newmod->handle=dlopen(newmod->name,RTLD_NOW))) {
-					char *error3=strdup(dlerror());
-					fprintf(stderr,"Couldn't open module %s, tried:\n",modname);
-					fprintf(stderr,"  %s\n  %s\n  %s\n  %s\n", error0, error1,
-							  error2, error3);
-					free(newmod);
-					free(error3);
-					return FALSE;
-				}
-				free(error2);
-			}
-			free(error1);
-		}
-		free(error0);
-	}
-	strcpy(newmod->name,modname);
-	if(NULL==(newmod->initialize=dlsym(newmod->handle,"initialize"))) {
-		fprintf(stderr,"%s doesn't have an initialize function: %s\n",modname,
-				  dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	if(NULL==(newmod->do_opt=dlsym(newmod->handle,"do_opt"))) {
-		fprintf(stderr,"%s doesn't contain a do_opt function: %s\n",modname,
-				  dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	newmod->set_addr=dlsym(newmod->handle,"set_addr"); // don't care if fails
-	if(NULL==(newmod->finalize=dlsym(newmod->handle,"finalize"))) {
-		fprintf(stderr,"%s\n",dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	if(NULL==(n_opts=dlsym(newmod->handle,"num_opts"))) {
-		fprintf(stderr,"%s\n",dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	if(NULL==(get_opts=dlsym(newmod->handle,"get_opts"))) {
-		fprintf(stderr,"%s\n",dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	if(NULL==(get_optchar=dlsym(newmod->handle,"get_optchar"))) {
-		fprintf(stderr,"%s\n",dlerror());
-		dlclose(newmod->handle);
-		free(newmod);
-		return FALSE;
-	}
-	newmod->num_opts = n_opts();
-	newmod->optchar=get_optchar();
-	/* TODO: check uniqueness */
-	newmod->opts = get_opts();
-
-	num_opts+=newmod->num_opts;
-
-out:
-	newmod->pack=NULL;
-	newmod->prev=last;
-	newmod->next=NULL;
-	last = newmod;
-	if(last->prev) last->prev->next = last;
-	if(!first) first=last;
-
-	return TRUE;
-}
-
 static void print_usage(void) {
-	sendip_module *mod;
+	sendip_mod_li *e;
 	int i;
 	printf("Usage: %s [-v] [-d data] [-h] [-f datafile] "
 		"[-p module] [module options] hostname\n", progname);
@@ -332,6 +207,7 @@ static void print_usage(void) {
 "Packet data, and argument values for many header fields, may\n"
 "specified as\n"
 "rN to generate N random(ish) data bytes;\n"
+"zN to generate N zero (nul) data bytes;\n"
 "0x or 0X followed by hex digits;\n"
 "0 followed by octal digits;\n"
 "decimal number for decimal digits;\n"
@@ -349,9 +225,13 @@ static void print_usage(void) {
 "module in the command line.\n"
 "\n\n"
 "Modules available at compile time:\n"
-"    ipv4 ipv6 icmp tcp udp bgp rip ripng ntp ah dest esp frag gre hop route.\n"
+"    ipv4 ipv6 icmp tcp udp bgp rip ripng ntp\n"
+"    ah dest esp frag gre hop route wesp.\n"
 "\n");
-	for(mod=first;mod!=NULL;mod=mod->next) {
+	for(e = first; e != NULL; e = e->next) {
+		if (e->num_opts == 0)
+			continue;
+		sendip_module *mod = e->mod;
 		char *shortname = strrchr(mod->name, '/');
 
 		if (!shortname)
@@ -359,15 +239,33 @@ static void print_usage(void) {
 		else
 			++shortname;
 		printf("\n\nArguments for module %s:\n", shortname);
-		for(i=0;i<mod->num_opts;i++) {
-			printf("   -%c%s %c\t%s\n",mod->optchar,
-					  mod->opts[i].optname,mod->opts[i].arg?'x':' ',
+		for (i=0; i < e->num_opts; i++) {
+			printf("   -%c%s %c\t%s\n", mod->optchar,
+					  mod->opts[i].optname, mod->opts[i].arg ? 'x' : ' ',
 					  mod->opts[i].description);
-			if(mod->opts[i].def) printf("   \t\t  Default: %s\n", 
-												 mod->opts[i].def);
+			if (mod->opts[i].def)
+				printf("   \t\t  Default: %s\n", mod->opts[i].def);
 		}
 	}
 
+}
+
+static void
+unload_mods(bool freeit, int verbosity) {
+	sendip_mod_li *e, *p;
+
+	p = NULL;
+	for (e = first; e != NULL; e = e->next) {
+		if (p)
+			free(p);
+		p = e;
+		if (freeit)
+			free(p->pack->data);
+		free(p->pack);
+	}
+	if (p)
+		free(p);
+	unload_modules(verbosity);
 }
 
 int main(int argc, char *const argv[]) {
@@ -384,7 +282,8 @@ int main(int argc, char *const argv[]) {
 	int datalen=0;
 	bool randomflag=FALSE;
 
-	sendip_module *mod, *currentmod;
+	sendip_module *mod;
+	sendip_mod_li *e, *current_e;
 	int optc;
 
 	int num_modules=0;
@@ -392,7 +291,7 @@ int main(int argc, char *const argv[]) {
 	sendip_data packet;
 	
 	num_opts = 0;	
-	first=last=NULL;
+	first = last = NULL;
 
 	progname=argv[0];
 
@@ -404,31 +303,41 @@ int main(int argc, char *const argv[]) {
 	while(gnuoptind<argc && (EOF != (optc=gnugetopt(argc,argv,"-p:vd:hf:")))) {
 		switch(optc) {
 		case 'p':
-			if(load_module(gnuoptarg))
+			if (mod = load_sendip_module(gnuoptarg, &i)) {
+				e = malloc(sizeof(sendip_mod_li));
+				if (e == NULL) {
+					perror("Unable to process option -p ...");
+					return 1;
+				}
+				e->prev = last;
+				e->next = NULL;
+				e->pack = NULL;
+				e->mod = mod;
+				e->num_opts = i ? 0 : mod->num_opts;
+				last = e;
+				if (last->prev)
+					last->prev->next = last;
+				if (!first)
+					first = last;
 				num_modules++;
+				num_opts += e->num_opts;
+			}
 			break;
 		case 'v':
 			verbosity=TRUE;
 			break;
 		case 'd':
-			if(data == NULL) {
-				data=gnuoptarg;
-				if(*data=='r') {
-					/* random data, format is r<n> when n is number of bytes */
-					datalen = atoi(data+1);
-					if(datalen < 1) {
-						fprintf(stderr,"Random data with length %d invalid\nNo data will be included\n",datalen);
-						data=NULL;
-						datalen=0;
-					}
-					data=(char *)malloc(datalen);
-					for(i=0;i<datalen;i++)
-						data[i]=(char)random();
-					randomflag=TRUE;
-				} else {
-					/* "normal" data */
-					datalen = compact_string(data);
+			if (data == NULL) {
+				char *datarg;
+
+				/* normal data, rN for random, zN for nul (zero) string */
+				datalen = stringargument(gnuoptarg, &datarg);
+				data = (char *) malloc(datalen);
+				if (data == NULL) {
+					perror("Unable to process option -d ...");
+					return 1;
 				}
+				memcpy(data, datarg, datalen);
 			} else {
 				fprintf(stderr,"Only one -d or -f option can be given\n");
 				usage = TRUE;
@@ -484,25 +393,29 @@ int main(int argc, char *const argv[]) {
 	}
 	memset(opts,'\0',(1+num_opts)*sizeof(struct option));
 	i=0;
-	for(mod=first;mod!=NULL;mod=mod->next) {
+	for (e = first; e != NULL; e = e->next) {
+		mod = e->mod;
 		int j;
 		char *s;   // nasty kludge because option.name is const
-		for(j=0;j<mod->num_opts;j++) {
+		for (j = 0; j < e->num_opts; j++) {
 			/* +2 on next line is one for the char, one for the trailing null */
-			opts[i].name = s = malloc(strlen(mod->opts[j].optname)+2);
-			sprintf(s,"%c%s",mod->optchar,mod->opts[j].optname);
+			opts[i].name = s = malloc(strlen(mod->opts[j].optname) + 2);
+			sprintf(s, "%c%s", mod->optchar, mod->opts[j].optname);
 			opts[i].has_arg = mod->opts[j].arg;
 			opts[i].flag = NULL;
 			opts[i].val = mod->optchar;
 			i++;
 		}
 	}
-	if(verbosity) printf("Added %d options\n",num_opts);
+	if (verbosity)
+		printf("Added %d options\n", num_opts);
 
 	/* Initialize all */
-	for(mod=first;mod!=NULL;mod=mod->next) {
-		if(verbosity) printf("Initializing module %s\n",mod->name);
-		mod->pack=mod->initialize();
+	for (e = first; e != NULL; e = e->next) {
+		mod = e->mod;
+		if (verbosity)
+			printf("Initializing module %s\n", mod->name);
+		e->pack = mod->initialize();
 	}
 
 	/* Get opt like getopt_long, but '-' as well as '--' can indicate a long
@@ -516,11 +429,11 @@ int main(int argc, char *const argv[]) {
 	 */
 	gnuopterr=1;
 	gnuoptind=0;
-	currentmod = NULL;
+	current_e = NULL;
 	while(EOF != (optc=_getopt_internal(argc,argv,"p:vd:hf:",opts,&longindex,1))) {
 		switch(optc) {
 		case 'p':
-			currentmod = (currentmod) ? currentmod->next : first;
+			current_e = (current_e) ? current_e->next : first;
 			break;
 		case 'v':
 		case 'd':
@@ -539,12 +452,15 @@ int main(int argc, char *const argv[]) {
 			break;
 		default:
 			/* check current mod first */
-			if (currentmod->optchar == optc)
-				mod = currentmod;
-			else {
-				for(mod=first;mod!=NULL;mod=mod->next) {
-					if(mod->optchar==optc)
+			if (current_e->mod->optchar == optc) {
+				mod = current_e->mod;
+				e = current_e;
+			} else {
+				for (e = first; e != NULL; e = e->next) {
+					if (e->mod->optchar == optc) {
+						mod = e->mod;
 						break;
+					}
 				}
 			}
 			if (mod) {
@@ -558,7 +474,7 @@ int main(int argc, char *const argv[]) {
 					gnuoptarg = rbuff;
 				}
 
-				if(!mod->do_opt(opts[longindex].name,gnuoptarg,mod->pack)) {
+				if (!mod->do_opt(opts[longindex].name, gnuoptarg, e->pack)) {
 					usage=TRUE;
 				}
 			}
@@ -569,14 +485,14 @@ int main(int argc, char *const argv[]) {
 	/* gnuoptind is the first thing that is not an option - should have exactly
 		one hostname...
 	*/
-	if(argc != gnuoptind+1) {
+	if (argc != gnuoptind+1) {
  		usage=TRUE;
-		if(argc-gnuoptind < 1) fprintf(stderr,"No hostname specified\n");
-		else fprintf(stderr,"More than one hostname specified\n");
-	} else {
-		if(first && first->set_addr) {
-			first->set_addr(argv[gnuoptind],first->pack);
-		}
+		if (argc-gnuoptind < 1)
+			fprintf(stderr, "No hostname specified\n");
+		else
+			fprintf(stderr, "More than one hostname specified\n");
+	} else if (first && first->mod->set_addr) {
+		first->mod->set_addr(argv[gnuoptind], first->pack);
 	}
 
 	/* free opts now we have finished with it */
@@ -587,7 +503,7 @@ int main(int argc, char *const argv[]) {
 
 	if(usage) {
 		print_usage();
-		unload_modules(TRUE,verbosity);
+		unload_mods(TRUE, verbosity);
 		if(datafile != -1) {
 			munmap(data,datalen);
 			close(datafile);
@@ -613,16 +529,16 @@ int main(int argc, char *const argv[]) {
 	packet.data = NULL;
 	packet.alloc_len = 0;
 	packet.modified = 0;
-	for(mod=first;mod!=NULL;mod=mod->next) {
-		packet.alloc_len+=mod->pack->alloc_len;
+	for (e = first; e != NULL; e = e->next) {
+		packet.alloc_len += e->pack->alloc_len;
 	}
 	if(data != NULL) packet.alloc_len+=datalen;
 	packet.data = malloc(packet.alloc_len);
-	for(i=0, mod=first;mod!=NULL;mod=mod->next) {
-		memcpy((char *)packet.data+i,mod->pack->data,mod->pack->alloc_len);
-		free(mod->pack->data);
-		mod->pack->data = (char *)packet.data+i;
-		i+=mod->pack->alloc_len;
+	for(i = 0, e = first; e != NULL; e = e->next) {
+		memcpy((char *)packet.data + i, e->pack->data, e->pack->alloc_len);
+		free(e->pack->data);
+		e->pack->data = (char *)packet.data+i;
+		i += e->pack->alloc_len;
 	}
 
 	/* Add any data */
@@ -643,30 +559,32 @@ int main(int argc, char *const argv[]) {
 		d.alloc_len = datalen;
 		d.data = (char *)packet.data+packet.alloc_len-datalen;
 
-		for(i=0,mod=first;mod!=NULL;mod=mod->next,i++) {
-			hdrs[i]=mod->optchar;
-			headers[i]=mod->pack;
+		for(i = 0, e = first; e != NULL; e = e->next, i++) {
+			hdrs[i] = e->mod->optchar;
+			headers[i] = e->pack;
 		}
 
-		for(i=num_modules-1,mod=last;mod!=NULL;mod=mod->prev,i--) {
-
-			if(verbosity) printf("Finalizing module %s\n",mod->name);
+		for (i = num_modules - 1, e = last; e != NULL; e = e->prev, i--) {
+			if (verbosity)
+				printf("Finalizing module %s\n", e->mod->name);
 			/* Remove this header from enclosing list but don't erase the
 			 * header type, so that it's available to upper-level headers where
 			 * needed. Instead, we tell the upper-level headers where they are
 			 * in the list.
-			 */
-			headers[i] = NULL;
-			mod->finalize(hdrs, headers, i, &d, mod->pack);
+			 * wesp needs to see the esp header info, so we can't erase that,
+			 * either. */
+			/* headers[i] = NULL; */
+			e->mod->finalize(hdrs, headers, i, &d, e->pack);
 
 			/* Get everything ready for the next call */
-			d.data=(char *)d.data-mod->pack->alloc_len;
-			d.alloc_len+=mod->pack->alloc_len;
+			d.data = (char *)d.data - e->pack->alloc_len;
+			d.alloc_len += e->pack->alloc_len;
 		}
 		/* Trim back the packet length if need be */
 		if (d.alloc_len < packet.alloc_len)
 			packet.alloc_len = d.alloc_len;
 	}
+	/* We could (and should?) free any leftover priv data here. */
 
 	/* And send the packet */
 	{
@@ -676,24 +594,24 @@ int main(int argc, char *const argv[]) {
 				fprintf(stderr,"Nothing specified to send!\n");
 				print_usage();
 				free(packet.data);
-				unload_modules(FALSE,verbosity);
+				unload_mods(FALSE, verbosity);
 				return 1;
 			} else {
 				af_type = AF_INET;
 			}
 		}
-		else if(first->optchar=='i') af_type = AF_INET;
-		else if(first->optchar=='6') af_type = AF_INET6;
+		else if (first->mod->optchar == 'i') af_type = AF_INET;
+		else if (first->mod->optchar == '6') af_type = AF_INET6;
 		else {
 			fprintf(stderr,"Either IPv4 or IPv6 must be the outermost packet\n");
-			unload_modules(FALSE,verbosity);
+			unload_mods(FALSE, verbosity);
 			free(packet.data);
 			return 1;
 		}
 		i = sendpacket(&packet,argv[gnuoptind],af_type,verbosity);
 		free(packet.data);
 	}
-	unload_modules(FALSE,verbosity);
+	unload_mods(FALSE, verbosity);
 
 	return 0;
 }

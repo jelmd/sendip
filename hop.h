@@ -7,8 +7,7 @@
 #ifndef _SENDIP_HOP_H
 #define _SENDIP_HOP_H
 
-/* hop header
- */
+/* hop header */
 
 typedef struct ipv6_opt_hdr hop_header;	/* defined in ipv6ext.h */
 
@@ -42,15 +41,13 @@ struct ipv6_hopopt {
  */
 
 
-/* Defined router alerts
- */
+/* Defined router alerts */
 #define IPV6_RA_MLD		0	/* multicast listener discovery */
-#define IPV6_RA_RSVP		1	/* RSVP */
+#define IPV6_RA_RSVP	1	/* RSVP */
 #define IPV6_RA_AN		2	/* active networks */
 
 
-/* Defines for which parts have been modified
- */
+/* Defines for which parts have been modified */
 #define HOP_LEN_FRAG	(HDR_ALLOC-1)	/* First 3 bits are part of length */
 /* Hop-by-hop options we have defined. The flags don't serve
  * much purpose here, but we'll include them for the sake
@@ -64,22 +61,21 @@ struct ipv6_hopopt {
 #define HOP_MOD_HAO   	(1<<8)
 #define HOP_MOD_TLV   	(1<<9)
 
-/* Options
- */
+/* Options */
 sendip_option hop_opts[] = {
 	{"n",1,"Option next header","Correct"},
 	{"0",0,"Option pad 0 (1 byte padding)"},
 	{"p",1,"Option pad N bytes","2"},
 	{"r",1,"Option router alert","0"},
 	{"j",1,"Option jumbo frame length"
-" Note: actual production of jumbo frames requires interface support.",
-					"0"},
+		" Note: actual production of jumbo frames requires interface support.",
+		"0"},
 	{"h",1,"(Destination) option home address","::1"},
-	{"t",1,"Option arbitrary t.l.v option"
-" The fields are type.length.value. Each field can be specified "
-"in the usual way as hex, octal, decimal, literal, or rN for "
-"N random bytes.",
-					"0.0.0"},
+	{"t",1,"Option arbitrary t.l.v option "
+		"The fields are type.length.value. Each field can be specified "
+		"in the usual way as hex, octal, decimal, literal, or rN for "
+		"N random or zN for N zero bytes.",
+		"0.0.0"},
 };
 
 #endif  /* _SENDIP_HOP_H */

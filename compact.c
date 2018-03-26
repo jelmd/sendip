@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <ctype.h>
 #include "sendip_module.h"
 
 int compact_string(char *data_out) {
@@ -69,12 +70,12 @@ int compact_string(char *data_out) {
 }
 
 /* Functions for filling out several header data areas using the
- * "string and/or rand" business.
+ * "string, rand or zero" business.
  *
  * Note the handling of space is slightly screwy - compact_string
  * above overwrites its argument in place, since it knows that
  * no matter what, the string it produces can be no longer than
- * its argument. randombytes, however, uses a static area, since
+ * its argument. randombytes and zerobytes, however, uses a static area, since
  * the calling argument there (something like r32) will generally
  * be much shorter than the string produced.
  *
@@ -102,26 +103,44 @@ randombytes(int length)
 	return answer;
 }
 
+/* @return a pointer to a string of zero bytes. Note this is a
+ * static area which should really be left alone ...
+ */
+u_int8_t *
+zerobytes(int length)
+{
+	static u_int8_t answer[MAXRAND];
+
+	/* Sanity check */
+	if (length > MAXRAND) {
+		usage_error("Zero data too long to be sane\n");
+		return NULL;
+	}
+	/* Paranoia */
+	(void) memset((void *)answer, 0, MAXRAND);
+	return answer;
+}
+
 /* Yes, well, not the world's most brilliant name, but this
  * does the standard string argument handling. The output
  * may either be the transformed input or a static area.
  * @return The length of the output.
  */
 int
-compact_or_rand(char *input, char **output)
+stringargument(char *input, char **output)
 {
-	int length=0;
+	int len=0;
 
 	if (!input || !output) return 0;
-	switch (*input) {
-	case 'r':	/* rN - random data, N bytes */
-		length = atoi(input+1);
-		*output = (char *)randombytes(length);
-		if (!*output) return 0;
-		return length;
-	default:	/* read hex/octal/decimal/raw string */
-		length = compact_string(input);
-		*output = input;
-		return length;
+	/* Special case for rN, zN strings */
+	if ((*input == 'r' || *input == 'z') && isdigit(*(input+1))) {
+		len = atoi(input+1);
+		*output = (char *)
+			((*input == 'r') ? randombytes(len) : zerobytes(len));
+		return (*output) ? len : 0;
 	}
+	/* read hex/octal/decimal/raw string */
+	len = compact_string(input);
+	*output = input;
+	return len;
 }

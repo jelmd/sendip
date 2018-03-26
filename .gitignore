@@ -9,6 +9,12 @@
 *.gch
 *.pch
 
+# Generated
+dest.c
+dest.h
+xorauth.h
+xorcrypto.h
+
 # Libraries
 *.a
 

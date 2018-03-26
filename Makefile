@@ -49,10 +49,10 @@ SOBN= lib$(LIBRARY)$(DYNLIBEXT)
 SONAME= $(SOBN).$(DYNLIB_MAJOR)
 DYNLIB= $(SONAME).$(DYNLIB_MINOR)
 
-LIBSRCS= csum.c compact.c protoname.c headers.c parseargs.c
+LIBSRCS= csum.c compact.c protoname.c headers.c parseargs.c c_origin.c modload.c
 LIBOBJS= $(LIBSRCS:%.c=%.o)
 
-PROGSRCS = sendip.c gnugetopt.c compact.c c_origin.c
+PROGSRCS = sendip.c gnugetopt.c
 PROGOBJS = $(PROGSRCS:%.c=%.o) 
 
 BASEPROTOS= ipv4.so ipv6.so
@@ -60,9 +60,13 @@ IPPROTOS= icmp.so tcp.so udp.so
 UDPPROTOS= rip.so ripng.so ntp.so
 TCPPROTOS= bgp.so
 # contributions by Mark Carson (NIST - "IPv6 Tools and Test Materials")
-MECPROTOS= ah.so hop.so dest.so frag.so route.so esp.so gre.so
+CRYPTOS= xorauth.so xorcrypto.so
+MECPROTOS= ah.so hop.so dest.so frag.so route.so esp.so wesp.so gre.so
 
-PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS) $(MECPROTOS)
+PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS) \
+	$(CRYPTOS) $(MECPROTOS)
+
+PSEUDO_HEADER = dest.h xorauth.h xorcrypto.h
 
 all:	$(PROGS) $(PROTOS) sendip.spec
 lib:	$(DYNLIB)
@@ -78,15 +82,15 @@ dest.so:	CFLAGS += -DDEST_OPT
 $(DYNLIB): $(LIBOBJS)
 	$(CC) -o $@ $(SHARED) $(SONAME_OPT)$(SONAME) $(LIBOBJS) $(LIBCFLAGS)
 
-$(PROGS):	$(PROGOBJS)
-	$(CC) -o $@ $(PROGOBJS) $(LDFLAGS)
+$(PROGS):	$(PROGOBJS) $(DYNLIB)
+	$(CC) -o $@ $(PROGOBJS) $(DYNLIB) $(LDFLAGS)
 
 # a kludge to keep rules straight
 dest.c:
 	ln -s hop.c $@
 
-dest.h:
-	touch dest.h
+$(PSEUDO_HEADER):
+	touch $@
 
 sendip.spec:	sendip.spec.in VERSION
 	printf '%%define ver ' >sendip.spec
@@ -108,7 +112,7 @@ clean:
 	rm -f *.o *~ *.so $(PROTOS) $(SONAME)* $(PROGS) core gmon.out
 
 distclean: clean
-	rm -f sendip.spec dest.{c,h} $(DEPENDFILE)
+	rm -f sendip.spec dest.c $(PSEUDO_HEADER) $(DEPENDFILE) *.rej *.orig
 
 install:	$(SUBDIRS) all
 	$(INSTALL) -d $(DESTDIR)$(PREFIX)/$(LIBDIR)

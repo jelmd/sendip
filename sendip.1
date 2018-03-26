@@ -1,4 +1,4 @@
-.TH "SENDIP" "1" "February 09, 2018" "sendip 2.5.0"
+.TH "SENDIP" "1" "March 30, 2018" "sendip 2.5.0"
 
 .\" disable hyphenation
 .nh
@@ -55,6 +55,9 @@ parameter) may vary. Often th following formats are understood:
 If \fIdata\fR starts with \fBr\fIN\fR, \fIN\fR random bytes get generated and
 used as payload.
 
+If \fIdata\fR starts with \fBz\fIN\fR, \fIN\fR zero (nul) bytes get generated
+and used as payload.
+
 If \fIdata\fR starts with a \fB0x\fR or \fB0X\fR (digit zero followed by the
 letter x or X), the first two charcaters are ignored and all others are
 interpreted as hex representation of the data to use. Non-digits are handled
@@ -95,7 +98,7 @@ Set the IPv6 \fBpayload length\fR to \fInum\fR {0..255}. Default: auto
 \-6n\ \fInum\fR|\fIproto\fR
 Set the IPv6 \fBnext header\fR field to \fInum\fR {0..255}. If a \fIproto\fRcol
 name is given, sendip tries to determine the corresponding number automatically.
-Default: auto
+Default:\ auto
 .TP
 \-6h\ \fInum\fR
 Set the IPv6 \fBhop limit\fR to \fInum\fR {0..255}. Default: 32
@@ -120,7 +123,16 @@ Set the AH \fBSequence Number\fR to \fInum\fR (0..0xffff). Default:\ 1
 \-ad\ \fIdata\fR
 Append the AH \fBAuthentication Data\fR.  \fIdata\fR has a variable length,
 can be either a user-provided string (in hex, octal, decimal, or raw), or rN
-for N random bytes. Default:\ 0
+for N random or zN for N zero bytes. Default:\ 0
+.TP
+\-ak\ \fIdata\fR
+Pass the given \fIdata\fR as AH \fBkey\fR (string, rN for N random or zN for
+N zero bytes) to the authentication module. Gets not transmitted in the packet.
+Default:\ none
+.TP
+\-am\ \fIname\fR
+Load and use the authentication \fBmodule\fR with the given \fIname\fR.
+Default:\ none
 .TP
 \-an\ \fInum\fR|\fIproto\fR
 Set the AH \fBNext Header\fR field to \fInum\fR {0..0xffff}. If a \fIproto\fRcol
@@ -147,16 +159,62 @@ a \fIproto\fRcol name is given, sendip tries to determine the corresponding
 number automatically.  Default:\ auto
 .TP
 \-ei\ \fIdata\fR
-Set the ESP \fBIV\fR \fIdata\fR (string or rN for N random bytes) - max. 8192
-bytes.  Default:\ none
-.TP
-\-eI\ \fInum\fR
-Set the ESP \fBICV\fR \fIdata\fR (string or rN for N random bytes) - max. 8192
-bytes.  Default:\ none
-.TP
-\-ek\ \fInum\fR
-Set the ESP \fBKey\fR (not transmitted string, for now silently ignored).
+Set the ESP \fBIV\fR \fIdata\fR (string, rN for N random or zN for N zero
+bytes) - max. 8192 bytes.
 Default:\ none
+.TP
+\-eI\ \fIdata\fR
+Set the ESP \fBICV\fR \fIdata\fR (string, rN for N random or zN for N zero
+bytes) - max. 8192 bytes.
+Default:\ none
+.TP
+\-ek\ \fIdata\fR
+Pass the given ESP \fBKey\fR \fIdata\fR (string, rN for N random or zN for
+N zero bytes) to the cryptographic module(s). Gets not transmitted in the
+packet.
+Default:\ none
+.TP
+\-ea\ \fIname\fR
+Load and use the \fBauthentication module\fR with the given \fIname\fR.
+Default:\ none
+.TP
+\-ec\ \fIname\fR
+Load and use the \fBcrypto module\fR with the given \fIname\fR.
+Default:\ none
+
+
+.SS "wesp MODULE OPTIONS"
+.TP
+\-wv\ \fIversion\fR
+Set the WESP \fBVersion\fR {0..3}.
+Default:\ 0
+.TP
+\-we\ \fInum\fR
+Set the value of WESP \fBEncrypted Payload\fR flag {0|1}.
+Default:\ 0
+.TP
+\-wp\ \fInum\fR
+Set the value of WESP \fBPadded\fR flag (also adds 4 bytes padding) {0|1}.
+Default:\ 0
+.TP
+\-wr\ \fInum\fR
+Set the value of the WESP \fBReserved\fR field {0..15}.
+Default: 0
+.TP
+\-wh\ \fInum\fR
+Set the WESP \fBHeader Length\fR value {0..255}.
+Default:\ auto
+.TP
+\-wt\ \fInum\fR
+Set the WESP \fBTrailer Length\fR value {0..255}.
+Default:\ auto
+.TP
+\-wn\ \fInum\fR|\fIproto\fR
+Set the WESP \fBNext Header\fR to the given protocol. \fInum\fR is a protocol
+number, \fIproto\fR is the name of the protocol and needs to match an entry of
+the systems protocols database (see \fB/etc/protocols\fR) or from an internal
+hardcoded fallback table.
+Default:\ auto
 
 
 .SS "frag MODULE OPTIONS"
@@ -212,7 +270,7 @@ Default:\ auto (if known)
 Set the GRE \fBoffset\fR to \fInum\fR (0..0xffff). Default:\ none
 
 
-.SS "hop-by-hop MODULE OPTIONS"
+.SS "hop MODULE OPTIONS"
 .TP
 \-Hn\ \fInum\fR
 Set the Option \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
@@ -238,13 +296,13 @@ Default:\ ::1
 \-Ht\ \fItype\fB.\fIlength\fB.\fIvalue\fR
 Set the Option \fBarbitrary TLV option\fR according to the given parameters.
 Each parameter can be specified in the usual way as hex, octal, decimal,
-literal, or rN for N random bytes.
+literal, or rN for N random or zN for N zero bytes.
 Default:\ 0.0.0
 
 
 .SS "dst MODULE OPTIONS"
 .P
-This module takes the same option and arguments as the \fBhop-by-hop\fR module,
+This module takes the same option and arguments as the \fBhop\fR module,
 but uses \fBd\fR as the first option letter instead of \fBH\fR.
 
 
