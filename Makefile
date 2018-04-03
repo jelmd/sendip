@@ -61,7 +61,7 @@ UDPPROTOS= rip.so ripng.so ntp.so
 TCPPROTOS= bgp.so
 # contributions by Mark Carson (NIST - "IPv6 Tools and Test Materials")
 CRYPTOS= xorauth.so xorcrypto.so
-MECPROTOS= ah.so hop.so dest.so frag.so route.so esp.so wesp.so gre.so
+MECPROTOS= ah.so dest.so esp.so frag.so gre.so hop.so route.so sctp.so wesp.so
 
 PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS) \
 	$(CRYPTOS) $(MECPROTOS)

@@ -169,3 +169,9 @@ Changes between sendip-2.5-mec-0 and sendip-2.5-mec-1
   (demo xorauth "authentication" and xorcrypto "encryption")
 * Extended uniform string argument handling
 * outsourced module loading to modload.* and stop copying module data (jelmd)
+
+Changes between sendip-2.5-mec-1 and sendip-2.5-mec-2
+* Extended uniform integer argument handling (Mark Carson, NIST)
+* SCTP header with some chunk/parameter support (IPv4,6) (Mark Carson, NIST)
+* linux based crc32 implementation used by sctp replaced by the portable,
+  less Linux/GNU C agnostic and less bloated code published in RFC 3309 (jelmd)

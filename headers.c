@@ -20,6 +20,7 @@ struct sendip_headers sendip_headers[] = {
 	{'6', IPPROTO_IPV6},	/* for 6-in-4 tunnels */
 	{'d', IPPROTO_DSTOPTS},
 	{'o', IPPROTO_ROUTING},	/* sorry, r and R already taken */
+	{'s', IPPROTO_SCTP},
 	{'w', IPPROTO_WESP},
 	{0, IPPROTO_NONE},
 	/* These are placeholders */

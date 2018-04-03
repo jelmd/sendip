@@ -16,6 +16,7 @@ typedef int bool;
 
 /* Solaris doesn't define these */
 #ifdef __sun
+#include <sys/types.h>
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint8_t  u_int8_t;

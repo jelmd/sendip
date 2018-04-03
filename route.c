@@ -18,7 +18,7 @@
 
 /* Character that identifies our options
  */
-const char opt_char='o';	/* 's'ource routing - r and R already used */
+const char opt_char='o';	/* s'o'urce routing - r and R already used */
 
 sendip_data *
 initialize(void)
