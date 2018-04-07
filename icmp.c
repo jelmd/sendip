@@ -16,13 +16,15 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "icmp.h"
 #include "ipv4.h"
 #include "ipv6.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='c';
 
 static void icmpcsum(sendip_data *icmp_hdr, sendip_data *data) {
@@ -83,15 +85,15 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 	icmp_header *icp = (icmp_header *)pack->data;
 	switch(opt[1]) {
 	case 't':
-		icp->type = (u_int8_t)strtoul(arg, (char **)NULL, 0);
+		icp->type = integerargument(arg, 1);
 		pack->modified |= ICMP_MOD_TYPE;
 		break;
 	case 'd':
-		icp->code = (u_int8_t)strtoul(arg, (char **)NULL, 0);
+		icp->code = integerargument(arg, 1);
 		pack->modified |= ICMP_MOD_CODE;
 		break;
 	case 'c':
-		icp->check = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		icp->check = integerargument(arg, 2);
 		pack->modified |= ICMP_MOD_CHECK;
 		break;
 	}

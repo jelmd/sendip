@@ -14,9 +14,12 @@
 #include "ipv6ext.h"
 #define _CRYPTO_MAIN
 #define _ESP_MAIN
-#include "esp.h"
+
 #include "crypto_module.h"
+#include "common.h"
 #include "modload.h"
+
+#include "esp.h"
 
 /* Character that identifies our options */
 const char opt_char='e';
@@ -55,12 +58,11 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 	switch(opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		esp->hdr.spi = htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		esp->hdr.spi = integerargument(arg, 4);
 		pack->modified |= ESP_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		esp->hdr.seq_no =
-			htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		esp->hdr.seq_no = integerargument(arg, 4);
 		pack->modified |= ESP_MOD_SEQUENCE;
 		break;
 	case 'p':	/* padding (variable length) */

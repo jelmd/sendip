@@ -14,12 +14,15 @@
 #include "ipv6ext.h"
 #define _CRYPTO_MAIN
 #define _AH_MAIN
-#include "ah.h"
+
+#include "sendip_module.h"
 #include "crypto_module.h"
+#include "common.h"
 #include "modload.h"
 
-/* Character that identifies our options
- */
+#include "ah.h"
+
+/* Character that identifies our options */
 const char opt_char='a';
 
 crypto_module *cryptoah;
@@ -52,11 +55,11 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 	switch(opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		ah->spi = htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		ah->spi = integerargument(arg, 4);
 		pack->modified |= AH_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		ah->seq_no = htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		ah->seq_no = integerargument(arg, 4);
 		pack->modified |= AH_MOD_SEQUENCE;
 		break;
 	case 'd':	/* Authentication data (variable length) */

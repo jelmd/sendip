@@ -1,11 +1,6 @@
-#include <stdlib.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <memory.h>
 #include <string.h>
-#include <ctype.h>
-#include "sendip_module.h"
-#include "ipv6ext.h"
+
+#include "headers.h"
 
 struct sendip_headers sendip_headers[] = {
 	{'H', IPPROTO_HOPOPTS},		/* h already taken */
@@ -22,11 +17,11 @@ struct sendip_headers sendip_headers[] = {
 	{'o', IPPROTO_ROUTING},	/* sorry, r and R already taken */
 	{'s', IPPROTO_SCTP},
 	{'w', IPPROTO_WESP},
-	{0, IPPROTO_NONE},
+	{'\0', IPPROTO_NONE},		/* stop here at opt char '\0' */
 	/* These are placeholders */
-	{'n'},		/* ntp */
-	{'r'},		/* rip */
-	{'R'},		/* ripng */
+	{'n', IPPROTO_NONE},		/* ntp */
+	{'r', IPPROTO_NONE},		/* rip */
+	{'R', IPPROTO_NONE},		/* ripng */
 	/* These are base flags and can't be used for headers:
 	 * d f h p v
 	 */

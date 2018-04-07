@@ -19,13 +19,15 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "tcp.h"
 #include "ipv4.h"
 #include "ipv6.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='t';
 
 static void tcpcsum(sendip_data *ip_hdr, sendip_data *tcp_hdr,
@@ -111,19 +113,19 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 	// opt[0]==t
 	switch(opt[1]) {
 	case 's':
-		tcp->source = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		tcp->source = integerargument(arg, 2);
 		pack->modified |= TCP_MOD_SOURCE;
 		break;
 	case 'd':
-		tcp->dest = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		tcp->dest = integerargument(arg, 2);
 		pack->modified |= TCP_MOD_DEST;
 		break;
 	case 'n':
-		tcp->seq = htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		tcp->seq = integerargument(arg, 4);
 		pack->modified |= TCP_MOD_SEQ;
 		break;
 	case 'a':
-		tcp->ack_seq = htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+		tcp->ack_seq = integerargument(arg, 4);
 		pack->modified |= TCP_MOD_ACKSEQ;
 		if(!(pack->modified&TCP_MOD_ACK)) {
 			tcp->ack = 1;
@@ -131,11 +133,11 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		}
 		break;
 	case 't':
-		tcp->off = (u_int16_t)strtoul(arg, (char **)NULL, 0) &0xF;
+		tcp->off = integerargument(arg, 1) & 0xF;
 		pack->modified |= TCP_MOD_OFF;
 		break;
 	case 'r':
-		tcp->res = (u_int16_t)(strtoul(arg, (char **)NULL, 0) & 0x000F);
+		tcp->res = integerargument(arg, 1) & 0xF;
 		pack->modified |= TCP_MOD_RES;
 		break;
 	case 'f':
@@ -178,15 +180,15 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		}
 		break;
 	case 'w':
-		tcp->window = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		tcp->window = integerargument(arg, 2);
 		pack->modified |= TCP_MOD_WINDOW;
 		break;
 	case 'c':
-		tcp->check = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		tcp->check = integerargument(arg, 2);
 		pack->modified |= TCP_MOD_CHECK;
 		break;
 	case 'u':
-		tcp->urg_ptr = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		tcp->urg_ptr = integerargument(arg, 2);
 		pack->modified |= TCP_MOD_URGPTR;
 		if(!(pack->modified&TCP_MOD_URG)) {
 			tcp->urg = 1;
@@ -281,7 +283,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 			/* Timestamp rfc1323 */
 			u_int32_t tsval=0, tsecr=0;
 			u_int8_t comb[8];
-			if (2!=sscanf(arg, "%d:%d", &tsval, &tsecr)) {
+			if (2 != sscanf(arg, "%u:%u", &tsval, &tsecr)) {
 				fprintf(stderr, 
 						  "Invalid value for tcp timestamp option.\n");
 				fprintf(stderr, 
@@ -304,8 +306,6 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 	default:
 		usage_error("unknown TCP option\n");
 		return FALSE;
-		break;
-
 	}
 
 	return TRUE;
@@ -332,7 +332,7 @@ bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 	}
 
 	/* Find enclosing IP header and do the checksum */
-	i = outer_header(hdrs, index, "i6");/*@@*/
+	i = outer_header(hdrs, index, "i6");
 	if(hdrs[i]=='i') {
 		if(!(headers[i]->modified&IP_MOD_PROTOCOL)) {
 			((ip_header *)(headers[i]->data))->protocol=IPPROTO_TCP;

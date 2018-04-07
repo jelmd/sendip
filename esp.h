@@ -2,6 +2,9 @@
 #ifndef _SENDIP_ESP_H
 #define _SENDIP_ESP_H
 
+#pragma error_messages (off, E_ZERO_OR_NEGATIVE_SUBSCRIPT)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wpedantic"
 /* Real ESP header (ip_esp_hdr) is defined in ipv6ext.h.
  * For allocation purposes, we make up a fake header which includes
  * the ESP trailer. We then move the trailer after the packet data
@@ -19,6 +22,8 @@ struct ip_esp_headtail {
 	struct ip_esp_hdr hdr;
 	struct ip_esp_tail tail;
 };
+#pragma GCC diagnostic pop
+#pragma error_messages (default, E_ZERO_OR_NEGATIVE_SUBSCRIPT)
 
 typedef struct ip_esp_headtail esp_header;
 

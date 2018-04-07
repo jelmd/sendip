@@ -9,10 +9,13 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "sctp.h"
-#include "parse.h"
+#include "parseargs.h"
 
 #include "crc32.h"
 
@@ -131,21 +134,19 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 	u_int16_t svalue;
 	u_int32_t lvalue;
 	char *temp;
-	int length;
+	u_int32_t length;
 	static sctp_chunk_header *currentchunk;
 
 	switch(opt[1]) {
 	/* Overall header arguments are lowercase; chunk args are upper */
 	case 's':	/* SCTP source port (16 bits) */
 		pack->modified |= SCTP_MOD_SOURCE;
-		svalue = strtoul(arg, (char **) NULL, 0);
-		sctp->source = htons(svalue);
+		sctp->source = integerargument(arg, 2);
 		break;
 
 	case 'd':	/* SCTP destination port (16 bits) */
 		pack->modified |= SCTP_MOD_DEST;
-		svalue = strtoul(arg, (char **) NULL, 0);
-		sctp->dest = htons(svalue);
+		sctp->dest = integerargument(arg, 2);
 		break;
 
 	case 'v':	/* SCTP vtag (32 bits) */
@@ -164,8 +165,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 	case 'c':	/* SCTP checksum (32 bits) */
 		pack->modified |= SCTP_MOD_CHECKSUM;
-		lvalue = strtoul(arg, (char **) NULL, 0);
-		sctp->dest = htonl(lvalue);
+		sctp->dest = integerargument(arg, 4);
 		break;
 
 	case 'T':	/* SCTP chunk type (8 bits) */
@@ -388,8 +388,10 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 	return TRUE;
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index,
-	sendip_data *data, sendip_data *pack)
+bool finalize(__attribute__((unused)) char *hdrs,
+	__attribute__((unused)) sendip_data *headers[],
+	__attribute__((unused)) int index,
+	__attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
 	sctp_header *sctp = (sctp_header *)pack->data;
 

@@ -6,17 +6,15 @@
  *
  * This by Mark Carson.
  */
-
-#include <getopt.h>
 #include <stddef.h>
-#include <stdio.h>
+#include <netdb.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <ctype.h>
+#include <stdio.h>
 
-#include "ipv6ext.h"
+#include "types.h"
+#include "headers.h"
 
 /* A few hardcoded protocols for 'all' and in case the user has no
  *    /etc/protocols */

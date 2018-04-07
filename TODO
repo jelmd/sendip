@@ -1,7 +1,6 @@
 MAIN: Try using PF_PACKET (so ip works with wrong checksums)
 
 ipv4.c: __FreeBSD hack needed on solaris too?
-ipv4.h: __FreeBSD hack needed for fragment offset
 rip.c: handling of -re is sick
 ripng.c: handling of -re is sick, check conformance to spec
 

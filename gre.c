@@ -9,12 +9,14 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "gre.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='g';
 
 /* Our initial allocation only includes the non-optional fields. Others
@@ -217,8 +219,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		pack->modified |= GRE_MOD_VERSION;
 		break;
 	case 'p':
-		gre->gre_protocol =
-			htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+		gre->gre_protocol = integerargument(arg, 2);
 		pack->modified |= GRE_MOD_PROTOCOL;
 		break;
 	case 'o':
@@ -242,15 +243,15 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 }
 
 bool
-finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack)
+finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[], int index,
+	sendip_data *data, sendip_data *pack)
 {
-	gre_header *gre = (gre_header *)pack->data;
+	gre_header *gre = (gre_header *) pack->data;
 
 	/* Note that GRE uses the Ethernet protocol value and not the
 	 * IP one! Because it's "generic," you see.
 	 */
-	if (!(pack->modified&GRE_MOD_PROTOCOL)) {
+	if (!(pack->modified & GRE_MOD_PROTOCOL)) {
 		switch (hdrs[inner_header(hdrs, index, "i6")]) {
 		case 'i':
 			gre->gre_protocol = htons(ETH_P_IP);
@@ -260,7 +261,9 @@ finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 			break;
 		}
 	}
-	if ((gre->gre_flag&htons(GRE_CSUM)) && !(pack->modified&GRE_MOD_CHECKSUM)) {
+	if ((gre->gre_flag & htons(GRE_CSUM))
+		&& !(pack->modified & GRE_MOD_CHECKSUM))
+	{
 		/* We need to compute the checksum */
 		u_int16_t *vec[3];
 		int lens[3];

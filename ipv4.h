@@ -1,7 +1,9 @@
-/* ip.h
- */
+/* ip.h */
 #ifndef _SENDIP_IP_H
 #define _SENDIP_IP_H
+
+#include "types.h"
+#include "sendip_module.h"
 
 /* IP HEADER
  * Taken from glibc 2.2, and modified
@@ -19,19 +21,25 @@ typedef struct {
 	u_int8_t tos;
 	u_int16_t tot_len;
 	u_int16_t id;
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+	/* In FreeBSD, for historical reasons, fragment offsets (and also tot_len)
+	 * are specified in *host* byte order at user level; the kernel then does
+	 * byte swapping before sending. So for FreeBSD only, we use the same
+	 * bitfield ordering and IP_SET_FRAGOFF macro for both little and big
+	 * endian.  */
+#if defined(__FreeBSD) || (__BYTE_ORDER == __BIG_ENDIAN)
+	u_int16_t res:1;
+	u_int16_t df:1;
+	u_int16_t mf:1;
+	u_int16_t frag_off:13;
+#	define IP_SET_FRAGOFF(ip, v) (ip)->frag_off = (v)
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
 	u_int16_t frag_off1:5;
 	u_int16_t mf:1;
 	u_int16_t df:1;
 	u_int16_t res:1;
 	u_int16_t frag_off2:8;
-#define IP_SET_FRAGOFF(ip,v) {(ip)->frag_off1=((v)&0x1F00)>>8;(ip)->frag_off2=(v)&0x00FF;}
-#elif __BYTE_ORDER == __BIG_ENDIAN
-	u_int16_t res:1;
-	u_int16_t df:1;
-	u_int16_t mf:1;
-	u_int16_t frag_off:13;
-#define IP_SET_FRAGOFF(ip,v) (ip)->frag_off=(v)
+#	define IP_SET_FRAGOFF(ip, v) \
+		(ip)->frag_off1 = ((v) >> 8) & 0x1F; (ip)->frag_off2 = (v) & 0xFF;
 #else
 #  error "Please fix <bits/endian.h>"
 #endif
@@ -59,8 +67,7 @@ typedef struct {
 #define IP_MOD_SADDR      (1<<12)
 #define IP_MOD_DADDR      (1<<13)
 
-/* Options
- */
+/* Options */
 sendip_option ip_opts[] = {
 	{"s",1,"Source IP address (see README)","127.0.0.1"},
 	{"d",1,"Destination IP address","Correct"},

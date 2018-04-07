@@ -12,53 +12,61 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ripng.h"
 
-/* Character that identifies our options
- */
-const char opt_char='R';
+/* Character that identifies our options */
+const char opt_char = 'R';
 
 static struct in6_addr inet6_addr(char *hostname) {
-	struct hostent *host = gethostbyname2(hostname,AF_INET6);
-	struct in6_addr ret;
-	if(host==NULL) {
-		fprintf(stderr,"RIPNG: Couldn't get address for %s defaulting to loopback",hostname);
+	struct hostent *host;
+	static struct in6_addr ret;
+
+	if (hostname == NULL)
+		return in6addr_any;
+	host = gethostbyname2(hostname, AF_INET6);
+	if (host == NULL) {
+		fprintf(stderr, "RIPNG: Couldn't get address for %s defaulting to"
+			 "loopback", hostname);
 		return in6addr_loopback;
 	}
-	if(host->h_length != sizeof(struct in6_addr)) {
-		fprintf(stderr,"RIPNG: IPV6 address is the wrong size: defaulting to loopback");
+	if (host->h_length != sizeof(struct in6_addr)) {
+		fprintf(stderr, "RIPNG: IPV6 address is the wrong size: defaulting to "
+		   "loopback");
 		return in6addr_loopback;
 	}
-	memcpy(&ret,host->h_addr,sizeof(ret));
+	memcpy(&ret, host->h_addr, sizeof(ret));
 	return ret;
 }
 
 sendip_data *initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	ripng_header *rip = malloc(sizeof(ripng_header));
-	memset(rip,0,sizeof(ripng_header));
+	memset(rip, 0, sizeof(ripng_header));
 	ret->alloc_len = sizeof(ripng_header);
-	ret->data = (void *)rip;
-	ret->modified=0;
+	ret->data = (void *) rip;
+	ret->modified = 0;
 	return ret;
 }
 
 bool do_opt(char *opt, char *arg, sendip_data *pack) {
-	ripng_header *rippack = (ripng_header *)pack->data;
+	ripng_header *rippack = (ripng_header *) pack->data;
 	ripng_entry *ripopt;
 	char *p, *q;
 	switch(opt[1]) {
 	case 'v': /* version */
-		rippack->version = (u_int8_t)strtoul(arg, (char **)0, 0);
+		rippack->version = (u_int8_t) strtoul(arg, (char **) 0, 0);
 		pack->modified |= RIPNG_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = (u_int8_t)strtoul(arg, (char **)0, 0);
+		rippack->command = (u_int8_t) strtoul(arg, (char **) 0, 0);
 		pack->modified |= RIPNG_MOD_COMMAND;
 		break;
 	case 'r': /* reserved */
-		rippack->res = htons((u_int16_t)strtoul(arg, (char **)0, 0));
+		rippack->res = htons((u_int16_t) strtoul(arg, (char **) 0, 0));
 		pack->modified |= RIPNG_MOD_RESERVED;
 		break;
 		/*
@@ -75,43 +83,55 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 	case 'e': /* rip entry */
 		RIPNG_ADD_ENTRY(pack);
 		ripopt = RIPNG_ENTRY(pack);
-		p=q=arg;
+
+		p = q = arg;
 		/* TODO: if arg is malformed, this could segfault */
-		while(*(q++)!='/') {} /* do nothing */; *(--q)='\0';
-		ripopt->prefix = (p==q)?in6addr_any:inet6_addr(p);
+		while (*(q++) != '/') { /* do nothing */ }
+		*(--q) = '\0';
+		ripopt->prefix = (p == q) ? inet6_addr(NULL) : inet6_addr(p);
 
-		p=++q; while(*(q++)!='/') {} /* do nothing */; *(--q)='\0';
-		ripopt->tag=htons( (p==q)?0:(u_int16_t)strtoul(p, (char **)0,0));
+		p = ++q;
+		while (*(q++) != '/') { /* do nothing */ }
+		*(--q) = '\0';
+		ripopt->tag = htons(p == q ? 0 : (u_int16_t) strtoul(p, (char **) 0,0));
 
-		p=++q; while(*(q++)!='/') {} /* do nothing */; *(--q)='\0';
-		ripopt->len=(p==q)?(u_int8_t)128:(u_int8_t)strtoul(p, (char **)0,0);
+		p = ++q;
+		while (*(q++) != '/') { /* do nothing */ }
+		*(--q) = '\0';
+		ripopt->len = (u_int8_t) (p == q ? 128 : strtoul(p, (char **) 0, 0));
 
-		p=++q; while(*(q++)!='\0') {} /* do nothing */; *(--q)='\0';
-		ripopt->metric=(p==q)?(u_int8_t)16:(u_int8_t)strtoul(p,(char **)0, 0);
+		p = ++q;
+		while (*(q++) != '\0') { /* do nothing */ }
+		*(--q) = '\0';
+		ripopt->metric = (u_int8_t) (p == q ? 16 : strtoul(p, (char **) 0, 0));
 		break;
 	case 'd': /* default request */
 		if(RIPNG_NUM_ENTRIES(pack) != 0) {
-			usage_error("Warning: a real RIPng packet does not have any other entries in a default request.\n");
+			usage_error("Warning: a real RIPng packet does not have any other "
+				"entries in a default request.\n");
 		}
-		rippack->command = (u_int8_t)1;
-		rippack->version = (u_int8_t)1;
-		rippack->res = (u_int16_t)0;
-		pack->modified|=RIPNG_MOD_COMMAND|RIPNG_MOD_VERSION|RIPNG_MOD_RESERVED;
+		rippack->command = (u_int8_t) 1;
+		rippack->version = (u_int8_t) 1;
+		rippack->res = (u_int16_t) 0;
+		pack->modified |=
+			RIPNG_MOD_COMMAND | RIPNG_MOD_VERSION | RIPNG_MOD_RESERVED;
 		RIPNG_ADD_ENTRY(pack);
-		ripopt=RIPNG_ENTRY(pack);
-		ripopt->prefix=in6addr_any;
-		ripopt->tag=(u_int16_t)0;
-		ripopt->len=(u_int8_t)0;
-		ripopt->metric=htons((u_int16_t)16);
+		ripopt = RIPNG_ENTRY(pack);
+		ripopt->prefix = in6addr_any;
+		ripopt->tag = (u_int16_t) 0;
+		ripopt->len = (u_int8_t) 0;
+		ripopt->metric = htons((u_int16_t) 16);
 		break;
 	}
 	return TRUE;
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack) {
-	if(hdrs[index-1] != 'u') {
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data,
+	__attribute__((unused)) sendip_data *pack)
+{
+	if (hdrs[index-1] != 'u') {
 		usage_error("Warning: RIPng should be contained in a UDP packet\n");
 	}
 
@@ -119,7 +139,7 @@ bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 }
 
 int num_opts() {
-	return sizeof(rip_opts)/sizeof(sendip_option); 
+	return sizeof(rip_opts) / sizeof(sendip_option);
 }
 sendip_option *get_opts() {
 	return rip_opts;

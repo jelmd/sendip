@@ -10,11 +10,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ntp.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='n';
 
 u_int32_t make_fixed_point(double n, bool issigned, int totbits, int intbits) {
@@ -130,7 +132,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 				  */
 		if('0'<=*arg&&*arg<='9') {
 			/* either a number or an IP */
-			if((ntp->reference.ipaddr=inet_addr(arg))==-1) {
+			if((ntp->reference.ipaddr = inet_addr(arg)) == (in_addr_t)-1) {
 				/* Not a valid IP, or really want 255.255.255.255 */
 				if(strcmp(arg,"255.255.255.255")) {
 					ntp->reference.ipaddr=htonl(strtol(arg,(char **)NULL,0));
@@ -185,16 +187,18 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack) {
-	if(hdrs[index-1] != 'u') {
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data,
+	__attribute__((unused)) sendip_data *pack)
+{
+	if (hdrs[index-1] != 'u') {
 		usage_error("Warning: NTP should be contained in a UDP packet\n");
 	}
 	return TRUE;
 }
 
 int num_opts() {
-	return sizeof(ntp_opts)/sizeof(sendip_option); 
+	return sizeof(ntp_opts) / sizeof(sendip_option);
 }
 sendip_option *get_opts() {
 	return ntp_opts;

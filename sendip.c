@@ -18,26 +18,16 @@
 
 #define _SENDIP_MAIN
 
-/* socket stuff */
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <netdb.h>
 
 /* everything else */
-#include <unistd.h>
 #include <stdlib.h>
-#include <dlfcn.h>
 #include <string.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
+#include <ctype.h>
+#include <unistd.h>
 #include <fcntl.h>
-#include <ctype.h> /* isprint */
-
-#include "sendip_module.h"
-#include "crypto_module.h"
-#include "modload.h"
+#include <sys/mman.h>
+#include <time.h>
 
 #ifdef __sun  /* for EVILNESS workaround */
 #include "ipv4.h"
@@ -45,6 +35,11 @@
 
 /* Use our own getopt to ensure consistent behaviour on all platforms */
 #include "gnugetopt.h"
+
+#include "sendip_module.h"
+#include "crypto_module.h"
+#include "common.h"
+#include "modload.h"
 
 /* housekeeping for loaded modules and their packet data */
 typedef struct _sml {
@@ -114,7 +109,6 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 		break;
 	default:
 		return -2;
-		break;
 	}
 
 	if(verbose) { 
@@ -197,39 +191,24 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 static void print_usage(void) {
 	sendip_mod_li *e;
 	int i;
-	printf("Usage: %s [-v] [-d data] [-h] [-f datafile] "
-		"[-p module] [module options] hostname\n", progname);
 	printf(
-"  -d data\tadd this data as a string to the end of the packet\n"
-"  -f datafile\tread packet data from file\n"
-"  -h\t\tprint this help message and exit\n"
-"  -p module\tload the specified module (see below)\n"
-"  -v\t\tbe verbose\n"
-"\n\n"
-"Packet data, and argument values for many header fields, may\n"
-"specified as\n"
-"rN to generate N random(ish) data bytes;\n"
-"zN to generate N zero (nul) data bytes;\n"
-"0x or 0X followed by hex digits;\n"
-"0 followed by octal digits;\n"
-"decimal number for decimal digits;\n"
-"any other stream of bytes, taken literally.\n"
-"\n\n"
-"Modules are loaded in the order the -p option appears.  The headers from\n"
-"each module are put immediately inside the headers from the previous module\n"
-"in the final packet.  For example, to embed bgp inside tcp inside ipv4, do\n"
-"sendip -p ipv4 -p tcp -p bgp ...\n"
-"\n\n"
-"Modules may be repeated to create multiple instances of a given header\n"
-"type. For example, to create an ipip tunneled packet (ipv4 inside ipv4), do\n"
-"sendip -p ipv4 <outer header arguments> -p ipv4 <inner header arguments> ...\n"
-"In the case of repeated modules, arguments are applied to the closest matching\n"
-"module in the command line.\n"
+"\nUsage: %s [-vh] [-d data] [-f datafile] [-l count] [-t time] \\ \n"
+"         \t[-p module]... [module_option]... hostname\n"
+"\n"
+"Packet data, header fields:\n"
+"  fF  .. next line from file F\n"
+"  rN  .. N random bytes\n"
+"  zN  .. N zero (nul) bytes\n"
+"  tN  .. timestamp with zero padded tail of length N\n"
+"  0xH .. data in hex\n"
+"  0N  .. data in octal\n"
+"  *   .. literal string, decimal number, IP addr, etc. depending on opt type\n"
 "\n\n"
 "Modules available at compile time:\n"
 "    ipv4 ipv6 icmp tcp udp bgp rip ripng ntp\n"
-"    ah dest esp frag gre hop route sctp wesp.\n"
-"\n");
+"    ah dest esp frag gre hop route sctp wesp\n"
+"\n", progname);
+
 	for(e = first; e != NULL; e = e->next) {
 		if (e->num_opts == 0)
 			continue;
@@ -268,44 +247,61 @@ unload_mods(bool freeit, int verbosity) {
 	if (p)
 		free(p);
 	unload_modules(verbosity);
+	fargs_destroy();
 }
 
-int main(int argc, char *const argv[]) {
+int
+main(int argc, char **const argv) {
 	int i;
 
-	struct option *opts=NULL;
-	int longindex=0;
+	struct option *opts = NULL;
+	int longindex = 0, usage = 0;
 	char rbuff[31];
 
-	bool usage=FALSE, verbosity=FALSE;
+	bool verbosity = FALSE;
 
-	char *data=NULL;
-	int datafile=-1;
-	int datalen=0;
-	bool randomflag=FALSE;
+	char *data = NULL;
+	int datafile = -1;
+	int datalen = 0;
+	char *datarg = NULL;
 
 	sendip_module *mod;
 	sendip_mod_li *e, *current_e;
 	int optc;
 
-	int num_modules=0;
+	int num_modules = 0;
 
 	sendip_data packet;
+
+	int loopcount = 1;
+	unsigned int delaytime = 0;
 	
 	num_opts = 0;	
 	first = last = NULL;
 
-	progname=argv[0];
+	progname=strrchr(argv[0], '/');
+	if (progname == NULL)
+		progname = argv[0];
+	else
+		progname++;
 
 	/* magic random seed that gives 4 really random octets */
 	srandom(time(NULL) ^ (getpid()+(42<<15)));
 
 	/* First, get all the builtin options, and load the modules */
 	gnuopterr=0; gnuoptind=0;
-	while(gnuoptind<argc && (EOF != (optc=gnugetopt(argc,argv,"-p:vd:hf:")))) {
+	while(gnuoptind < argc
+		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:t:"))))
+	{
 		switch(optc) {
+		case 'l':
+			loopcount = atoi(gnuoptarg);
+			break;
+		case 't':
+			delaytime = atoi(gnuoptarg);
+			break;
 		case 'p':
-			if (mod = load_sendip_module(gnuoptarg, &i)) {
+			if ((mod = load_sendip_module(gnuoptarg, &i)) != NULL) {
 				e = malloc(sizeof(sendip_mod_li));
 				if (e == NULL) {
 					perror("Unable to process option -p ...");
@@ -329,24 +325,24 @@ int main(int argc, char *const argv[]) {
 			verbosity=TRUE;
 			break;
 		case 'd':
-			if (data == NULL) {
-				char *datarg;
+			if (datafile == -1) {
+				char *sdata;
 
-				/* normal data, rN for random, zN for nul (zero) string */
-				datalen = stringargument(gnuoptarg, &datarg);
+				datarg = gnuoptarg;						/* save for regen */
+				datalen = stringargument(datarg, &sdata);
 				data = (char *) malloc(datalen);
 				if (data == NULL) {
 					perror("Unable to process option -d ...");
 					return 1;
 				}
-				memcpy(data, datarg, datalen);
+				memcpy(data, sdata, datalen);
 			} else {
 				fprintf(stderr,"Only one -d or -f option can be given\n");
-				usage = TRUE;
+				usage = 1;
 			}
 			break;
 		case 'h':
-			usage=TRUE;
+			usage = 2;
 			break;
 		case 'f':
 			if(data == NULL) {
@@ -374,7 +370,7 @@ int main(int argc, char *const argv[]) {
 				}
 			} else {
 				fprintf(stderr,"Only one -d or -f option can be given\n");
-				usage = TRUE;
+				usage = 1;
 			}
 			break;
 		case '?':
@@ -386,6 +382,9 @@ int main(int argc, char *const argv[]) {
 			break;
 		}
 	}
+
+/* loop - need to start before module opt processing ... */
+while (--loopcount >= 0) {
 
 	/* Build the getopt listings */
 	opts = malloc((1+num_opts)*sizeof(struct option));
@@ -417,6 +416,8 @@ int main(int argc, char *const argv[]) {
 		mod = e->mod;
 		if (verbosity)
 			printf("Initializing module %s\n", mod->name);
+		if (e->pack)
+			free(e->pack);	/* may contain data when looping */
 		e->pack = mod->initialize();
 	}
 
@@ -432,7 +433,9 @@ int main(int argc, char *const argv[]) {
 	gnuopterr=1;
 	gnuoptind=0;
 	current_e = NULL;
-	while(EOF != (optc=_getopt_internal(argc,argv,"p:vd:hf:",opts,&longindex,1))) {
+	while(EOF != (optc =
+		_getopt_internal(argc, argv, "p:vd:hf:l:t:", opts, &longindex, 1)))
+	{
 		switch(optc) {
 		case 'p':
 			current_e = (current_e) ? current_e->next : first;
@@ -441,19 +444,22 @@ int main(int argc, char *const argv[]) {
 		case 'd':
 		case 'f':
 		case 'h':
+		case 'l':
+		case 't':
 			/* Processed above */
 			break;
 		case ':':
-			usage=TRUE;
+			usage = 1;
 			fprintf(stderr,"Option %s requires an argument\n",
 					  opts[longindex].name);
 			break;
 		case '?':
-			usage=TRUE;
-			fprintf(stderr,"Option starting %c not recognized\n",gnuoptopt);
+			usage = 1;
+			fprintf(stderr,"Option starting %c not recognized\n", gnuoptopt);
 			break;
 		default:
 			/* check current mod first */
+			mod = NULL;
 			if (current_e->mod->optchar == optc) {
 				mod = current_e->mod;
 				e = current_e;
@@ -477,7 +483,7 @@ int main(int argc, char *const argv[]) {
 				}
 
 				if (!mod->do_opt(opts[longindex].name, gnuoptarg, e->pack)) {
-					usage=TRUE;
+					usage = 1;
 				}
 			}
 			break;
@@ -487,31 +493,35 @@ int main(int argc, char *const argv[]) {
 	/* gnuoptind is the first thing that is not an option - should have exactly
 		one hostname...
 	*/
-	if (argc != gnuoptind+1) {
- 		usage=TRUE;
-		if (argc-gnuoptind < 1)
-			fprintf(stderr, "No hostname specified\n");
-		else
-			fprintf(stderr, "More than one hostname specified\n");
-	} else if (first && first->mod->set_addr) {
-		first->mod->set_addr(argv[gnuoptind], first->pack);
+	if (usage == 0) {
+		if (argc != gnuoptind + 1) {
+ 			usage = 1;
+			if (argc - gnuoptind < 1)
+				fprintf(stderr, "No hostname specified\n");
+			else
+				fprintf(stderr, "More than one hostname specified\n");
+		} else if (first && first->mod->set_addr) {
+			first->mod->set_addr(argv[gnuoptind], first->pack);
+		}
 	}
 
 	/* free opts now we have finished with it */
-	for(i=0;i<(1+num_opts);i++) {
-		if(opts[i].name != NULL) free((void *)opts[i].name);
+	for(i = 0; i <= num_opts; i++) {
+		if (opts[i].name != NULL)
+			free((void *)(unsigned long) opts[i].name);
 	}
 	free(opts); /* don't need them any more */
 
-	if(usage) {
+	if (usage) {
 		print_usage();
 		unload_mods(TRUE, verbosity);
 		if(datafile != -1) {
 			munmap(data,datalen);
 			close(datafile);
-			datafile=-1;
+			datafile = -1;
 		}
-		if(randomflag) free(data);
+		if (datarg)
+			free(data);
 		return 0;
 	}
 
@@ -545,12 +555,6 @@ int main(int argc, char *const argv[]) {
 
 	/* Add any data */
 	if(data != NULL) memcpy((char *)packet.data+i,data,datalen);
-	if(datafile != -1) {
-		munmap(data,datalen);
-		close(datafile);
-		datafile=-1;
-	}
-	if(randomflag) free(data);
 
 	/* Finalize from inside out */
 	{
@@ -613,7 +617,34 @@ int main(int argc, char *const argv[]) {
 		i = sendpacket(&packet,argv[gnuoptind],af_type,verbosity);
 		free(packet.data);
 	}
+	/* Regenerate data on subsequent loop calls */
+	if (loopcount && datarg) {
+		char *sdata;
+		int newlen;
+
+		newlen = stringargument(datarg, &sdata);
+		if (newlen > datalen) {
+			free(data);
+			if ((data = (char *) malloc(datalen)) == NULL) {
+				perror("Unable to allocate data memory");
+				break;
+			}
+		}
+		datalen = newlen;
+		memcpy(data, sdata, datalen);
+	}
+	if (loopcount && delaytime)
+		sleep(delaytime);
+} /* end of loop */
+
 	unload_mods(FALSE, verbosity);
+	if (datafile != -1) {
+		munmap(data, datalen);
+		close(datafile);
+		datafile = -1;
+	}
+	if (datarg)
+		free(data);
 
 	return 0;
 }

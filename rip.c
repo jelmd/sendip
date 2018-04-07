@@ -14,11 +14,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "rip.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='r';
 
 sendip_data *initialize(void) {
@@ -37,11 +39,11 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 	char *p, *q;
 	switch(opt[1]) {
 	case 'v': /* version */
-		rippack->version = (u_int8_t)strtoul(arg, (char **)0, 0);
+		rippack->version = integerargument(arg, 1);
 		pack->modified |= RIP_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = (u_int8_t)strtoul(arg, (char **)0, 0);
+		rippack->command = integerargument(arg, 1);
 		pack->modified |= RIP_MOD_COMMAND;
 		break;
 	case 'a': /* authenticate */
@@ -95,8 +97,10 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack) {
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data,
+	__attribute__((unused)) sendip_data *pack)
+{
 	if(hdrs[index-1] != 'u') {
 		usage_error("Warning: RIP should be contained in a UDP packet\n");
 	}

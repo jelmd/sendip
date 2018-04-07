@@ -11,13 +11,15 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "route.h"
-#include "parse.h"
+#include "parseargs.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='o';	/* s'o'urce routing - r and R already used */
 
 sendip_data *
@@ -70,7 +72,6 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 	 * other fields.
 	 */
 	struct rt0_hdr *rt = (struct rt0_hdr *)route;
-	u_int32_t value;
 	u_int16_t svalue;
 
 	switch(opt[1]) {
@@ -97,8 +98,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		pack->modified |= ROUTE_MOD_SEGMENTS;
 		break;
 	case 'r':	/* Reserved field (4 bytes) */
-		value = strtoul(arg, (char **)NULL, 0);
-		rt->reserved = htonl(value);
+		rt->reserved = integerargument(arg, 4);
 		pack->modified |= ROUTE_MOD_RESV;
 		break;
 	case 'a':	/* address list */
@@ -111,19 +111,19 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index,
-			sendip_data *data, sendip_data *pack)
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
-	route_header *route = (route_header *)pack->data;
+	route_header *route = (route_header *) pack->data;
 
-	if (!(pack->modified&ROUTE_MOD_NEXTHDR))
-		route->nexthdr = header_type(hdrs[index+1]);
+	if (!(pack->modified & ROUTE_MOD_NEXTHDR))
+		route->nexthdr = header_type(hdrs[index + 1]);
 	return TRUE;
 }
 
 int num_opts()
 {
-	return sizeof(route_opts)/sizeof(sendip_option);
+	return sizeof(route_opts) / sizeof(sendip_option);
 }
 
 sendip_option *get_opts()

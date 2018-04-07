@@ -51,7 +51,7 @@ void
 xorcrypto(u_int8_t *key, u_int32_t keylen,
 	u_int8_t *data, u_int32_t datalen)
 {
-	int d, k;
+	u_int32_t d, k;
 
 	for (d=0, k=0; d < datalen; ++d, k = (k+1)%keylen) {
 		data[d] ^= key[k];
@@ -82,8 +82,9 @@ espcrypto(esp_private *epriv, sendip_data *data, sendip_data *pack)
 }
 
 bool
-cryptomod(void *priv, char *hdrs, sendip_data *headers[],
-	int index, sendip_data *data, sendip_data *pack)
+cryptomod(void *priv, __attribute__((unused)) char *hdrs,
+	__attribute__((unused)) sendip_data *headers[],
+	__attribute__((unused)) int index, sendip_data *data, sendip_data *pack)
 {
 	if (!pack || !priv || !data) return FALSE; /* don't mess with me! */
 

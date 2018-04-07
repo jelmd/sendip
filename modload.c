@@ -5,6 +5,7 @@
 #include <sys/param.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "c_origin.h"
 #include "sendip_module.h"
@@ -44,13 +45,13 @@ dlopen_module(char *modname) {
 	strcpy(name, modname);
 	if (NULL == (handle = dlopen(name, RTLD_NOW)) ) {
 		char *error0 = strdup(dlerror());
-		sprintf(name,"./%s.so", modname);
+		snprintf(name, MAXPATHLEN, "./%s.so", modname);
 		if (NULL == (handle = dlopen(name, RTLD_NOW)) ) {
 			char *error1 = strdup(dlerror());
-			sprintf(name, "%s/%s.so", libdir, modname);
+			snprintf(name, MAXPATHLEN, "%s/%s.so", libdir, modname);
 			if (NULL == (handle = dlopen(name, RTLD_NOW)) ) {
 				char *error2 = strdup(dlerror());
-				sprintf(name, "%s/%s", libdir, modname);
+				snprintf(name, MAXPATHLEN, "%s/%s", libdir, modname);
 				if (NULL == (handle = dlopen(name, RTLD_NOW)) ) {
 					char *error3 = strdup(dlerror());
 					fprintf(stderr, "Couldn't open module %s, tried:\n"
@@ -89,6 +90,9 @@ load_crypto_module(char *modname) {
 		free(newmod);
 		return NULL;
 	}
+#pragma error_messages (off, E_ASSIGNMENT_TYPE_MISMATCH)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 	/* Initialize is optional */
 	if (NULL == (newmod->cryptoinit = dlsym(handle, "cryptoinit")) ) {
 		fprintf(stderr, "Warning: %s doesn't have an cryptoinit function: %s\n",
@@ -102,6 +106,8 @@ load_crypto_module(char *modname) {
 		free(newmod);
 		return NULL;
 	}
+#pragma GCC diagnostic pop
+#pragma error_messages (default, E_ASSIGNMENT_TYPE_MISMATCH)
 	newmod->name = malloc(strlen(modname) + 1);
 	if (newmod->name == NULL) {
 		perror("No space left to copy module name");
@@ -158,6 +164,9 @@ load_sendip_module(char *modname, int *cached) {
 		free(newmod);
 		return NULL;
 	}
+#pragma error_messages (off, E_ASSIGNMENT_TYPE_MISMATCH)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 	if (NULL == (newmod->initialize = dlsym(handle, "initialize")) ) {
 		fprintf(stderr, "%s doesn't have an initialize function: %s\n",
 			modname, dlerror());
@@ -197,6 +206,8 @@ load_sendip_module(char *modname, int *cached) {
 		free(newmod);
 		return NULL;
 	}
+#pragma GCC diagnostic pop
+#pragma error_messages (default, E_ASSIGNMENT_TYPE_MISMATCH)
 	newmod->name = malloc(strlen(modname) + 1);
 	if (newmod->name == NULL) {
 		perror("No space left to copy module name");

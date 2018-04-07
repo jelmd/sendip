@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include "parse.h"
+#include "parseargs.h"
 
 static int
 mstrchr(const char *s, int c)
@@ -89,5 +89,3 @@ main(int argc, char **argv)
 	}
 }
 #endif
-
-

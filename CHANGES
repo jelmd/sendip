@@ -175,3 +175,14 @@ Changes between sendip-2.5-mec-1 and sendip-2.5-mec-2
 * SCTP header with some chunk/parameter support (IPv4,6) (Mark Carson, NIST)
 * linux based crc32 implementation used by sctp replaced by the portable,
   less Linux/GNU C agnostic and less bloated code published in RFC 3309 (jelmd)
+
+Changes between sendip-2.5-mec-2 and sendip-2.5-mec-3
+  This version merged in sendip-2.5-mec-3a1 and 3a2 (Mark Carson, NIST):
+* Extended uniform IP address handling, generation and CIDR notation support
+* new timestamp parameter
+* Modifications for uniform string and integer handling
+* Looping capability and file-based parameters to create packet streams
+* Replaced GNU extension/Linux agnostic, non-portable hsearch_r usage for
+  file parameter handling with tsearch(3C) + friends (jelmd)
+* Simplified random byte generator, code cleanups + header re-arrangements
+  and fixes (jelmd)

@@ -7,16 +7,18 @@
 #ifndef _SENDIP_TYPES_H
 #define _SENDIP_TYPES_H
 
-/* Make sure we have bool */
-typedef int bool;
+#include <sys/types.h>
+
+/* C99+ feature */
+#include <stdbool.h>
+
 #ifndef FALSE
-#define TRUE  (0==0)
-#define FALSE (!TRUE)
+#define TRUE  true
+#define FALSE false
 #endif
 
 /* Solaris doesn't define these */
 #ifdef __sun
-#include <sys/types.h>
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint8_t  u_int8_t;

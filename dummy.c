@@ -46,14 +46,17 @@
  *    - in the do_opt function, fill in code for all the options you defined in
  *      the header file.  Typically, the code will look a lot like:
  *      case 'option':
- *        header->thing = htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+ *        header->thing = htons((u_int16_t)strtoul(arg, (char **)NULL, 0)); //OR
+ *        header->thing = integerargument(arg, 2);  // 2 for 16-bit OR
+ *        header->thing = hostargument(arg, 2);     // if not byte-swapped
  *        pack->modified |= FOO_MOD_THING;
  *        break;
  *      If some of your options change the length of the packet, you might want
  *      to take a look in ipv4.c or tcp.c - specifically where they add IPV4 or
  *      TCP options.
- *      Make sure you use htons and htonl everywhere you need to to avoid 
- *      byteorder problems.
+ *      Make sure you use htons and htonl everywhere you need to avoid
+ *      byteorder problems. For input arguments the functions in compact.c
+ *      usually take care of it.
  *      -opt contains the option string, including the starting opt_char
  *      -arg contains any argument given
  *      -pack contains our headers

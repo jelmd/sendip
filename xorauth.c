@@ -16,13 +16,16 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "crypto_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "ipv6.h"
 #include "ipv4.h"
 #include "ah.h"
 #include "esp.h"
-#include "crypto_module.h"
 
 /* There's no particular "initialization" to be done here, so
  * this is just a demo interface. In real life, initialization
@@ -82,9 +85,9 @@ xoricv(u_int8_t *key, u_int32_t keylen,
 	u_int8_t *data1, u_int32_t data1len,
 	u_int8_t *data2, u_int32_t data2len)
 {
-	int d, k, i;
+	u_int32_t d, k, i;
 
-	/* @@ The icv should be zeroed prior to calculation. Should
+	/* The icv should be zeroed prior to calculation. Should
 	 * we do that here, or just assume that this has been done?
 	 * I guess we will have to do it, just to make sure. Of course,
 	 * this defeats any attempt to "spike" the icv with some
@@ -93,13 +96,15 @@ xoricv(u_int8_t *key, u_int32_t keylen,
 	 */
 	(void) memset((void *)icv, 0, icvlen);
 
-	for (d=0, k=0, i=0; d < data1len; ++d,
-			k = (k+1)%keylen, i = (i+1)%icvlen) {
-		icv[i] ^= (key[k]^data1[d]);
+	for (d = 0, k = 0, i = 0; d < data1len;
+		++d, k = (k + 1) % keylen, i = (i + 1) % icvlen)
+	{
+		icv[i] ^= (key[k] ^ data1[d]);
 	}
-	for (d=0, k=0, i=0; d < data2len; ++d,
-			k = (k+1)%keylen, i = (i+1)%icvlen) {
-		icv[i] ^= (key[k]^data2[d]);
+	for (d = 0, k = 0, i = 0; d < data2len;
+		++d, k = (k +1 ) % keylen, i = (i + 1) % icvlen)
+	{
+		icv[i] ^= (key[k] ^ data2[d]);
 	}
 }
 
@@ -138,10 +143,8 @@ ahipv4(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 	if (!(ipack->modified & IP_MOD_TOTLEN)) {
 		pseudoip.tot_len = ipack->alloc_len +
 			pack->alloc_len + data->alloc_len;
-#ifndef __FreeBSD__
 #ifndef __FreeBSD
 		pseudoip.tot_len = htons(pseudoip.tot_len);
-#endif
 #endif
 	} else
 		pseudoip.tot_len = realip->tot_len;
@@ -256,7 +259,9 @@ ahipv6(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
  * is therefore the same for IPv4 and IPv6.
  */
 bool
-espip(esp_private *epriv, char *hdrs, int index, sendip_data *ipack,
+espip(esp_private *epriv, __attribute__((unused)) char *hdrs,
+	__attribute__((unused)) int index,
+	__attribute__((unused)) sendip_data *ipack,
 	sendip_data *data, sendip_data *pack)
 {
 	u_int32_t keylen;
@@ -277,8 +282,8 @@ espip(esp_private *epriv, char *hdrs, int index, sendip_data *ipack,
 	 * the routine is just sitting there ...
 	 */
 	xoricv(key, keylen, icv, epriv->icvlen,
-		(u_int8_t *)pack->data, pack->alloc_len,
-		(u_int8_t *)data->data, data->alloc_len - epriv->icvlen);
+		(u_int8_t *) pack->data, pack->alloc_len,
+		(u_int8_t *) data->data, data->alloc_len - epriv->icvlen);
 	return TRUE;
 }
 
@@ -290,32 +295,28 @@ cryptomod(void *priv, char *hdrs, sendip_data *headers[],
 	int i;
 	sendip_data *ipack;
 
-	if (!pack || !priv || !data) return FALSE; /* don't mess with me! */
+	if (!pack || !priv || !data)
+		return FALSE; /* don't mess with me! */
+
 	type = *(u_int32_t *) priv;
 	i = outer_header(hdrs, index, "i6");	/* IPv4/IPv6 */
 	ipack = headers[i];
-	if (!ipack) return FALSE; /* don't mess with me! */
+	if (!ipack)
+		return FALSE; /* don't mess with me! */
 
 	switch (type) {
 	case IPPROTO_AH:
 		switch (hdrs[i]) {
 		case 'i':	/* IPv4 */
-			return ahipv4((ah_private *)priv, hdrs, index, ipack,
-				data, pack);
-			break;
+			return ahipv4((ah_private *) priv, hdrs, index, ipack, data, pack);
 		case '6':	/* IPv6 */
-			return ahipv6((ah_private *)priv, hdrs, index, ipack,
-				data, pack);
-			break;
+			return ahipv6((ah_private *) priv, hdrs, index, ipack, data, pack);
 		default:
 			return FALSE;
 		}
-		break;
 	case IPPROTO_ESP:
 		/* No need to differentiate between IPv4 and IPv6 */
-		return espip((esp_private *)priv, hdrs, index, ipack,
-			data, pack);
-		break;
+		return espip((esp_private *) priv, hdrs, index, ipack, data, pack);
 	default:
 		break;
 	}

@@ -11,12 +11,14 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "frag.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='F';	/* -f is load from file */
 
 sendip_data *
@@ -128,19 +130,19 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index,
-			sendip_data *data, sendip_data *pack)
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
-	frag_header *frag = (frag_header *)pack->data;
+	frag_header *frag = (frag_header *) pack->data;
 
-	if (!(pack->modified&FRAG_MOD_NEXTHDR))
-		frag->nexthdr = header_type(hdrs[index+1]);
+	if (!(pack->modified & FRAG_MOD_NEXTHDR))
+		frag->nexthdr = header_type(hdrs[index + 1]);
 	return TRUE;
 }
 
 int num_opts()
 {
-	return sizeof(frag_opts)/sizeof(sendip_option);
+	return sizeof(frag_opts) / sizeof(sendip_option);
 }
 
 sendip_option *get_opts()

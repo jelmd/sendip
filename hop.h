@@ -63,19 +63,13 @@ struct ipv6_hopopt {
 
 /* Options */
 sendip_option hop_opts[] = {
-	{"n",1,"Option next header","Correct"},
-	{"0",0,"Option pad 0 (1 byte padding)"},
-	{"p",1,"Option pad N bytes","2"},
-	{"r",1,"Option router alert","0"},
-	{"j",1,"Option jumbo frame length"
-		" Note: actual production of jumbo frames requires interface support.",
-		"0"},
-	{"h",1,"(Destination) option home address","::1"},
-	{"t",1,"Option arbitrary t.l.v option "
-		"The fields are type.length.value. Each field can be specified "
-		"in the usual way as hex, octal, decimal, literal, or rN for "
-		"N random or zN for N zero bytes.",
-		"0.0.0"},
+	{ "n", 1, "next header", "Correct" },
+	{ "0", 0, "pad 0 (1 byte padding)", NULL },
+	{ "p", 1, "pad N bytes", "2" },
+	{ "r", 1, "router alert", "0" },
+	{ "j", 1, "jumbo frame length", "0" },
+	{ "h", 1, "home address (Destination)", "::1" },
+	{ "t", 1, "arbitrary t.l.v option", "0.0.0" },
 };
 
 #endif  /* _SENDIP_HOP_H */

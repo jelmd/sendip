@@ -67,7 +67,7 @@ get_origin_impl(int up, const char *tail, const char *fallback, int retry)
       if (fp != NULL) {
         size_t lsz;
         char *l = NULL;
-        while ((lsz = getdelim(&l, &lsz, 0, fp)) != -1) {
+        while (getdelim(&l, &lsz, 0, fp) != -1) {
           if ((strlen(l) > 4) && l[3] == '=' && l[2] == 'D' && l[1] == 'W'
               && l[0] == 'P')
           {

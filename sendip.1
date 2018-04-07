@@ -1,15 +1,18 @@
 .TH "SENDIP" "1" "March 30, 2018" "sendip 2.5.0"
 
-.\" disable hyphenation
-.nh
-.\" disable justification (adjust text to left margin only)
-.ad l
 .SH "NAME"
 sendip \- a tool to send arbitrary IP packets
 
 .SH "SYNOPSIS"
+.\" no hyphenation
+.nh
+.\" no alignment
+.na
 .HP
-\fBsendip\fR [\-h] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-p\ \fImodule] [\fImodule_options] \fIhostname\fR
+\fBsendip\fR [\-h] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-l\ \fInum\fR] [\-t\ time] [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
+.\" re-enable hyphenation and aligment
+.ad
+.hy
 
 .SH "DESCRIPTION"
 .PP
@@ -21,8 +24,13 @@ send out wrong checksums, that is supported too.
 .PP
 Modules are loaded in the order the -p options appear.  The headers from
 each module are put immediately inside the headers from the previous module
-in the final packet.  For example, to embed bgp inside tcp inside ipv4, do
-sendip -p ipv4 -p tcp -p bgp ...\ \. If no module is given, the \-d\ \fIdata\fR
+in the final packet.  For example, to embed bgp inside tcp inside ipv4, do:
+.RS
+.P
+sendip -p ipv4 -p tcp -p bgp ...
+.RE
+.PP
+If no module is given, the \-d\ \fIdata\fR
 or \-f\ \fIfile\fR option must be used to set the payload (in this case it
 is assumed, that the packet is of type \fBAFINET\fR, i.e. IPv4). Otherwise
 either \fBipv4\fR or \fBipv6\fR must be the first module given via CLI options.
@@ -40,40 +48,83 @@ Beside the module specific options the following general options are recognized
 by \fBsendip\fR:
 .TP
 \-h
-Print a a short help message and exit.
-.TP
-\-p\ \fImodule\fR
-Load the given \fImodule\fR.
+Print a help message and exit.
 .TP
 \-v
 Be verbose.
 .TP
-\-d\ \fIdata\fR
-Use the given \fIdata\fR as payload. The format of the data (incl. header
-parameter) may vary. Often th following formats are understood:
-
-If \fIdata\fR starts with \fBr\fIN\fR, \fIN\fR random bytes get generated and
-used as payload.
-
-If \fIdata\fR starts with \fBz\fIN\fR, \fIN\fR zero (nul) bytes get generated
-and used as payload.
-
-If \fIdata\fR starts with a \fB0x\fR or \fB0X\fR (digit zero followed by the
-letter x or X), the first two charcaters are ignored and all others are
-interpreted as hex representation of the data to use. Non-digits are handled
-in a case-insensitive manner.
-
-If \fIdata\fR starts with a \fB0\fR (digit zero) followed by a digit in the
-range of \fB0\fR..\fB7\fR, the first character gets ignored and all others
-are interpreted as octal representation of the data to use.
-
-Decimal numbers are usually used for decimal digits.
-
-Otherwise the \fIdata\fR string is taken literally.
-
+\-t\ \fItime\fR
+Wait \fItime\fR seconds before generating and sending the next packet (the
+default value 0 means no waiting, run as fast as possible).
+Ignored if no loop parameter was given.
+.TP
+\-p\ \fImodule\fR
+Load the given \fImodule\fR. Can be specified multiple times.
+.TP
+\-l\ \fInum\fR
+After all general options have been read and modules initialized, run the
+related packet generator \fInum\fR times (0 means indefinitely). Each time
+a new packet gets generated, all module specific options applied and the
+packet finally sent. So each packet sent will be identical unless
+random (\fBr\fIN\fR) or file (\fBf\fIfile\fR) option values are used.
 .TP
 \-f\ \fIfile\fR
 Read the given \fIfile\fR and use its contents as payload.
+
+.TP
+\-d\ \fIdata\fR
+Use the given \fIdata\fR as payload. The following formats are understood and
+tried in the following order (first match wins):
+.RS 2
+.TP
+\fBf\fIfile\fR
+file. If \fIfile\fR exists, read the next line of the given \fIfile\fR and use
+this line without the trailing newline (\en) but including leading and trailing
+whitespaces as \fIdata\fR and restart evaluation.
+If \fIfile\fR does not exist, \fBf\fIfile\fR is taken literally.
+Because there is no loop detection, one may turn the computer running this
+utility into a heating machine easily by just adding the same
+value (\fBf\fIfile\fR) to the \fIfile\fR.
+Also note, that the same \fIfile\fR can be used as option value multiple
+times. Each such usage causes \fBsendip\fR to read the next line of
+the \fIfile\fR. If the end of the file has been reached, it starts from the
+beginning, i.e. with the first line of the \fIfile\fR. This works, because the
+contents of it gets read in and cached as soon as it gets encountered as a
+valid data/option value.
+.TP
+\fBr\fIN\fR
+random. Generate and use \fIN\fR random bytes.
+.TP
+\fBz\fIN\fR
+zero. Generate and \fIN\fR zero (nul) bytes.
+.TP
+\fBt\fIN\fR
+timestamp. Generate a timestamp (see \fBgettimeofday\fR(3C)) and return the
+first \fIN\fR bytes of it. If \fIN\fR > than the number of bytes produced by
+the timestamp (8 on 32bit, 16 on 64bit) the remaining bytes will be all
+zero (nul) bytes.
+.TP
+\fB0x\fIS\fR or \fB0X\fIS\fR
+hex. Ignore the first two charcaters (zero and letter X or x) and interprete
+all others (\fIS\fR) as a hex representation of the data to use. Non-digits
+are handled in a case-insensitive manner.
+.TP
+\fB0\fIS\fR
+octal. Ignore the first character (zero) and interprete all others (\fIS\fR)
+as a octal representation of the data to use.
+.TP
+\fIdata\fR
+The \fIdata\fR string is taken literally.
+
+.P
+Note that the option values for the modules described below often get evaluated
+the same way as \fIdata\fR, however, depending on the type of the option a
+string might not be taken literally, but as a decimal number, IP address, CIDR
+notation and so on. They can be sometimes even a combiation of the formats
+mentioned above, e.g. one may use
+"\-p\ ipv4\ \-is\ 10.1.1.r1" to generate random 10.1.1.xx source addresses.
+.RE
+
 
 .SS "ipv6 MODULE OPTIONS"
 .TP
@@ -264,7 +315,7 @@ Set the GRE \fBversion number\fR to \fInum\fR (0..7}. Default:\ 0
 .TP
 \-gp\ \fInum\fR
 Set the GRE \fBencapsulated protocol\fR to \fInum\fR (0..0xffff).
-Default:\ auto (if known)
+Default:\ auto (if known, IPv4 and IPv6 only)
 .TP
 \-go\ \fInum\fR
 Set the GRE \fBoffset\fR to \fInum\fR (0..0xffff). Default:\ none
@@ -834,7 +885,7 @@ The default destination to use.
 .br
 \fBMark Carson\fR (NIST)
 .br
-\fBJens Elkner\fR <jel+sendip@cs.ovgu.de> (man page and fixes)
+\fBJens Elkner\fR <jel+sendip@cs.ovgu.de> (man page, code fixes and cleanups)
 .br
 Debian maintainers and many others (fixes).
 

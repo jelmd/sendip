@@ -10,13 +10,15 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "wesp.h"
 #include "esp.h"
 
-/* Character that identifies our options
- */
+/* Character that identifies our options */
 const char opt_char='w';
 
 sendip_data *
@@ -125,7 +127,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 }
 
 bool finalize(char *hdrs, sendip_data *headers[], int index,
-			sendip_data *data, sendip_data *pack)
+	__attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
 	wesp_header *wesp = (wesp_header *)pack->data;
 	/* Sanity check - if the user is doing something funky and

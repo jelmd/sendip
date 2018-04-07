@@ -10,6 +10,10 @@
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+
+#include "sendip_module.h"
+#include "common.h"
+
 #include "bgp.h"
 
 /* Character that identifies our options
@@ -472,10 +476,10 @@ bool do_opt (char        *optstring,
 
 
 bool finalize (char        *hdrs,
-               sendip_data *headers[],
+               __attribute__((unused)) sendip_data *headers[],
                int index,
-               sendip_data *data,
-               sendip_data *pack)
+               __attribute__((unused)) sendip_data *data,
+               __attribute__((unused)) sendip_data *pack)
 {
 	if (hdrs[index - 1] != 't') {
 		usage_error("WARNING: BGP should be carried over TCP\n");
@@ -486,7 +490,7 @@ bool finalize (char        *hdrs,
 
 int num_opts (void)
 {
-	return (sizeof(bgp_opts)/sizeof(sendip_option));
+	return (sizeof(bgp_opts) / sizeof(sendip_option));
 }
 
 

@@ -20,13 +20,14 @@
 #include <strings.h>
 #include <memory.h>
 #include <ctype.h>
+
 #include "sendip_module.h"
+#include "common.h"
+
 #include "ipv6ext.h"
 #include "hop.h"
 
-/* Character that identifies our options
- */
-
+/* Character that identifies our options */
 #if defined(HOP_OPT)
 const char opt_char='H';	/* 'h' gives help message */
 #elif defined(DEST_OPT)
@@ -167,7 +168,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 		break;
 	case 'r':	/* router alert */
 		pack->modified |= HOP_MOD_RA;
-		svalue = htons(strtoul(arg, (char **)NULL, 0));
+		svalue = integerargument(arg, 2);
 		hopt = (struct ipv6_hopopt *)
 			malloc(sizeof(struct ipv6_hopopt) + 2);
 		hopt->hopt_type = IPV6_TLV_ROUTERALERT;
@@ -179,7 +180,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 		break;
 	case 'j':	/* jumbo frame length */
 		pack->modified |= HOP_MOD_JUMBO;
-		value = htonl(strtoul(arg, (char **)NULL, 0));
+		value = integerargument(arg, 4);
 		hopt = (struct ipv6_hopopt *)
 			malloc(sizeof(struct ipv6_hopopt) + 4);
 		hopt->hopt_type = IPV6_TLV_JUMBO;
@@ -220,6 +221,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 			return FALSE;
 		}
 		type = svalue;
+
 		arg = index(arg, '.');
 		if (arg) {
 			++arg;
@@ -227,7 +229,6 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 		} else {
 			svalue = 0;
 		}
-
 		if (svalue > OCTET_MAX) {
 			usage_error("Too big a length value\n");
 			return FALSE;
@@ -239,15 +240,17 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 
 			length = stringargument(arg, &temp);
 		} else {
+			length = 0;
 			temp = NULL;
 		}
 		hopt = (struct ipv6_hopopt *)
-			malloc(sizeof(struct ipv6_hopopt) + svalue);
+			malloc(sizeof(struct ipv6_hopopt) + length);
 		hopt->hopt_type = type;
 		hopt->hopt_len = svalue;
-		memset(hopt->hopt_data, 0, svalue);
-		length = (length > svalue) ? svalue : length;
-		memcpy((void *)hopt->hopt_data, (void *)temp, length);
+		if (length) {
+			memset(hopt->hopt_data, 0, length);
+			memcpy((void *) hopt->hopt_data, (void *) temp, length);
+		}
 		if (!addopt(pack, hopt))
 			return FALSE;
 		free((void *)hopt);
@@ -256,17 +259,17 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 	return TRUE;
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack)
+bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+	int index, __attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
-	hop_header *hop = (hop_header *)pack->data;
+	hop_header *hop = (hop_header *) pack->data;
 	int alloclen = pack->alloc_len;
 	int hoplen;
 
-	hoplen = hop->hdrlen*HDR_ALLOC + (pack->modified&(HDR_ALLOC-1));
+	hoplen = hop->hdrlen * HDR_ALLOC + (pack->modified & (HDR_ALLOC - 1));
 
-	if (!(pack->modified&HOP_MOD_NEXTHDR))
-		hop->nexthdr = header_type(hdrs[index+1]);
+	if (!(pack->modified & HOP_MOD_NEXTHDR))
+		hop->nexthdr = header_type(hdrs[index + 1]);
 	/* Fix the header length field */
 	if (hoplen != alloclen) {
 		/* This indicates nobody filled out the final bytes.
@@ -276,18 +279,18 @@ bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 		int i;
 		u_int8_t *where;
 
-		where = (u_int8_t *)hop;
+		where = (u_int8_t *) hop;
 		for (i = hoplen; i < alloclen; ++i)
 			where[i] = 0;
 		/* Now replace header length with IETF-approved value */
-		hop->hdrlen = alloclen/HDR_ALLOC - 1;
+		hop->hdrlen = alloclen / HDR_ALLOC - 1;
 	}
 	return TRUE;
 }
 
 int num_opts(void)
 {
-	return sizeof(hop_opts)/sizeof(sendip_option);
+	return sizeof(hop_opts) / sizeof(sendip_option);
 }
 
 sendip_option *get_opts(void)
