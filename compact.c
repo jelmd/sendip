@@ -9,169 +9,153 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#ifdef __linux
+#include <bsd/string.h>
+#endif
 
 #include "fargs.h"
 #include "compact.h"
 
-u_int32_t
-compact_string(char *data_out) {
-	char *data_in = data_out;
-	u_int32_t i = 0;
-	if (*data_in == '0') {
-		data_in++;
-		if (*data_in == 'x' || *data_in == 'X') {
-			/* Hex */
-			char c = '\0';
-			data_in++;
-			while (*data_in) {
-				if (*data_in >= '0' && *data_in <= '9') {
-					c += *data_in - '0';
-				} else if (*data_in >= 'A' && *data_in <= 'F') {
-					c += *data_in - 'A' + 10;
-				} else if(*data_in >= 'a' && *data_in <= 'f') {
-					c += *data_in - 'a' + 10;
-				} else {
-					fprintf(stderr, "Character %c invalid in hex data stream\n",
-							  *data_in);
-					return 0;
-				}
-				if (i & 1) {
-					*(data_out++) = c;  // odd nibble - output it
-					c = '\0';
-				} else {
-					c <<= 4;   // even nibble - shift to top of byte
-				}
-				data_in++;
-				i++;
-			}
-			*data_out = c; // make sure last nibble is added
-			i++;
-			i >>= 1;  // i was a nibble count...
-			return i;
-		} else {
-         /* Octal */
-			char c = '\0';
-			while (*data_in) {
-				if(*data_in >= '0' && *data_in <= '7') {
-					c += *data_in - '0';
-				} else {
-					fprintf(stderr,
-						"Character %c invalid in octal data stream\n",*data_in);
-					return 0;
-				}
-				if( (i & 3) == 3 ) {
-					*(data_out++) = c;  // output every 4th char
-					c = '\0';
-				} else {        // otherwise just shift it up
-					c <<= 2;
-				}
-				data_in++;
-				i++;
-			}
-			*data_out = c;     // add partial last byte
-			i += 3;
-			i >>= 2;
-			return i;
+size_t
+compact_string(const char *input, char *output, size_t buflen) {
+	const char *p = input + 1;
+	char *s = output;
+	size_t max = buflen;
+	size_t i;
+
+	if (*input == '0' && (*p == 'x' || *p == 'X')) {
+		p++;
+		/* Hex */
+		i = (strlen(p) + 1) >> 1;
+		if (i > buflen) {
+			DWARN("output buffer is too small to comsume the whole input "
+				"of %ld hex bytes. Skipping last %ld hex bytes!", i, i - max)
 		}
-	} else {
-		/* String */
-		return strlen(data_in);
+		i = 0;
+		char c = '\0';
+		while (*p && max != 0) {
+			if (*p >= '0' && *p <= '9') {
+				c += *p - '0';
+			} else if (*p >= 'A' && *p <= 'F') {
+				c += *p - 'A' + 10;
+			} else if(*p >= 'a' && *p <= 'f') {
+				c += *p - 'a' + 10;
+			} else {
+				DERROR("Character %c invalid in hex data stream", *p)
+				return 0;
+			}
+			if (i & 1) {
+				*(s++) = c;  // odd nibble - output it
+				c = '\0';
+				max--;
+			} else {
+				c <<= 4;   // even nibble - shift to top of byte
+			}
+			p++;
+			i++;
+		}
+		if (i & 1 && max != 0) {
+			*s = c; // make sure last nibble is added
+			max--;
+		}
+		return buflen - max;
 	}
+
+	if (*input == '0') {
+		/* Octal */
+		char c = '\0';
+		i = (strlen(p) + 3) >> 2;
+		if (i > buflen) {
+			DWARN("output buffer is too small to comsume the whole input "
+				"of %ld octo bytes. Skipping last %ld octo bytes!", i, i - max)
+		}
+		i = 0;
+		while (*p && max != 0) {
+			if (*p >= '0' && *p <= '7') {
+				c += *p - '0';
+			} else {
+				DERROR("Character %c invalid in octo data stream", *p)
+				return 0;
+			}
+			if( (i & 3) == 3 ) {
+				*(s++) = c;  // output every 4th char
+				c = '\0';
+				max--;
+			} else {        // otherwise just shift it up
+				c <<= 2;
+			}
+			p++;
+			i++;
+		}
+		if (i & 3 && max != 0) {
+			*s = c;     // add partial last byte
+			max--;
+		}
+		return buflen - max;
+	}
+
+	/* String */
+	if ((i = strlcpy(output, input, buflen)) >= buflen) {
+		DWARN("output buffer is too small, skipping '%s' of '%s'",
+			(input + buflen), input)
+	}
+	return i;
 }
 
-
-/* Functions for filling out several header data areas using the
- * "string, rand or zero" business.
- *
- * Note the handling of space is slightly screwy - compact_string
- * above overwrites its argument in place, since it knows that
- * no matter what, the string it produces can be no longer than
- * its argument. randombytes and zerobytes, however, uses a static area, since
- * the calling argument there (something like r32) will generally
- * be much shorter than the string produced.
- *
- * In practice, in both cases the string returned will be immediately
- * copied into an allocated area, so the differences in string handling
- * don't matter. But this should be kept in mind if these routines
- * are used elsewhere.
+/* Generate @length random bytes and copy them to @output, which is expected
+ * to be large enough (no check for overflow of the array).
  */
-
-/* @return a pointer to a string of random bytes. Note this is a
- * static area which is periodically overwritten.
- */
-u_int8_t *
-randombytes(int length)
+void
+randombytes(size_t length, char *output)
 {
 	static unsigned short xsubi[3];
-	static union {
-		u_int32_t random32[MAXRAND >> 2];
-		u_int8_t random8[MAXRAND];
-	} store;
+	u_int32_t random32;
 
-	int i;
+	int n = length >> 2, i;
 
-	/* Sanity check */
-	if (length > MAXRAND) {
-		usage_error("Random data too long to be sane\n");
-		return NULL;
-	} else if (length == 0) {
-		return NULL;
-	}
 	/* random() returns 31 random bits, only. So we use jrand48(), which gives
 	 * us the 32 bit random range we need. */
-	for (i = ((length + 3) >> 2) - 1; i >= 0; i--)
-		store.random32[i] = (u_int32_t) jrand48(xsubi);
-
-	return &store.random8[0];
+	for (i = 0; i < n; i++) {
+		random32 = jrand48(xsubi);
+		memcpy(output, &random32, 4);
+		output += 4;
+	}
+	length -= n << 2;
+	if (length != 0) {
+		random32 = jrand48(xsubi);
+		memcpy(output, &random32, length);
+	}
 }
 
-/* @return a pointer to a string of zero bytes. Note this is a
- * static area which should be used in read-only mode!
+/* Write the time in host byte order to @output and pad remaining bytes with 0.
+ * @output is expected to have a least a size of @length  bytes (check for
+ * overflow of the array). If @length is smaller than the size of a timestamp,
+ * only the first @length bytes of the timestamp get copied over to the @output.
+ * @return number of bytes copied to @output .
  */
-u_int8_t *
-zerobytes(int length)
+size_t
+timestamp(size_t length, char *output)
 {
-	static u_int8_t *s = NULL;
+	struct timeval ts;
 
-	if (s == NULL)
-		s = calloc(MAXRAND, sizeof(u_int8_t));
-
-	/* Sanity check */
-	if (length > MAXRAND) {
-		usage_error("Zero data too long to be sane\n");
-		return NULL;
+	if (gettimeofday(&ts, NULL) == 0)
+		return 0;
+	if (sizeof(ts) > length) {
+		memcpy(output, &ts, length);
+	} else {
+		memcpy(output, &ts, sizeof(ts));
+		memset(output + sizeof(ts), 0, length - sizeof(ts));
 	}
-	return s;
-}
-
-/* Write the time in host byte order onto the beginning of a zero-padded
- * static buffer of BUFSIZ bytes. Therefore it should be used in read-only mode!
- * @return The pointer to the beginning of the timestamp buffer.
- */
-u_int8_t *
-timestamp(int length)
-{
-	static u_int8_t *s = NULL;
-
-	if (s == NULL)
-		s = calloc(BUFSIZ, sizeof(u_int8_t));
-
-	/* Sanity check */
-	if (length > BUFSIZ) {
-		usage_error("Time data too long to be sane\n");
-		return NULL;
-	}
-	gettimeofday((struct timeval *) s, NULL);
-	return s;
+	return length;
 }
 
 /* Yes, well, not the world's most brilliant name, but this
- * does the standard string argument handling. The output
- * may either be the transformed input or a static area.
- * @return The length of the output.
+ * does the standard string argument handling. The @output is expected to
+ * has at least a size @outlen bytes.
+ * @return The number of bytes copied to @output.
  */
-u_int32_t
-stringargument(char *input, char **output)
+size_t
+stringargument(const char *input, char *output, size_t outlen)
 {
 	u_int32_t len = 0;
 
@@ -182,42 +166,52 @@ stringargument(char *input, char **output)
 	if (*input == 'f') {
 		char *data =  fileargument(input + 1);
 		if (data != NULL)
-			return stringargument(data , output);
+			return stringargument(data , output, outlen);
 	}
 
 	if ((*input == 'r' || *input == 'z') && isdigit(*(input + 1))) {
 		len = atoi(input + 1);
-		*output = (char *)
-			((*input == 'r') ? randombytes(len) : zerobytes(len));
-		return (*output) ? len : 0;
+		if (len == 0)
+			return 0;
+		if (len > outlen) {
+			DWARN("output buffer to small. Generating only %ld %s bytes",
+				outlen, (*input == 'r' ? "random" : "zero"))
+			len = outlen;
+		}
+		if (*input == 'r') {
+			randombytes(len, output);
+		} else {
+			memset(output, 0, len);
+		}
+		return len;
 	}
 
 	if (*input == 't' && isdigit(*(input + 1))) {
-		len = atoi(input+1);
-		*output = (char *) timestamp(len);
-		return (*output == NULL) ? 0 : len;
+		len = atoi(input + 1);
+		if (len > outlen) {
+			DWARN("output buffer to small. "
+				"Reducing timestamp from %d to %ld bytes", len, outlen)
+			len = outlen;
+		}
+		return timestamp(len, output);
 	}
 
 	/* read hex/octal/decimal/raw string */
-	len = compact_string(input);
-	*output = input;
-	return len;
+	return compact_string(input, output, outlen);
 }
 
-/* This is the integer (1, 2 or 4 byte) version of the above. It takes
- * the input, which may be decimal, octal, hex, or the special strings
- * rX (random bytes) or zX (zero bytes - kind of pointless) and converts
- * it to an integer with the specified number of bytes in *network* byte
- * order. The idea is you can just do:
+/* Extracts a decimal, octal, hex integer of from the given @input string or
+ * generate one using the special strings rX (random bytes) or zX (zero bytes),
+ * converts it to an integer with the specified number of bytes in *network*
+ * byte order and returns it. Since an integer has not more than 4 bytes,
+ * 4 will be used instead of @length, if it is bigger than that, and @length
+ * overrules X if it is smaller than X. The idea is you can just do:
  *
  * 	field = integerargument(input, sizeof(field));
  */
 u_int32_t
 integerargument(const char *input, int length)
 {
-	int inputlength;
-	u_int8_t *string;
-
 	if (input == NULL || length < 1)
 		return 0;
 
@@ -226,27 +220,29 @@ integerargument(const char *input, int length)
 		return integerargument(fileargument(input + 1), length);
 
 	if (*input == 'r' && isdigit(*(input + 1))) {
-		inputlength = atoi(input + 1);
-		if (inputlength > length)
-			inputlength = length;
-		string = randombytes(inputlength);
-		if (!string)
-			return 0;
+		u_int32_t r;
+		int len = atoi(input + 1);
+		if (len > length) {
+			DWARN("Reducing number of random bytes for an int from %d to %d",
+				len, length);
+			len = length;
+		}
+		randombytes(len, (char *) &r);
 
 		/* There's no point in byte-swapping random bytes */
 		switch (length) {
 			case 1:
-				return (u_int8_t) *string;
+				return (u_int8_t) r;
 			case 2:
-				return *(u_int16_t *) string;
+				return (u_int16_t) r;
 			case 3:
-				return (0x00ffffff & *(u_int32_t *) string);
+				return (0x00ffffff & r);
 			default:
-				return *(u_int32_t *) string;
+				return r;
 		}
 	}
 	if (*input == 'z')
-		return 0;	/* like I said, pointless ... */
+		return 0;
 
 	/* Everything else, just use strtoul, then cast and swap */
 	if (length == 1)
@@ -262,9 +258,6 @@ integerargument(const char *input, int length)
 u_int32_t
 hostintegerargument(const char *input, int length)
 {
-	int inputlength;
-	u_int8_t *string;
-
 	if (input == NULL || length < 1)
 		return 0;
 
@@ -273,29 +266,29 @@ hostintegerargument(const char *input, int length)
 		return hostintegerargument(fileargument(input + 1), length);
 
 	if (*input == 'r' && isdigit(*(input + 1))) {
-		inputlength = atoi(input + 1);
-		if (inputlength > length)
-			inputlength = length;
-		string = randombytes(inputlength);
-		if (string == NULL)
-			return 0;
+		u_int32_t r;
+		int len = atoi(input + 1);
+		if (len > length) {
+			DWARN("Reducing number of random bytes for an int from %d to %d",
+				len, length)
+			len = length;
+		}
+		randombytes(len, (char *) &r);
 
 		switch (length) {
 			case 1:
-				return (u_int8_t) *string;
+				return (u_int8_t) r;
 			case 2:
-				return *(u_int16_t *) string;
+				return (u_int16_t) r;
 			case 3:
-				return (0x00ffffff & *(u_int32_t *) string);
+				return (0x00ffffff & r);
 			default:
-				return *(u_int32_t *) string;
+				return r;
 		}
 	}
 
-	if (*input == 'z') {
-		/* like I said, pointless ... */
+	if (*input == 'z')
 		return 0;
-	}
 
 	/* Everything else, just use strtoul, then cast */
 	if (length == 1)
@@ -339,34 +332,34 @@ cidrargument(const char *input, char *slashpoint)
 	in_addr_t host;
 	in_addr_t hmask, smask;
 	struct in_addr cidrarg;
-	int slash;
+	int bits;
 
 	strncpy(ipv4space, input, slashpoint - input);
 	ipv4space[slashpoint - input] = '\0';
 	inet_pton(AF_INET, ipv4space, &cidrarg);
-	slash = atoi(++slashpoint);
+	bits = strtol(++slashpoint, NULL, 0);
 	/* Interpret weird /xx values as fixed addresses */
-	if (slash <= 0 || slash >= 32)
+	if (bits <= 0 || bits >= 32)
 		return cidrarg.s_addr;
-	/* The host and subnet parts, in host order for now */
-	hmask = (1 << (32 - slash)) - 1;
+
+	/* The host and subnet mask, in host order for now */
+	hmask = (1 << (32 - bits)) - 1;
 	smask = ~hmask;
-	/* Determine how much randomness we need, and get it. */
-	/* Don't allow 0 or ffff.. host parts if we can help it.
-	* We can help it so long as slash < 31.
-	*/
+
+	/* Get the random host part */
 	do {
-		if (slash < 8) {
+		if (bits < 8) {
 			host = integerargument("r4", 4);
-		} else if (slash < 16) {
+		} else if (bits < 16) {
 			host = integerargument("r3", 3);
-		} else if (slash < 24) {
+		} else if (bits < 24) {
 			host = integerargument("r2", 2);
 		} else {
 			host = integerargument("r1", 1);
 		}
 		host &= hmask;
-	} while (slash < 31 && (host == 0 || host == hmask));
+	} while (host == 0 || host == hmask); /* Don't allow all 0 or all 0xff */
+
 	/* Now fold the random host into the output */
 	return ((cidrarg.s_addr & htonl(smask)) | htonl(host));
 }

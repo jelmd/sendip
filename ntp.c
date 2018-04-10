@@ -68,10 +68,11 @@ u_int32_t make_fixed_point(double n, bool issigned, int totbits, int intbits) {
 	return htonl(result);
 }
 
-bool make_ts(ntp_ts *dest, char *src) {
-	char *intpart, *fracpart;
-	intpart=src;
-	fracpart=strchr(intpart,'.');
+bool make_ts(ntp_ts *dest, const char *src) {
+	const char *intpart;
+	char *fracpart;
+	intpart = src;
+	fracpart = strchr(intpart,'.');
 
 	if(*intpart) {
 		dest->intpart=(u_int32_t)strtoul(intpart,&fracpart,0);
@@ -97,7 +98,8 @@ sendip_data *initialize(void) {
 	return ret;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+bool
+do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	ntp_header *ntp = (ntp_header *)pack->data;
 	switch(opt[1]) {
 	case 'l':  /* Leap Indicator (2 bits) */

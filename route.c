@@ -40,7 +40,7 @@ initialize(void)
 }
 
 bool
-readaddrs(char *arg, sendip_data *pack)
+readaddrs(const char *arg, sendip_data *pack)
 {
 	/* We'll use the type 0 routing header to get at the
 	 * other fields.
@@ -48,24 +48,31 @@ readaddrs(char *arg, sendip_data *pack)
 	struct rt0_hdr *rt;
 	int count, i;
 	char *addrs[ADDRMAX];
+	char *args = strdup(arg);
 
-	count = parsenargs(arg, addrs, ADDRMAX, ", ");
+	if (args == NULL) {
+		PERROR("Unable to parse addresses");
+		return FALSE;
+	}
+	count = parsenargs(args, addrs, ADDRMAX, ", ");
 	pack->data = realloc(pack->data,
-		sizeof(struct rt0_hdr)+count*sizeof(struct in6_addr));
-	rt = (struct rt0_hdr *)pack->data;
-	pack->alloc_len = sizeof(struct rt0_hdr)+count*sizeof(struct in6_addr);
+		sizeof(struct rt0_hdr) + count * sizeof(struct in6_addr));
+	rt = (struct rt0_hdr *) pack->data;
+	pack->alloc_len = sizeof(struct rt0_hdr) + count * sizeof(struct in6_addr);
 	for (i=0; i < count; ++i) {
 		if (!inet_pton(AF_INET6, addrs[i], &rt->addr[i])) {
-			usage_error("Can't parse address\n");
+			DERROR("Can't parse address '%s'", addrs[i]);
+			free(args);
 			return FALSE;
 		}
 	}
-	rt->rt_hdr.hdrlen = count*2;
+	rt->rt_hdr.hdrlen = count << 2;
+	free(args);
 	return TRUE;
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	route_header *route = (route_header *)pack->data;
 	/* We'll use the type 0 routing header to get at the

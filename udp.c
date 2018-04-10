@@ -1,11 +1,5 @@
 /* udp.c - UDP code for sendip
- * Author: Mike Ricketts <mike@earth.li>
- * ChangeLog since 2.0 release:
- * ChangeLog since 2.1 release:
- * 16/04/2002: Only check one layer of enclosing headers for ip
- * 16/04/2002: Add support for UDP over IPV6
- * ChangeLog since 2.4 release:
- * 21/04/2003: Fix errors found by valgrind
+ * Created by Mike Ricketts <mike@earth.li>
  */
 
 #include <sys/types.h>
@@ -67,7 +61,8 @@ static void udp6csum(sendip_data *ipv6_hdr, sendip_data *udp_hdr,
 	memset(&phdr,0,sizeof(phdr));
 	memcpy(&phdr.source,&ipv6->ip6_src,sizeof(struct in6_addr));
 	memcpy(&phdr.destination,&ipv6->ip6_dst,sizeof(struct in6_addr));
-	phdr.ulp_length=IPPROTO_UDP;
+	phdr.nexthdr = IPPROTO_UDP;
+	phdr.ulp_length = udp-> len;
 	
 	memcpy(tempbuf,&phdr,sizeof(phdr));
 
@@ -90,7 +85,8 @@ sendip_data *initialize(void) {
 	return ret;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+bool
+do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	udp_header *udp = (udp_header *)pack->data;
 	switch(opt[1]) {
 	case 's':

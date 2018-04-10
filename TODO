@@ -1,8 +1,8 @@
 MAIN: Try using PF_PACKET (so ip works with wrong checksums)
 
 ipv4.c: __FreeBSD hack needed on solaris too?
-rip.c: handling of -re is sick
 ripng.c: handling of -re is sick, check conformance to spec
+sendip.c: add missing ipv6 sockopts
 
 ALL
 - DNS

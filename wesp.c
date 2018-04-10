@@ -1,6 +1,4 @@
-/* wesp.c - wrapped ESP header, provisional version
- *
- */
+/* wesp.c - wrapped ESP header, provisional version */
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -52,7 +50,7 @@ addpadding(sendip_data *pack)
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	wesp_header *wesp = (wesp_header *)pack->data;
 	u_int16_t svalue;

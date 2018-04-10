@@ -118,7 +118,7 @@ addopt(sendip_data *pack, struct ipv6_hopopt *opt)
 	return TRUE;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack)
+bool do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	hop_header *hop = (hop_header *)pack->data;
 	struct ipv6_hopopt *hopt;
@@ -126,7 +126,7 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 	u_int16_t svalue;
 	struct in6_addr addr;
 	u_int8_t type;
-	char *temp;
+	char temp[BUFSIZ];
 	int length;
 
 	switch(opt[1]) {
@@ -237,17 +237,15 @@ bool do_opt(char *opt, char *arg, sendip_data *pack)
 		arg = index(arg, '.');
 		if (arg) {
 			++arg;
-
-			length = stringargument(arg, &temp);
+			length = stringargument(arg, temp, BUFSIZ);
 		} else {
 			length = 0;
-			temp = NULL;
 		}
 		hopt = (struct ipv6_hopopt *)
 			malloc(sizeof(struct ipv6_hopopt) + length);
 		hopt->hopt_type = type;
 		hopt->hopt_len = svalue;
-		if (length) {
+		if (length != 0) {
 			memset(hopt->hopt_data, 0, length);
 			memcpy((void *) hopt->hopt_data, (void *) temp, length);
 		}

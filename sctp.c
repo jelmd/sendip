@@ -60,7 +60,7 @@ add_chunk(sendip_data *pack, u_int8_t type)
 /* Add in data space */
 static sctp_chunk_header *
 grow_chunk(sendip_data *pack, sctp_chunk_header *chunk,
-	u_int16_t length, void *data)
+	u_int16_t length, const void *data)
 {
 	sctp_header *sctp = (sctp_header *) pack->data;
 	/* urp */
@@ -102,7 +102,7 @@ round4(int number)
 /* Add in data space, rounded up to 4-byte boundary */
 static sctp_chunk_header *
 grow_chunk_round4(sendip_data *pack, sctp_chunk_header *chunk,
-	u_int16_t length, void *data)
+	u_int16_t length, const void *data)
 {
 	sctp_header *sctp = (sctp_header *) pack->data;
 	/* urp */
@@ -128,12 +128,12 @@ grow_chunk_round4(sendip_data *pack, sctp_chunk_header *chunk,
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	sctp_header *sctp = (sctp_header *) pack->data;
 	u_int16_t svalue;
 	u_int32_t lvalue;
-	char *temp;
+	char temp[BUFSIZ];
 	u_int32_t length;
 	static sctp_chunk_header *currentchunk;
 
@@ -154,7 +154,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		/* While the value should be 32 bits, let them specify whatever they
 		 * want. We only try to fit four bytes, however.
 		 */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		if (length < sizeof(u_int32_t)) {
 			sctp->vtag = 0;
 			memcpy((void *) &sctp->vtag, temp, length);
@@ -206,7 +206,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		break;
 
 	case 'D':	/* arbitrary SCTP chunk data */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
@@ -219,6 +219,11 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 #define INITFIELDS	5
 		char *strargs[INITFIELDS+1];
 		int nargs;
+		char *args = strdup(arg);
+		if (args == NULL) {
+			PERROR("Unable to process sctp '-I' option")
+			return FALSE;
+		}
 
 		currentchunk = add_chunk(pack, SCTP_CID_INIT);
 		/* set up defaults first, then overwrite with any others */
@@ -228,7 +233,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		init.num_inbound_streams = htons(1);
 		init.initial_tsn = htonl(1);
 
-		nargs = parsenargs(arg, strargs, INITFIELDS, " ,:.");
+		nargs = parsenargs(args, strargs, INITFIELDS, " ,:.");
 		/* Note the cheesy reverse fallthrough */
 		switch (nargs) {
 		case 5:
@@ -248,6 +253,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 
 		currentchunk = grow_chunk(pack, currentchunk,
 			sizeof(sctp_inithdr_t), (void *) &init);
+		free(args);
 		break;
 	}
 
@@ -280,7 +286,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		currentchunk = grow_chunk(pack, currentchunk,
 			sizeof(sctp_hostname_param_t), (void *) &hostnameparam);
 		currentchunk = grow_chunk_round4(pack, currentchunk,
-			strlen(arg) + 1, (void *)arg);
+			strlen(arg) + 1, arg);
 		}
 		break;
 
@@ -292,14 +298,20 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		 * I suppose.
 		 */
 		sctp_supported_addrs_param_t supportedaddrs;
+
 #define MAXSUPPORTEDADDRS	8	/* why not */
 		char *straddrs[MAXSUPPORTEDADDRS + 1];
 		u_int16_t addrs[MAXSUPPORTEDADDRS + 1];
 		int naddrs, i;
+		char *args = strdup(arg);
 
+		if (args == NULL) {
+			PERROR("Unable to process sctp '-A' option");
+			return FALSE;
+		}
 		supportedaddrs.param_hdr.type =
 			htons(SCTP_PARAM_SUPPORTED_ADDRESS_TYPES);
-		naddrs = parsenargs(arg, straddrs, MAXSUPPORTEDADDRS, " ,:.");
+		naddrs = parsenargs(args, straddrs, MAXSUPPORTEDADDRS, " ,:.");
 		for (i=0; i < naddrs; ++i)
 			addrs[i] = htons(atoi(straddrs[i]));
 		addrs[i] = 0;
@@ -308,6 +320,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		currentchunk = grow_chunk(pack, currentchunk,
 			sizeof(sctp_supported_addrs_param_t), (void *) &supportedaddrs);
 		currentchunk = grow_chunk(pack, currentchunk, 2* round2(naddrs), addrs);
+		free(args);
 		break;
 	}
 

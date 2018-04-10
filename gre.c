@@ -140,7 +140,7 @@ gre_resize(sendip_data *pack, u_int16_t flags, u_int16_t addflag)
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	gre_header *gre = (gre_header *)pack->data;
 	u_int16_t svalue;

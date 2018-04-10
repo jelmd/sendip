@@ -186,3 +186,13 @@ Changes between sendip-2.5-mec-2 and sendip-2.5-mec-3
   file parameter handling with tsearch(3C) + friends (jelmd)
 * Simplified random byte generator, code cleanups + header re-arrangements
   and fixes (jelmd)
+
+Changes between sendip-2.5-mec-3 and sendip-2.6.0-jel
+  Merged in all remaining post 2.5.0 commits (2018-04-07) from
+  https://github.com/rickettm/SendIP master branch:
+* setsocket option CLI support via general option -s {b|i|6}...
+* use setsockopt() to set IPV6 header options
+* RIP requests: fix addition/handling of entries
+* make option handling reliable - do not allow to modify the original value
+  by using 'const char *' (jelmd)
+* misc fixes + code cleanups (jelmd)

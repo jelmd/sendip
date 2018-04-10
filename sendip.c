@@ -1,19 +1,6 @@
 /* sendip.c - main program code for sendip
  * Copyright 2001 Mike Ricketts <mike@earth.li>
- * Distributed under the GPL.  See LICENSE.
- * Bug reports, patches, comments etc to mike@earth.li
- * ChangeLog since 2.0 release:
- * 27/11/2001 compact_string() moved to compact.c
- * 27/11/2001 change search path for libs to include <foo>.so
- * 23/01/2002 make random fields more random (Bryan Croft <bryan@gurulabs.com>)
- * 10/08/2002 detect attempt to use multiple -d and -f options
- * ChangeLog since 2.2 release:
- * 24/11/2002 compile on archs requiring alignment
- * ChangeLog since 2.3 release:
- * 21/04/2003 random data (Anand (Andy) Rao <andyrao@nortelnetworks.com>)
- * ChangeLog since 2.4 release:
- * 21/04/2003 fix errors detected by valgrind
- * 28/07/2003 fix compile error on solaris
+ * License: see LICENSE
  */
 
 #define _SENDIP_MAIN
@@ -40,6 +27,7 @@
 #include "crypto_module.h"
 #include "common.h"
 #include "modload.h"
+#include "ipv6.h"
 
 /* housekeeping for loaded modules and their packet data */
 typedef struct _sml {
@@ -65,47 +53,50 @@ static int num_opts=0;
 
 static char *progname;
 
-static int sendpacket(sendip_data *data, char *hostname, int af_type,
-							 bool verbose) {
+static int
+sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
+	const char *sockopts)
+{
 	_sockaddr_storage *to = malloc(sizeof(_sockaddr_storage));
-	int tolen;
+	const char *p;
 
 	/* socket stuff */
-	int s;                            /* socket for sending       */
+	int s;										/* socket for sending */
+	int sent = -2;								/* number of bytes sent */
+	bool sethdrincl = FALSE, setipv6opts = FALSE;
+	const int on = 1;
 
 	/* hostname stuff */
-	struct hostent *host = NULL;      /* result of gethostbyname2 */
+	struct hostent *host = NULL;				/* result of gethostbyname2 */
 
 	/* casts for specific protocols */
-	struct sockaddr_in *to4 = (struct sockaddr_in *)to; /* IPv4 */
-	struct sockaddr_in6 *to6 = (struct sockaddr_in6 *)to; /* IPv6 */
+	struct sockaddr_in *to4 = (struct sockaddr_in *) to;	/* IPv4 */
+	struct sockaddr_in6 *to6 = (struct sockaddr_in6 *) to;	/* IPv6 */
+	int tolen;
 
-	int sent;                         /* number of bytes sent */
-
-	if(to==NULL) {
-		perror("OUT OF MEMORY!\n");
+	if (to == NULL) {
+		PERROR("Unable to send packet");
 		return -3;
 	}
-	memset(to, 0, sizeof(_sockaddr_storage));
-
 	if ((host = gethostbyname2(hostname, af_type)) == NULL) {
-		char buf[256];
-		sprintf(buf, "gethostbyname2('%s', %d) failed.", hostname, af_type);
-		perror(buf);
+		PERROR("gethostbyname2('%s', %d) failed", hostname, af_type)
 		free(to);
 		return -1;
 	}
+	memset(to, 0, sizeof(_sockaddr_storage));
 
 	switch (af_type) {
 	case AF_INET:
 		to4->sin_family = host->h_addrtype;
 		memcpy(&to4->sin_addr, host->h_addr, host->h_length);
 		tolen = sizeof(struct sockaddr_in);
+		sethdrincl = TRUE;
 		break;
 	case AF_INET6:
 		to6->sin6_family = host->h_addrtype;
 		memcpy(&to6->sin6_addr, host->h_addr, host->h_length);
 		tolen = sizeof(struct sockaddr_in6);
+		setipv6opts = TRUE;
 		break;
 	default:
 		return -2;
@@ -132,15 +123,50 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 		free(to);
 		return -1;
 	}
-	/* Need this for OpenBSD, shouldn't cause problems elsewhere */
-	/* TODO: should make it a command line option */
-	if(af_type == AF_INET) { 
-		const int on=1;
-		if (setsockopt(s, IPPROTO_IP,IP_HDRINCL,(const void *)&on,sizeof(on)) <0) { 
-			perror ("Couldn't setsockopt IP_HDRINCL");
-			free(to);
-			close(s);
-			return -2;
+
+	/* Set socket options */
+	if (verbose)
+		printf("Setting socket options:\n");
+	for (p = sockopts == NULL ? "" : sockopts; *p != '\0'; p++) {
+		switch (*p) {
+		case 'b':
+			if (verbose)
+				printf(" SO_BROADCAST\n");
+			if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0) {
+				PERROR("Couldn't setsockopt SO_BROADCAST")
+				goto error;
+			}
+			break;
+		case 'i':
+			sethdrincl = FALSE;
+			break;
+		case '6':
+			setipv6opts = FALSE;
+			break;
+		default:
+			DWARN("Invalid socket option '%c' ignored", *p);
+			break;
+		}
+	}
+	if (sethdrincl) {
+		if (verbose)
+			printf(" IP_HDRINCL\n");
+		if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+			PERROR("Couldn't setsockopt IP_HDRINCL")
+			goto error;
+		}
+	}
+	if (setipv6opts) {
+		ipv6_header *iphdr = (ipv6_header *) data->data;
+		if(verbose)
+			printf(" IPV6_UNICAST_HOPS\n");
+		/* Setting various IPV6 header option requires using setsockopt, as
+		   in RFCs 3493, 3542, 2292. */
+		if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+			&(iphdr->ip6_hlim), sizeof(iphdr->ip6_hlim)) < 0)
+		{
+			PERROR("Couldnt set Sock options for IPv6:Hop Limit")
+			goto error;
 		}
 	}
 
@@ -151,22 +177,21 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 		I'm sure this *shouldn't* work.  But it does.
 	*/
 #ifdef __sun
-	if((*((char *)(data->data))&0x0F) != 5) {
-		ip_header *iphdr = (ip_header *)data->data;
+	if ((*((char *) (data->data)) & 0x0F) != 5) {
+		ip_header *iphdr = (ip_header *) data->data;
+		int optlen = iphdr->header_len * 4 - 20;
 
-		int optlen = iphdr->header_len*4-20;
+		if (verbose) {
+			printf(" IP_OPTIONS\n"
+				"Solaris workaround enabled for %d IP option bytes\n", optlen);
+		}
+		iphdr->tot_len = htons(ntohs(iphdr->tot_len) - optlen);
 
-		if(verbose) 
-			printf("Solaris workaround enabled for %d IP option bytes\n", optlen);
-
-		iphdr->tot_len = htons(ntohs(iphdr->tot_len)-optlen);
-
-		if(setsockopt(s,IPPROTO_IP,IP_OPTIONS,
-						  (void *)(((char *)(data->data))+20),optlen)) {
-			perror("Couldn't setsockopt IP_OPTIONS");
-			free(to);
-			close(s);
-			return -2;
+		if (setsockopt(s, IPPROTO_IP, IP_OPTIONS,
+			(char *)(data->data) + 20, optlen))
+		{
+			PERROR("Couldn't setsockopt IP_OPTIONS");
+			goto error;
 		}
 	}
 #endif /* __sun */
@@ -174,15 +199,15 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 	/* Send the packet */
 	sent = sendto(s, (char *)data->data, data->alloc_len, 0, (void *)to, tolen);
 	if (sent == data->alloc_len) {
-		if(verbose) printf("Sent %d bytes to %s\n",sent,hostname);
-	} else {
-		if (sent < 0)
-			perror("sendto");
-		else {
-			if(verbose) fprintf(stderr, "Only sent %d of %d bytes to %s\n", 
-									  sent, data->alloc_len, hostname);
-		}
+		if (verbose)
+			printf("Sent %d bytes to %s\n", sent, hostname);
+	} else if (sent < 0) {
+		PERROR("Packet not sent");
+	} else if (verbose) {
+		DWARN("Only sent %d of %d bytes to %s\n",
+			sent, data->alloc_len, hostname);
 	}
+error:
 	free(to);
 	close(s);
 	return sent;
@@ -191,9 +216,11 @@ static int sendpacket(sendip_data *data, char *hostname, int af_type,
 static void print_usage(void) {
 	sendip_mod_li *e;
 	int i;
+	char lbuf[LINE_MAX];
+
 	printf(
 "\nUsage: %s [-vh] [-d data] [-f datafile] [-l count] [-t time] \\ \n"
-"         \t[-p module]... [module_option]... hostname\n"
+"         \t[-s socket_opts] [-p module]... [module_option]... hostname\n"
 "\n"
 "Packet data, header fields:\n"
 "  fF  .. next line from file F\n"
@@ -203,13 +230,17 @@ static void print_usage(void) {
 "  0xH .. data in hex\n"
 "  0N  .. data in octal\n"
 "  *   .. literal string, decimal number, IP addr, etc. depending on opt type\n"
+"\nSocket options:\n"
+"  b .. set SO_BROADCAST option\n"
+"  i .. IPv4: disable IP header inclusion\n"
+"  6 .. IPv6: disable IPv6 headers (IPV6_UNICAST_HOPS)\n"
 "\n\n"
 "Modules available at compile time:\n"
 "    ipv4 ipv6 icmp tcp udp bgp rip ripng ntp\n"
 "    ah dest esp frag gre hop route sctp wesp\n"
-"\n", progname);
+, progname);
 
-	for(e = first; e != NULL; e = e->next) {
+	for (e = first; e != NULL; e = e->next) {
 		if (e->num_opts == 0)
 			continue;
 		sendip_module *mod = e->mod;
@@ -220,12 +251,14 @@ static void print_usage(void) {
 		else
 			++shortname;
 		printf("\n\nArguments for module %s:\n", shortname);
-		for (i=0; i < e->num_opts; i++) {
-			printf("   -%c%s %c\t%s\n", mod->optchar,
-					  mod->opts[i].optname, mod->opts[i].arg ? 'x' : ' ',
-					  mod->opts[i].description);
+		for (i = 0; i < e->num_opts; i++) {
+			snprintf(lbuf, LINE_MAX, "-%c%s %c", mod->optchar,
+				mod->opts[i].optname, mod->opts[i].arg ? 'x' : ' ');
+			printf("  %10s   %s.", lbuf, mod->opts[i].description);
 			if (mod->opts[i].def)
-				printf("   \t\t  Default: %s\n", mod->opts[i].def);
+				printf("  Default: %s\n", mod->opts[i].def);
+			else
+				printf("\n");
 		}
 	}
 
@@ -255,6 +288,7 @@ main(int argc, char **const argv) {
 	int i;
 
 	struct option *opts = NULL;
+	char *sockopts = NULL;
 	int longindex = 0, usage = 0;
 	char rbuff[31];
 
@@ -291,9 +325,16 @@ main(int argc, char **const argv) {
 	/* First, get all the builtin options, and load the modules */
 	gnuopterr=0; gnuoptind=0;
 	while(gnuoptind < argc
-		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:t:"))))
+		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:s:t:"))))
 	{
 		switch(optc) {
+		case 's':
+			sockopts = strdup(gnuoptarg);
+			if (sockopts == NULL) {
+				PERROR("Couldn't allocate memory for socket options");
+				return 1;
+			}
+			break;
 		case 'l':
 			loopcount = atoi(gnuoptarg);
 			break;
@@ -326,10 +367,10 @@ main(int argc, char **const argv) {
 			break;
 		case 'd':
 			if (datafile == -1) {
-				char *sdata;
+				char sdata[BUFSIZ];
 
 				datarg = gnuoptarg;						/* save for regen */
-				datalen = stringargument(datarg, &sdata);
+				datalen = stringargument(datarg, sdata, BUFSIZ);
 				data = (char *) malloc(datalen);
 				if (data == NULL) {
 					perror("Unable to process option -d ...");
@@ -387,9 +428,9 @@ main(int argc, char **const argv) {
 while (--loopcount >= 0) {
 
 	/* Build the getopt listings */
-	opts = malloc((1+num_opts)*sizeof(struct option));
-	if(opts==NULL) {
-		perror("OUT OF MEMORY!\n");
+	opts = malloc((1 + num_opts) * sizeof(struct option));
+	if (opts == NULL) {
+		PERROR("Unable to process options");
 		return 1;
 	}
 	memset(opts,'\0',(1+num_opts)*sizeof(struct option));
@@ -434,7 +475,7 @@ while (--loopcount >= 0) {
 	gnuoptind=0;
 	current_e = NULL;
 	while(EOF != (optc =
-		_getopt_internal(argc, argv, "p:vd:hf:l:t:", opts, &longindex, 1)))
+		_getopt_internal(argc, argv, "p:vd:hf:l:s:t:", opts, &longindex, 1)))
 	{
 		switch(optc) {
 		case 'p':
@@ -445,6 +486,7 @@ while (--loopcount >= 0) {
 		case 'f':
 		case 'h':
 		case 'l':
+		case 's':
 		case 't':
 			/* Processed above */
 			break;
@@ -522,6 +564,7 @@ while (--loopcount >= 0) {
 		}
 		if (datarg)
 			free(data);
+		free(sockopts);
 		return 0;
 	}
 
@@ -544,7 +587,8 @@ while (--loopcount >= 0) {
 	for (e = first; e != NULL; e = e->next) {
 		packet.alloc_len += e->pack->alloc_len;
 	}
-	if(data != NULL) packet.alloc_len+=datalen;
+	if (data != NULL)
+		packet.alloc_len += datalen;
 	packet.data = malloc(packet.alloc_len);
 	for(i = 0, e = first; e != NULL; e = e->next) {
 		memcpy((char *)packet.data + i, e->pack->data, e->pack->alloc_len);
@@ -554,7 +598,8 @@ while (--loopcount >= 0) {
 	}
 
 	/* Add any data */
-	if(data != NULL) memcpy((char *)packet.data+i,data,datalen);
+	if (data != NULL)
+		memcpy((char *) packet.data + i, data, datalen);
 
 	/* Finalize from inside out */
 	{
@@ -601,28 +646,32 @@ while (--loopcount >= 0) {
 				print_usage();
 				free(packet.data);
 				unload_mods(FALSE, verbosity);
+				free(sockopts);
 				return 1;
 			} else {
 				af_type = AF_INET;
 			}
 		}
-		else if (first->mod->optchar == 'i') af_type = AF_INET;
-		else if (first->mod->optchar == '6') af_type = AF_INET6;
+		else if (first->mod->optchar == 'i')
+			af_type = AF_INET;
+		else if (first->mod->optchar == '6')
+			af_type = AF_INET6;
 		else {
 			fprintf(stderr,"Either IPv4 or IPv6 must be the outermost packet\n");
-			unload_mods(FALSE, verbosity);
 			free(packet.data);
+			unload_mods(FALSE, verbosity);
+			free(sockopts);
 			return 1;
 		}
-		i = sendpacket(&packet,argv[gnuoptind],af_type,verbosity);
+		i = sendpacket(&packet,argv[gnuoptind],af_type,verbosity, sockopts);
 		free(packet.data);
 	}
 	/* Regenerate data on subsequent loop calls */
 	if (loopcount && datarg) {
-		char *sdata;
+		char sdata[BUFSIZ];
 		int newlen;
 
-		newlen = stringargument(datarg, &sdata);
+		newlen = stringargument(datarg, sdata, BUFSIZ);
 		if (newlen > datalen) {
 			free(data);
 			if ((data = (char *) malloc(datalen)) == NULL) {
@@ -645,6 +694,7 @@ while (--loopcount >= 0) {
 	}
 	if (datarg)
 		free(data);
+	free(sockopts);
 
 	return 0;
 }

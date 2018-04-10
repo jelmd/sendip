@@ -9,7 +9,7 @@ sendip \- a tool to send arbitrary IP packets
 .\" no alignment
 .na
 .HP
-\fBsendip\fR [\-h] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-l\ \fInum\fR] [\-t\ time] [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
+\fBsendip\fR [\-h] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-l\ \fInum\fR] [\-t\ time] [\-s sock_opt]... [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
 .\" re-enable hyphenation and aligment
 .ad
 .hy
@@ -37,7 +37,7 @@ either \fBipv4\fR or \fBipv6\fR must be the first module given via CLI options.
 
 Modules may be repeated to create multiple instances of a given header type.
 For example, to create an ipip tunneled packet (ipv4 inside ipv4), do
-sendip\ -p\ ipv4\ \fIouter-header-arguments\fR -p\ ipv4\ \fIinner-header-arguments\fR\ ...
+sendip\ -p\ ipv4\ \fIouter-header-args\fR -p\ ipv4\ \fIinner-header-args\fR\ ...
 
 In the case of repeated modules, arguments are applied to the closest matching
 module in the command line.
@@ -52,6 +52,26 @@ Print a help message and exit.
 .TP
 \-v
 Be verbose.
+.TP
+\-s\ \fIsopt\fR
+Uses the setsockopt() call of the OS to change the flags or values. For now the
+following \fIsopt\fR are supported:
+.RS
+.TP
+\fBb\fR
+Set the \fBSO_BROADCAST\fR flag to 1 (enable/disable permission to transmit
+broadcast messages).
+.TP
+\fBi\fR
+Disable setting the \fBIP_HDRINCL\fR flag to 1 (header is included with data).
+This is probably not what you want.
+.TP
+\fB6\fR
+Disable setting the IPv6 \fBIPV6_UNICAST_HOPS\fR value (hop limit for unicast)
+to the value given via \fBipv6\fR module option \fB\-6h\ \fInum\fR, or if not
+given, to \fB32\fR.
+.RE
+
 .TP
 \-t\ \fItime\fR
 Wait \fItime\fR seconds before generating and sending the next packet (the
@@ -93,16 +113,16 @@ contents of it gets read in and cached as soon as it gets encountered as a
 valid data/option value.
 .TP
 \fBr\fIN\fR
-random. Generate and use \fIN\fR random bytes.
+random. Generate and use \fIN\fR random bytes (N is a decimal number).
 .TP
 \fBz\fIN\fR
-zero. Generate and \fIN\fR zero (nul) bytes.
+zero. Generate and \fIN\fR zero (nul) bytes. (N is a decimal number)
 .TP
 \fBt\fIN\fR
 timestamp. Generate a timestamp (see \fBgettimeofday\fR(3C)) and return the
-first \fIN\fR bytes of it. If \fIN\fR > than the number of bytes produced by
-the timestamp (8 on 32bit, 16 on 64bit) the remaining bytes will be all
-zero (nul) bytes.
+first \fIN\fR bytes of it (N is a decimal number). If \fIN\fR > than the number
+of bytes produced by the timestamp (8 on 32bit, 16 on 64bit) the remaining
+bytes will be all zero (nul) bytes.
 .TP
 \fB0x\fIS\fR or \fB0X\fIS\fR
 hex. Ignore the first two charcaters (zero and letter X or x) and interprete
@@ -120,9 +140,79 @@ The \fIdata\fR string is taken literally.
 Note that the option values for the modules described below often get evaluated
 the same way as \fIdata\fR, however, depending on the type of the option a
 string might not be taken literally, but as a decimal number, IP address, CIDR
-notation and so on. They can be sometimes even a combiation of the formats
+notation and so on. They can be sometimes even a combination of the formats
 mentioned above, e.g. one may use
 "\-p\ ipv4\ \-is\ 10.1.1.r1" to generate random 10.1.1.xx source addresses.
+.RE
+
+.P
+The following terms are used for the value specifications of the module options
+below:
+.RS 2
+.TP
+\fIdnum\fR
+A decimal number, which may start with a sequence of white-space
+characters (which gets get usually ignored), followed by an optional
+'+' or '\-' followed by a sequence of one or more digits from 0 to 9.
+Using anythig else usually results into an error, or the trailing invalid part
+gets ignored, or gets resolved to 0. If a number is not in the expected range,
+it results either in an error, or the spare bytes in front get silently dropped.
+.TP
+\fIrnum\fR
+A "real" number accepts hex (prefix \fB0x\fR or \fB0X\fR),
+octal (prefix \fB0\fR) and decimal numbers (\fIdnum\fR), only.
+Invalid numbers/parts gets usually handled the same way as described
+for \fIdnum\fR.
+.TP
+\fInum\fR
+Accepts usually "real" numbers (\fIrnum\fR) as well as the \fBr\fIN\fR and
+\fBz\fIN\fR generators. Furthermore the \fBf\fIpath\fR can be used, which is
+required to finally resolve to a \fInum\fR.
+Invalid numbers/parts gets usually handled the same way as described
+for \fIdnum\fR.
+.TP
+\fIhex\fR
+A hexadecimal number consists of the \fBoptional\fR prefix \fB0x\fR or \fB0X\fR
+followed by a sequence of the decimal digits and letters a (or A) to f (or F)
+with values 10 to 15 respectively.
+Invalid parts gets usually handled the same way as described for \fIdnum\fR.
+.TP
+\fIv4addr\fR
+An IPv4 address can be given in dot or CIDR notation, or as a single \fInum\fR.
+.RS
+.P
+In \fBdot notation\fB
+\fInum\fB.\fInum\fB.\fInum\fB.\fInum\fR,
+\fInum\fB.\fInum\fB.\fInum\fR, and
+\fInum\fB.\fInum\fR are allowed (a dot (\fB.\fR) without a trailing
+\fInum\fR part is equivalent to \fB.0\fR). The resulting value of each \fInum\fR
+must be in the range of decimal 0..255.
+.P
+When four parts are specified, each part is interpreted as a byte of data and
+assigned from left to right to the four bytes of an IPv4 address.
+.P
+When a three-part address is specified, the last part is interpreted as a
+16-bit quantity and placed in the right most two bytes of the network address.
+.P
+When a two-part address is supplied, the last part is interpreted as a
+24-bit quantity and placed in the right most three bytes of the network address.
+.P
+When only one part, i.e. a \fBsingle \fInum\fR is given, the value is stored
+directly in the network address without any byte rearrangement.
+
+.P
+\fBCIDR notation\fR is similar to the dot notation:
+\fIrnum\fB.\fIrnum\fB.\fIrnum\fB.\fIrnum\fB/\fIrnum\fR.
+All numbers are expected to be in the range from 0 to 255, except the netmask
+(the part after the slash), which needs to be in the range from 1 to 31.
+If the netmask is invalid, it gets silently skipped/ignored.
+The difference to the \fBdot notation\fR is, that the host part (i.e. the
+trailing (32 - netmask) bits) are drawn from a random generator and are never
+all 1s or all 0s, i.e. never produce a broadcast or network address.
+So e.g. 10.1.2.0/24 is the same as 10.1.2.r1, but the latter may replace r1
+with 0 or 255 (the last IP byte). Also skipping any number infront of the slash
+causes it to evaluate to 0x00000000.
+.RE
 .RE
 
 
@@ -591,45 +681,58 @@ Set the UDP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
 
 .SS "rip MODULE OPTIONS"
 .TP
-\-rc\ \fInum\fR
-Set the RIP command {0..15} with 1=request, 2=response, 3=traceon (obsolete), 4=traceoff (obsolete), 5=poll (undocumented), and 6=poll entry (undocumented). Default: 1
-.TP
 \-rv\ \fInum\fR
 Set the RIP \fBversion\fR to \fInum\fR {0..15}. Default: 2
 .TP
-\-ra\ \fIpassword\fR
-Generate a RIP \fBauthentication packet\fR with the given \fIpassword\fR (max.
-16 characters).  Do not use any other RIP options on this RIP header.
+\-rc\ \fInum\fR
+Set the RIP \fBcommand\fR {0..15} with 1=request, 2=response,
+3=traceon (obsolete), 4=traceoff (obsolete), 5=poll (undocumented),
+and 6=poll entry (undocumented).
+Default:\ 1
 .TP
-\-re\ \fIfamily\fB:\fIroute_tag\fB:\fIaddress\fB:\fIsubnet_mask\fB:\fInext_hop\fB:\fImetric\fR
+\-ra\ [\fIauth_type\fB:\fR]\fIpassword\fR
+Add a RIP \fBauthentication\fR entry using the given \fIpassword\fR (max.
+16 characters) and \fIauth_type\fB.
+For default basic authentication \fIauth_type\fR is optional (defaults to 2),
+but because a colon (\fB:\fR) is used as value delimiter, it is
+mandatory if the password contains a colon!
+Also note, that for RIP-2 requests this should be the first entry in the
+request.
+.TP
+\-re\ \fIfamily\fB|\fItag\fB|\fIaddress\fB|\fImask\fB|\fInext\fB|\fImetric\fR
 Add a \fBRIP entry\fR using the given information. If a field is missing (empty
-string), a default value will be used instead.
+string), the corresponding value from the default value will be used instead.
 .RS
 .TP
 \fIfamily\fR
-The family value to set {0..0xffff}. Should be 0xffff for authentication entry,
-2 otherwise. Default: 2
+The address family value to set {0..0xffff}. Should be 0xffff for
+authentication entry, 2 otherwise. Default:\ 2
 .TP
-\fIroute_tag\fR
-The route tag to set {0..0xffff}. Default: 0
+\fItag\fR
+The route or authentication tag to set {0..0xffff}. Default:\ 0
 .TP
 \fIaddress\fR
-A normal inet address. Default: 0.0.0.0
+A normal inet address. Default:\ 0.0.0.0
 .TP
-\fIsubnet_mask\fR
-The subnet mask for the \fIaddress\fR. Default: 255.255.255.0
+\fImask\fR
+The subnet mask for the \fIaddress\fR. Default:\ 255.255.255.0
 .TP
-\fInext_hop\fR
-The inet address of the next hop. Default: 0.0.0.0
+\fInext\fR
+The inet address of the next hop. Default:\ 0.0.0.0
 .TP
 \fImetric\fR
-The distance indicator to set {0..0xffffffff}. Default: 16
+The distance indicator to set {0..0xffffffff}. Default:\ 16
 .RE
 .TP
 \-rd
-Populate all fields with values for a default RIP request: get router's entire
-routing table, do not use any other RIP options on this RIP header. Same as
-\-rc\ 1 \-re\ 0\fB:\fR0\fB:\fR0.0.0.0\fB:\fR0.0.0.0\fB:\fR16
+Create a RIP \fBdefault request\fR, i.e. get router's entire routing table.
+Do not use any other RIP options on this RIP header. Is the same as
+\-rc\ 1\ \-re\ 0\fB|\fR0\fB|\fR0.0.0.0\fB|\fR0.0.0.0\fB|\fR16
+.TP
+\-rr\ \fInum\fR
+Set the value of the \fBreserved\fR field to \fInum\fR {0..0xffff}.
+Default:\ 0
+
 
 
 .SS "ntp MODULE OPTIONS"
@@ -749,9 +852,10 @@ Set the TCP option \fBwindow scale\fR to \fInum\fR {0..255} (rfc1323).
 \-tosackok
 Set the TCP option \fBallow selective ack\fR (rfc2018).
 .TP
-\-tosack\ \fIl_edge\fB:\fIr_edge\fR[\fB,\fIl_edge\fB:\fIr_edge\fR]...
+\-tosack\ \fInum\fB:\fInum\fR[\fB,\fInum\fB:\fInum\fR]...
 Set the TCP option \fBselective ack\fR (rfc2018) to the given value(s).
-The left and right edge are in the range of {0..0xffff}.
+The left and right edge are in the range of {0..0xffffffff}. If a value
+is missing (i.e. empty string), it is considered to be zero.
 .TP
 \-tots\ \fIval\fB:\fIsecr\fR
 Set the TCP option \fBtimestamp\fR (rfc1323) to \fIval\fR and \fIsecr\fR,
@@ -763,12 +867,19 @@ both in the range of {0..0xffff}.
 \-bm\ \fIhex\fR[\fB:\fIhex\fR]...
 Set the \fBBGP Marker\fR field to the given value. Each \fIhex\fR value
 represents 8 bits so {0..ff}. Not more than 16 \fIhex\fR values will be read!
+If less than 16 \fIhex\fR values are given, no adjustments will be made, i.e.
+an invalid, too short marker will be used.
+Beside the colon (\fB:\fR) one may use any non-hex ASCII character
+except '\0' as delimiter, but remember quoting if whitespaces are used and
+that leading whitespaces get chomped and thus one may loose bounderies.
+Empty or invalid strings are handled as \fB0\fR, so e.g. '::'
+becomes '00:00:00'.
 Default:\ FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF
 .TP
-\-bl\ \fInum\fR
+\-bl\ \fIdnum\fR
 Set the total \fBMessage Length\fR to \fInum\fR {0..65535}. Default: auto
 .TP
-\-bt\ \fInum\fR
+\-bt\ \fIrnum\fR
 Set the \fBMessage Type\fR to \fInum\fR {0..255} (1 OPEN, 2 UPDATE,
 3 NOTIFICATION, 4 KEEPALIVE). Default: 4 (KEEPALIVE)
 .TP
@@ -804,8 +915,7 @@ are:
 The parameter type {0..255}.
 .TP
 \fIlength\fR
-The length in octest of the parameter value. If omitted its
-value gets determined autmatically.
+The length of the parameter value in octets. Default:\ auto
 .TP
 \fIvalue\fR
 A sequence of max. 255 bytes given as \fIhex\fR values separated by a

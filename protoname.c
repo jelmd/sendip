@@ -69,7 +69,8 @@ proto_to_name(u_int8_t proto, int nolookup) {
 	return NULL;
 }
 
-u_int8_t name_to_proto(char *s) {
+u_int8_t
+name_to_proto(const char *s) {
 	unsigned int proto = 0;
 	struct protoent *pent;
 

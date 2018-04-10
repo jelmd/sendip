@@ -22,10 +22,10 @@ const char opt_char='6';
 sendip_data *initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	ipv6_header *ipv6 = malloc(sizeof(ipv6_header));
-	memset(ipv6,0,sizeof(ipv6_header));
+	memset(ipv6, 0, sizeof(ipv6_header));
 	ret->alloc_len = sizeof(ipv6_header);
-	ret->data = (void *)ipv6;
-	ret->modified=0;
+	ret->data = ipv6;
+	ret->modified = 0;
 	return ret;
 }
 
@@ -38,7 +38,7 @@ bool set_addr(char *hostname, sendip_data *pack) {
 	if(!(pack->modified & IPV6_MOD_DST)) {
 		if(host==NULL) return FALSE;
 		if(host->h_length != sizeof(ipv6->ip6_dst)) {
-			fprintf(stderr,"IPV6 destination address is the wrong size!!!");
+			ERROR("IPV6 destination address is the wrong size!!!")
 			return FALSE;
 		}
 		memcpy(&(ipv6->ip6_dst),host->h_addr,host->h_length);
@@ -46,7 +46,7 @@ bool set_addr(char *hostname, sendip_data *pack) {
 	return TRUE;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	ipv6_header *hdr = (ipv6_header *)pack->data;
 	struct in6_addr addr;
 

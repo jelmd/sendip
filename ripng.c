@@ -29,13 +29,12 @@ static struct in6_addr inet6_addr(char *hostname) {
 		return in6addr_any;
 	host = gethostbyname2(hostname, AF_INET6);
 	if (host == NULL) {
-		fprintf(stderr, "RIPNG: Couldn't get address for %s defaulting to"
-			 "loopback", hostname);
+		DERROR("RIPng: Couldn't get address for %s defaulting to loopback",
+			hostname)
 		return in6addr_loopback;
 	}
 	if (host->h_length != sizeof(struct in6_addr)) {
-		fprintf(stderr, "RIPNG: IPV6 address is the wrong size: defaulting to "
-		   "loopback");
+		DERROR("RIPng: IPV6 address is the wrong size: defaulting to loopback")
 		return in6addr_loopback;
 	}
 	memcpy(&ret, host->h_addr, sizeof(ret));
@@ -52,63 +51,50 @@ sendip_data *initialize(void) {
 	return ret;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+#define NEXT_FIELD \
+	p = (c == '|') ? ++q : q; \
+	while (*q != '|' && *q != '\0') { q++; } \
+	len = q - p; \
+	c = *q; \
+	*q = '\0';
+
+bool
+do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	ripng_header *rippack = (ripng_header *) pack->data;
 	ripng_entry *ripopt;
-	char *p, *q;
+	char *p, *q, c = '\0';
+	int len;
+
 	switch(opt[1]) {
 	case 'v': /* version */
-		rippack->version = (u_int8_t) strtoul(arg, (char **) 0, 0);
+		rippack->version = hostintegerargument(arg, 1);
 		pack->modified |= RIPNG_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = (u_int8_t) strtoul(arg, (char **) 0, 0);
+		rippack->command = hostintegerargument(arg, 1);
 		pack->modified |= RIPNG_MOD_COMMAND;
 		break;
 	case 'r': /* reserved */
-		rippack->res = htons((u_int16_t) strtoul(arg, (char **) 0, 0));
+		rippack->res = integerargument(arg, 2);
 		pack->modified |= RIPNG_MOD_RESERVED;
 		break;
-		/*
-	case 'a': / * authenticate * /
-		if(RIPNG_NUM_ENTRIES(pack) != 0) {
-			usage_error("Warning: a real RIP-2 packet only has authentication on the first entry.\n");
-		}
-		pack->modified |= RIP_IS_AUTH;
-		pack->data = realloc(pack->data,pack->alloc_len+strlen(arg));
-		strcpy(pack->data+pack->alloc_len,arg);
-		pack->alloc_len += strlen(arg);
-		break;
-		*/
 	case 'e': /* rip entry */
 		RIPNG_ADD_ENTRY(pack);
 		ripopt = RIPNG_ENTRY(pack);
-
-		p = q = arg;
-		/* TODO: if arg is malformed, this could segfault */
-		while (*(q++) != '/') { /* do nothing */ }
-		*(--q) = '\0';
-		ripopt->prefix = (p == q) ? inet6_addr(NULL) : inet6_addr(p);
-
-		p = ++q;
-		while (*(q++) != '/') { /* do nothing */ }
-		*(--q) = '\0';
-		ripopt->tag = htons(p == q ? 0 : (u_int16_t) strtoul(p, (char **) 0,0));
-
-		p = ++q;
-		while (*(q++) != '/') { /* do nothing */ }
-		*(--q) = '\0';
-		ripopt->len = (u_int8_t) (p == q ? 128 : strtoul(p, (char **) 0, 0));
-
-		p = ++q;
-		while (*(q++) != '\0') { /* do nothing */ }
-		*(--q) = '\0';
-		ripopt->metric = (u_int8_t) (p == q ? 16 : strtoul(p, (char **) 0, 0));
+		q = strdup(arg == NULL ? "" : arg);
+		NEXT_FIELD
+		ripopt->prefix = inet6_addr(len == 0 ? NULL : p);
+		NEXT_FIELD
+		ripopt->tag = len == 0 ? 0 : integerargument(p, 2);
+		NEXT_FIELD
+		ripopt->len = len == 0 ? 128 : hostintegerargument(p, 1);
+		NEXT_FIELD
+		ripopt->metric = len == 0 ? 16 : hostintegerargument(p, 1);
 		break;
 	case 'd': /* default request */
-		if(RIPNG_NUM_ENTRIES(pack) != 0) {
-			usage_error("Warning: a real RIPng packet does not have any other "
-				"entries in a default request.\n");
+		if (RIPNG_NUM_ENTRIES(pack) != 0) {
+			WARN("Warning: a real RIPng packet does not have any other "
+				"entries in a default request.")
 		}
 		rippack->command = (u_int8_t) 1;
 		rippack->version = (u_int8_t) 1;
@@ -127,23 +113,28 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 
 }
 
-bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
+bool
+finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
 	int index, __attribute__((unused)) sendip_data *data,
 	__attribute__((unused)) sendip_data *pack)
 {
-	if (hdrs[index-1] != 'u') {
-		usage_error("Warning: RIPng should be contained in a UDP packet\n");
+	if (hdrs[index - 1] != 'u') {
+		WARN("RIPng should be contained in an UDP packet");
 	}
-
 	return TRUE;
 }
 
-int num_opts() {
+int
+num_opts() {
 	return sizeof(rip_opts) / sizeof(sendip_option);
 }
-sendip_option *get_opts() {
+
+sendip_option *
+get_opts() {
 	return rip_opts;
 }
-char get_optchar() {
+
+char
+get_optchar() {
 	return opt_char;
 }

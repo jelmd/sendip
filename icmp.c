@@ -74,14 +74,14 @@ static void icmp6csum(struct in6_addr *src, struct in6_addr *dst,
 sendip_data *initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	icmp_header *icmp = malloc(sizeof(icmp_header));
-	memset(icmp,0,sizeof(icmp_header));
+	memset(icmp, 0, sizeof(icmp_header));
 	ret->alloc_len = sizeof(icmp_header);
-	ret->data = (void *)icmp;
-	ret->modified=0;
+	ret->data = icmp;
+	ret->modified = 0;
 	return ret;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	icmp_header *icp = (icmp_header *)pack->data;
 	switch(opt[1]) {
 	case 't':

@@ -46,11 +46,11 @@ initialize(void)
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	ah_header *ah = (ah_header *) pack->data;
 	ah_private *priv = (ah_private *) pack->private;
-	char *temp;
+	char temp[BUFSIZ];
 	int length;
 
 	switch(opt[1]) {
@@ -66,7 +66,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		/* For right now, we will do either random generation
 		 * or a user-provided string.
 		 */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		pack->data = realloc(ah, sizeof(ah_header)+length);
 		pack->alloc_len = sizeof(ah_header)+length;
 		ah = (ah_header *)pack->data;
@@ -76,7 +76,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		pack->modified |= AH_MOD_AUTHDATA;
 		break;
 	case 'k':       /* Key */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		priv->keylen = length;
 		priv = (ah_private *) realloc(priv, sizeof(ah_private) + length);
 		memcpy(priv->key, temp, priv->keylen);

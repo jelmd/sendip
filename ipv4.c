@@ -96,10 +96,10 @@ static void addoption(u_int8_t copy, u_int8_t class, u_int8_t num,
 sendip_data *initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	ip_header *ip = malloc(sizeof(ip_header));
-	memset(ip,0,sizeof(ip_header));
+	memset(ip, 0, sizeof(ip_header));
 	ret->alloc_len = sizeof(ip_header);
-	ret->data = (void *)ip;
-	ret->modified=0;
+	ret->data = ip;
+	ret->modified = 0;
 	return ret;
 }
 
@@ -120,7 +120,7 @@ bool set_addr(char *hostname, sendip_data *pack) {
 	return TRUE;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
+bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	ip_header *iph = (ip_header *)pack->data;
 	switch(opt[1]) {
 	case 's':
@@ -203,18 +203,21 @@ bool do_opt(char *opt, char *arg, sendip_data *pack) {
 		if(!strcmp(opt+2, "num")) {
 			/* Other options (auto length) */
 			u_int8_t cp, cls, num, len;
-			u_int8_t *data = malloc(strlen(arg)+2);
-			if(!data) {
-				fprintf(stderr,"Out of memory!\n");
+			char *src = malloc(strlen(arg) + 3);
+			char *dst = malloc(strlen(arg) >> 1 + 2);
+			if (src == NULL || dst == NULL) {
+				PERROR("Unable to process ipv4 '-o num' option");
+				free(src); free(dst);
 				return FALSE;
 			}
-			sprintf((char*)data,"0x%s",arg);
-			len = compact_string((char*)data);
-			cp=(*data&0x80)>>7;
-			cls=(*data&0x60)>>5;
-			num=(*data&0x1F);
-			addoption(cp,cls,num,len+1,data+1,pack);
-			free(data);
+			sprintf(src, "0x%s", arg);
+			len = compact_string(src, dst, sizeof(dst));
+			cp =  (*dst & 0x80) >> 7;
+			cls = (*dst & 0x60) >> 5;
+			num = (*dst & 0x1F);
+			addoption(cp, cls, num, len + 1, (u_int8_t *) dst + 1, pack);
+			free(src);
+			free(dst);
 		} else if(!strcmp(opt+2, "eol")) {
 			/* End of list */
 			addoption(0,0,0,1,NULL,pack);

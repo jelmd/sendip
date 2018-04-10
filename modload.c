@@ -33,7 +33,7 @@ static crypto_mod_entry *first_crypto = NULL;
 static crypto_mod_entry *last_crypto = NULL;
 
 static void *
-dlopen_module(char *modname) {
+dlopen_module(const char *modname) {
 	static char *libdir = NULL;
 	char name[MAXPATHLEN];
 	void *handle;
@@ -70,7 +70,7 @@ dlopen_module(char *modname) {
 }
 
 crypto_module *
-load_crypto_module(char *modname) {
+load_crypto_module(const char *modname) {
 	crypto_module *newmod;
 	crypto_mod_entry *cur;
 	void *handle;
@@ -138,7 +138,7 @@ load_crypto_module(char *modname) {
 }
 
 sendip_module *
-load_sendip_module(char *modname, int *cached) {
+load_sendip_module(const char *modname, int *cached) {
 	sendip_module *newmod;
 	sendip_mod_entry *cur;
 	void *handle;

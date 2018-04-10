@@ -80,7 +80,7 @@ frag_getflags(frag_header *frag)
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	frag_header *frag = (frag_header *)pack->data;
 	u_int32_t value;

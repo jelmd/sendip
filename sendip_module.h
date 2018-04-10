@@ -2,6 +2,9 @@
 #define _SENDIP_MODULE_H
 
 #include <stdbool.h>
+#ifndef LINE_MAX
+#define LINE_MAX 2048	/* single option value is usually not longer [bytes] */
+#endif
 
 /* Options */
 typedef struct {
@@ -36,7 +39,7 @@ typedef struct {
 /* Prototypes */
 #ifndef _SENDIP_MAIN
 sendip_data *initialize(void);
-bool do_opt(char *optstring, char *optarg, sendip_data *pack);
+bool do_opt(const char *optstring, const char *optarg, sendip_data *pack);
 bool set_addr(char *hostname, sendip_data *pack);
 bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
 				  sendip_data *pack);

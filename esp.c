@@ -49,11 +49,11 @@ initialize(void)
 }
 
 bool
-do_opt(char *opt, char *arg, sendip_data *pack)
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	esp_header *esp = (esp_header *)pack->data;
 	esp_private *priv = (esp_private *)pack->private;
-	char *temp;
+	char temp[BUFSIZ];
 	int length;
 
 	switch(opt[1]) {
@@ -90,7 +90,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		 * where in finalize it will constitute the beginning
 		 * of the payload area.
 		 */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		priv->ivlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
@@ -107,7 +107,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		 * or a user-provided string. We put it in the header,
 		 * then move it into the trailer in finalize.
 		 */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		priv->icvlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
@@ -116,7 +116,7 @@ do_opt(char *opt, char *arg, sendip_data *pack)
 		pack->modified |= ESP_MOD_ICV;
 		break;
 	case 'k':	/* Key */
-		length = stringargument(arg, &temp);
+		length = stringargument(arg, temp, BUFSIZ);
 		priv->keylen = length;
 		priv = (esp_private *) realloc(priv, sizeof(esp_private) + length);
 		memcpy(priv->key, temp, priv->keylen);
