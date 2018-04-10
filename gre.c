@@ -219,7 +219,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= GRE_MOD_VERSION;
 		break;
 	case 'p':
-		gre->gre_protocol = integerargument(arg, 2);
+		gre->gre_protocol = opt2intn(arg, 2);
 		pack->modified |= GRE_MOD_PROTOCOL;
 		break;
 	case 'o':

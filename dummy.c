@@ -47,7 +47,7 @@
  *      the header file.  Typically, the code will look a lot like:
  *      case 'option':
  *        header->thing = htons((u_int16_t)strtoul(arg, (char **)NULL, 0)); //OR
- *        header->thing = integerargument(arg, 2);  // 2 for 16-bit OR
+ *        header->thing = opt2intn(arg, 2);         // 2 for 16-bit OR
  *        header->thing = hostargument(arg, 2);     // if not byte-swapped
  *        pack->modified |= FOO_MOD_THING;
  *        break;
@@ -55,7 +55,7 @@
  *      to take a look in ipv4.c or tcp.c - specifically where they add IPV4 or
  *      TCP options.
  *      Make sure you use htons and htonl everywhere you need to avoid
- *      byteorder problems. For input arguments the functions in compact.c
+ *      byteorder problems. For input arguments the functions in parseargs.c
  *      usually take care of it.
  *      -opt contains the option string, including the starting opt_char
  *      -arg contains any argument given
@@ -76,17 +76,18 @@
  *      -pack contains our headers.
  *    - You might, possibly, find the following functions useful.  They are
  *      automatically available to all modules:
- *      -int compact_string(char *string);
+ *      -int str2val(char *in, const char *out, size_t free);
  *       For strings starting 0x or 0X, converts each pair of bytes thereafter
  *       to a single byte of that hex value.  For other strings starting 0,
  *       converts sets of 3 bytes to a single byte of that octal value.  For
  *       all other strings, does nothing.  Returns the length of the final
  *       string.  This is recomended when parsing arbitrary data (like the -d
  *       option of sendip, -tonum for arbitrary TCP options)
- *      -int stringargument(char *input, char **output);
- *       The "standard" string argument routine - does either compact_string
- *       above, or for strings of the form rN, returns N random bytes, or
- *       for strings of the form zN, returns N nul (zero) bytes.
+ *      -int opt2val(char *output, const char *input, size_t outlen);
+ *       The "standard" string argument routine - does either str2val
+ *       above, or for strings of the form rN and zN, generates N random or
+ *       nul (zero) bytes respectively, or fPATH, which gets replaced by the
+ *       value read from a line in PATH (see fargs.c for more info).
  *      -u_int16_t csum(u_int16_t *data, int len)
  *       returns the standard internet checksum of the packet
  *    - If something doesn't work as expected, or you can't figure out how to

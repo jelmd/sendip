@@ -69,7 +69,7 @@ static u_int8_t buildroute(char *data) {
 		if(next) {
 			*(next++)=0;
 		}
-		ip = ipv4argument(data_in, strlen(data_in));
+		ip = opt2v4(data_in, strlen(data_in));
 		memcpy(data_out,&ip,4);
 		data_out+=4;
 		data_in = next;
@@ -124,11 +124,11 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	ip_header *iph = (ip_header *)pack->data;
 	switch(opt[1]) {
 	case 's':
-		iph->saddr = ipv4argument(arg, strlen(arg));
+		iph->saddr = opt2v4(arg, strlen(arg));
 		pack->modified |= IP_MOD_SADDR;
 		break;
 	case 'd':
-		iph->daddr = ipv4argument(arg, strlen(arg));
+		iph->daddr = opt2v4(arg, strlen(arg));
 		pack->modified |= IP_MOD_DADDR;
 		break;
 	case 'h':
@@ -148,14 +148,14 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		 * in FreeBSD have to be passed in host, rather than network byte order.
 		 * They are flipped (if need be) in the kernel before transmission. */
 #ifdef __FreeBSD
-		iph->tot_len = hostintegerargument(arg, 2);
+		iph->tot_len = opt2inth(arg, 2);
 #else
-		iph->tot_len = integerargument(arg, 2);
+		iph->tot_len = opt2intn(arg, 2);
 #endif
 		pack->modified |= IP_MOD_TOTLEN;
 		break;
 	case 'i':
-		iph->id = integerargument(arg, 2);
+		iph->id = opt2intn(arg, 2);
 		pack->modified |= IP_MOD_ID;
 		break;
 	case 'f':
@@ -187,15 +187,15 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		}
 		break;
 	case 't':
-		iph->ttl = integerargument(arg, 1);
+		iph->ttl = opt2intn(arg, 1);
 		pack->modified |= IP_MOD_TTL;
 		break;
 	case 'p':
-	   iph->protocol = integerargument(arg, 1);
+	   iph->protocol = opt2intn(arg, 1);
 		pack->modified |= IP_MOD_PROTOCOL;
 		break;
 	case 'c':
-		iph->check = integerargument(arg, 2);
+		iph->check = opt2intn(arg, 2);
 		pack->modified |= IP_MOD_CHECK;
 		break;
 	case 'o':
@@ -204,14 +204,14 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			/* Other options (auto length) */
 			u_int8_t cp, cls, num, len;
 			char *src = malloc(strlen(arg) + 3);
-			char *dst = malloc(strlen(arg) >> 1 + 2);
+			char *dst = malloc((strlen(arg) >> 1) + 2);
 			if (src == NULL || dst == NULL) {
 				PERROR("Unable to process ipv4 '-o num' option");
 				free(src); free(dst);
 				return FALSE;
 			}
 			sprintf(src, "0x%s", arg);
-			len = compact_string(src, dst, sizeof(dst));
+			len = str2val(dst, src, sizeof(dst));
 			cp =  (*dst & 0x80) >> 7;
 			cls = (*dst & 0x60) >> 5;
 			num = (*dst & 0x1F);
@@ -342,14 +342,14 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 						return FALSE;
 					}
 					*(next++)=0;
-					ip = ipv4argument(data_in, next-data_in);
+					ip = opt2v4(data_in, next-data_in);
 					memcpy(data_out,&ip,4);
 					data_out+=4;
 					data_in = next;
 				}
 				next=strchr(next,':');
 				if(next) *(next++)=0;
-				ts = integerargument(data_in, 4);
+				ts = opt2intn(data_in, 4);
 				memcpy(data_out,&ts,4);
 				data_out+=4;
 				data_in = next;
@@ -385,7 +385,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			}
 		} else if(!strcmp(opt+2, "sid")) {
 			/* Stream ID (RFC791) */
-			u_int16_t sid = integerargument(arg, 2);
+			u_int16_t sid = opt2intn(arg, 2);
 			addoption(1,0,8,4,(u_int8_t *)&sid,pack);
 		} else if(!strcmp(opt+2, "ssr")) {
 			/* Strict Source Route 

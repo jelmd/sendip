@@ -110,19 +110,19 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch(opt[1]) {
 	case 's':
-		tcp->source = integerargument(arg, 2);
+		tcp->source = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_SOURCE;
 		break;
 	case 'd':
-		tcp->dest = integerargument(arg, 2);
+		tcp->dest = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_DEST;
 		break;
 	case 'n':
-		tcp->seq = integerargument(arg, 4);
+		tcp->seq = opt2intn(arg, 4);
 		pack->modified |= TCP_MOD_SEQ;
 		break;
 	case 'a':
-		tcp->ack_seq = integerargument(arg, 4);
+		tcp->ack_seq = opt2intn(arg, 4);
 		pack->modified |= TCP_MOD_ACKSEQ;
 		if (!(pack->modified & TCP_MOD_ACK)) {
 			tcp->ack = 1;
@@ -130,11 +130,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		}
 		break;
 	case 't':
-		tcp->off = integerargument(arg, 1) & 0xF;
+		tcp->off = opt2intn(arg, 1) & 0xF;
 		pack->modified |= TCP_MOD_OFF;
 		break;
 	case 'r':
-		tcp->res = integerargument(arg, 1) & 0xF;
+		tcp->res = opt2intn(arg, 1) & 0xF;
 		pack->modified |= TCP_MOD_RES;
 		break;
 	case 'f':
@@ -177,15 +177,15 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		}
 		break;
 	case 'w':
-		tcp->window = integerargument(arg, 2);
+		tcp->window = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_WINDOW;
 		break;
 	case 'c':
-		tcp->check = integerargument(arg, 2);
+		tcp->check = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_CHECK;
 		break;
 	case 'u':
-		tcp->urg_ptr = integerargument(arg, 2);
+		tcp->urg_ptr = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_URGPTR;
 		if(!(pack->modified&TCP_MOD_URG)) {
 			tcp->urg = 1;
@@ -198,14 +198,14 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			/* Other options (auto length) */
 			int len;
 			char *src = malloc(strlen(arg) + 3);
-			char *dst = malloc(strlen(arg) >> 1 + 2);
+			char *dst = malloc((strlen(arg) >> 1) + 2);
 			if (src == NULL || dst == NULL) {
 				PERROR("Unable to process tcp '-o num' option")
 				free(src); free(dst);
 				return FALSE;
 			}
 			sprintf(src, "0x%s", arg);
-			len = compact_string(src, dst, sizeof(dst));
+			len = str2val(dst, src, sizeof(dst));
 			if (len == 1)
 				addoption(*dst, 1, NULL, pack);
 			else
@@ -220,11 +220,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			addoption(1, 1, NULL, pack);
 		} else if (strcmp(opt + 2, "mss") == 0) {
 			/* Maximum segment size RFC 793 kind 2 */
-			u_int16_t mss = integerargument(arg, 2);
+			u_int16_t mss = opt2intn(arg, 2);
 			addoption(2, 4, (u_int8_t *) &mss, pack);
 		} else if (strcmp(opt + 2, "wscale") == 0) {
 			/* Window scale rfc1323 */
-			u_int8_t wscale = hostintegerargument(arg, 1);
+			u_int8_t wscale = opt2inth(arg, 1);
 			addoption(3, 3, &wscale, pack);
 		} else if (strcmp(opt + 2, "sackok") == 0) {
 			/* Selective Acknowledge permitted rfc1323 */
@@ -269,14 +269,14 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				if (*q == ':') {
 					if (e != 0) { SACKERR }
 					q = '\0';
-					le = integerargument(p, 4);
+					le = opt2intn(p, 4);
 					p = ++q;
 					e++;
 				} else if (*q == ',' || *q == '\0') {
 					if (e == 0) { le = 0; } else if (e > 1) { SACKERR }
 					c = *q;
 					q = '\0';
-					re = integerargument(p, 4);
+					re = opt2intn(p, 4);
 					memcpy(cpos, &le, 4);
 					cpos += 4;
 					memcpy(cpos, &re, 4);

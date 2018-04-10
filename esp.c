@@ -58,11 +58,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 	switch(opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		esp->hdr.spi = integerargument(arg, 4);
+		esp->hdr.spi = opt2intn(arg, 4);
 		pack->modified |= ESP_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		esp->hdr.seq_no = integerargument(arg, 4);
+		esp->hdr.seq_no = opt2intn(arg, 4);
 		pack->modified |= ESP_MOD_SEQUENCE;
 		break;
 	case 'p':	/* padding (variable length) */
@@ -90,7 +90,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		 * where in finalize it will constitute the beginning
 		 * of the payload area.
 		 */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		priv->ivlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
@@ -107,7 +107,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		 * or a user-provided string. We put it in the header,
 		 * then move it into the trailer in finalize.
 		 */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		priv->icvlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
@@ -116,7 +116,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ESP_MOD_ICV;
 		break;
 	case 'k':	/* Key */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		priv->keylen = length;
 		priv = (esp_private *) realloc(priv, sizeof(esp_private) + length);
 		memcpy(priv->key, temp, priv->keylen);

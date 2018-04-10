@@ -4,7 +4,7 @@
 #include "csum.h"
 #include "protoname.h"
 #include "fargs.h"
-#include "compact.h"
+#include "parseargs.h"
 #include "headers.h"
 
 #endif  /* _COMMON_H */

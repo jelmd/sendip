@@ -196,3 +196,6 @@ Changes between sendip-2.5-mec-3 and sendip-2.6.0-jel
 * make option handling reliable - do not allow to modify the original value
   by using 'const char *' (jelmd)
 * misc fixes + code cleanups (jelmd)
+
+Changes between sendip-2.6.0-jel and sendip-2.6.1-jel
+* rename aweful long function names in compact.c and merge it to parseargs.*

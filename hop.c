@@ -168,7 +168,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'r':	/* router alert */
 		pack->modified |= HOP_MOD_RA;
-		svalue = integerargument(arg, 2);
+		svalue = opt2intn(arg, 2);
 		hopt = (struct ipv6_hopopt *)
 			malloc(sizeof(struct ipv6_hopopt) + 2);
 		hopt->hopt_type = IPV6_TLV_ROUTERALERT;
@@ -180,7 +180,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'j':	/* jumbo frame length */
 		pack->modified |= HOP_MOD_JUMBO;
-		value = integerargument(arg, 4);
+		value = opt2intn(arg, 4);
 		hopt = (struct ipv6_hopopt *)
 			malloc(sizeof(struct ipv6_hopopt) + 4);
 		hopt->hopt_type = IPV6_TLV_JUMBO;
@@ -237,7 +237,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack)
 		arg = index(arg, '.');
 		if (arg) {
 			++arg;
-			length = stringargument(arg, temp, BUFSIZ);
+			length = opt2val(temp, arg, BUFSIZ);
 		} else {
 			length = 0;
 		}

@@ -43,11 +43,11 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch(opt[1]) {
 	case 'v': /* version */
-		rippack->version = integerargument(arg, 1);
+		rippack->version = opt2intn(arg, 1);
 		pack->modified |= RIP_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = integerargument(arg, 1);
+		rippack->command = opt2intn(arg, 1);
 		pack->modified |= RIP_MOD_COMMAND;
 		break;
 	case 'a': /* authenticate */
@@ -61,7 +61,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		s = q = strdup(arg == NULL ? "" : arg);
 		NEXT_FIELD
 		ripopt->routeTagOrAuthenticationType =
-			integerargument(c == '|' ? p : "2", 2);
+			opt2intn(c == '|' ? p : "2", 2);
 		if (c == '|') {
 			NEXT_FIELD
 		}
@@ -84,18 +84,18 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		ripopt = RIP_OPTION(pack);
 		s = q = strdup(arg == NULL ? "" : arg);
 		NEXT_FIELD
-		ripopt->addressFamily = integerargument(len == 0 ? "2" : p, 2);
+		ripopt->addressFamily = opt2intn(len == 0 ? "2" : p, 2);
 		NEXT_FIELD
 		ripopt->routeTagOrAuthenticationType =
-			integerargument(len == 0 ? "2" : p, 2);
+			opt2intn(len == 0 ? "2" : p, 2);
 		NEXT_FIELD
-		ripopt->address = ipv4argument(len == 0 ? "0.0.0.0" : p, 4);
+		ripopt->address = opt2v4(len == 0 ? "0.0.0.0" : p, 4);
 		NEXT_FIELD
-		ripopt->subnetMask = ipv4argument(len == 0 ? "255.255.255.0" : p, 4);
+		ripopt->subnetMask = opt2v4(len == 0 ? "255.255.255.0" : p, 4);
 		NEXT_FIELD
-		ripopt->nextHop = ipv4argument(len == 0 ? "0.0.0.0" : p, 4);
+		ripopt->nextHop = opt2v4(len == 0 ? "0.0.0.0" : p, 4);
 		NEXT_FIELD
-		ripopt->metric = integerargument(len == 0 ? p : "16", 4);
+		ripopt->metric = opt2intn(len == 0 ? p : "16", 4);
 		free(s);
 		break;
 	case 'd': /* default request */
@@ -113,7 +113,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		ripopt->metric = htons((u_int16_t) 16);
 		break;
 	case 'r': /* set reserved field */
-		rippack->res = integerargument(arg, 2);
+		rippack->res = opt2intn(arg, 2);
 		pack->modified |= RIP_MOD_RESERVED;
 		break;
 	default:

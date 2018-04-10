@@ -85,15 +85,15 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	icmp_header *icp = (icmp_header *)pack->data;
 	switch(opt[1]) {
 	case 't':
-		icp->type = integerargument(arg, 1);
+		icp->type = opt2intn(arg, 1);
 		pack->modified |= ICMP_MOD_TYPE;
 		break;
 	case 'd':
-		icp->code = integerargument(arg, 1);
+		icp->code = opt2intn(arg, 1);
 		pack->modified |= ICMP_MOD_CODE;
 		break;
 	case 'c':
-		icp->check = integerargument(arg, 2);
+		icp->check = opt2intn(arg, 2);
 		pack->modified |= ICMP_MOD_CHECK;
 		break;
 	}

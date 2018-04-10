@@ -67,15 +67,15 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch(opt[1]) {
 	case 'v': /* version */
-		rippack->version = hostintegerargument(arg, 1);
+		rippack->version = opt2inth(arg, 1);
 		pack->modified |= RIPNG_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = hostintegerargument(arg, 1);
+		rippack->command = opt2inth(arg, 1);
 		pack->modified |= RIPNG_MOD_COMMAND;
 		break;
 	case 'r': /* reserved */
-		rippack->res = integerargument(arg, 2);
+		rippack->res = opt2intn(arg, 2);
 		pack->modified |= RIPNG_MOD_RESERVED;
 		break;
 	case 'e': /* rip entry */
@@ -85,11 +85,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		NEXT_FIELD
 		ripopt->prefix = inet6_addr(len == 0 ? NULL : p);
 		NEXT_FIELD
-		ripopt->tag = len == 0 ? 0 : integerargument(p, 2);
+		ripopt->tag = len == 0 ? 0 : opt2intn(p, 2);
 		NEXT_FIELD
-		ripopt->len = len == 0 ? 128 : hostintegerargument(p, 1);
+		ripopt->len = len == 0 ? 128 : opt2inth(p, 1);
 		NEXT_FIELD
-		ripopt->metric = len == 0 ? 16 : hostintegerargument(p, 1);
+		ripopt->metric = len == 0 ? 16 : opt2inth(p, 1);
 		break;
 	case 'd': /* default request */
 		if (RIPNG_NUM_ENTRIES(pack) != 0) {

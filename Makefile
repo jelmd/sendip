@@ -59,8 +59,7 @@ SOBN= lib$(LIBRARY)$(DYNLIBEXT)
 SONAME= $(SOBN).$(DYNLIB_MAJOR)
 DYNLIB= $(SONAME).$(DYNLIB_MINOR)
 
-LIBSRCS= csum.c compact.c fargs.c protoname.c headers.c parseargs.c \
-	c_origin.c modload.c
+LIBSRCS= csum.c fargs.c protoname.c headers.c parseargs.c c_origin.c modload.c
 LIBOBJS= $(LIBSRCS:%.c=%.o)
 
 PROGSRCS = sendip.c gnugetopt.c

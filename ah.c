@@ -55,18 +55,18 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 	switch(opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		ah->spi = integerargument(arg, 4);
+		ah->spi = opt2intn(arg, 4);
 		pack->modified |= AH_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		ah->seq_no = integerargument(arg, 4);
+		ah->seq_no = opt2intn(arg, 4);
 		pack->modified |= AH_MOD_SEQUENCE;
 		break;
 	case 'd':	/* Authentication data (variable length) */
 		/* For right now, we will do either random generation
 		 * or a user-provided string.
 		 */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		pack->data = realloc(ah, sizeof(ah_header)+length);
 		pack->alloc_len = sizeof(ah_header)+length;
 		ah = (ah_header *)pack->data;
@@ -76,7 +76,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= AH_MOD_AUTHDATA;
 		break;
 	case 'k':       /* Key */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		priv->keylen = length;
 		priv = (ah_private *) realloc(priv, sizeof(ah_private) + length);
 		memcpy(priv->key, temp, priv->keylen);

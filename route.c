@@ -105,7 +105,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ROUTE_MOD_SEGMENTS;
 		break;
 	case 'r':	/* Reserved field (4 bytes) */
-		rt->reserved = integerargument(arg, 4);
+		rt->reserved = opt2intn(arg, 4);
 		pack->modified |= ROUTE_MOD_RESV;
 		break;
 	case 'a':	/* address list */

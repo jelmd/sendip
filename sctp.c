@@ -141,12 +141,12 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	/* Overall header arguments are lowercase; chunk args are upper */
 	case 's':	/* SCTP source port (16 bits) */
 		pack->modified |= SCTP_MOD_SOURCE;
-		sctp->source = integerargument(arg, 2);
+		sctp->source = opt2intn(arg, 2);
 		break;
 
 	case 'd':	/* SCTP destination port (16 bits) */
 		pack->modified |= SCTP_MOD_DEST;
-		sctp->dest = integerargument(arg, 2);
+		sctp->dest = opt2intn(arg, 2);
 		break;
 
 	case 'v':	/* SCTP vtag (32 bits) */
@@ -154,7 +154,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		/* While the value should be 32 bits, let them specify whatever they
 		 * want. We only try to fit four bytes, however.
 		 */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		if (length < sizeof(u_int32_t)) {
 			sctp->vtag = 0;
 			memcpy((void *) &sctp->vtag, temp, length);
@@ -165,7 +165,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 	case 'c':	/* SCTP checksum (32 bits) */
 		pack->modified |= SCTP_MOD_CHECKSUM;
-		sctp->dest = integerargument(arg, 4);
+		sctp->dest = opt2intn(arg, 4);
 		break;
 
 	case 'T':	/* SCTP chunk type (8 bits) */
@@ -206,7 +206,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 
 	case 'D':	/* arbitrary SCTP chunk data */
-		length = stringargument(arg, temp, BUFSIZ);
+		length = opt2val(temp, arg, BUFSIZ);
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
@@ -238,17 +238,17 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		switch (nargs) {
 		case 5:
 			init.initial_tsn =
-				integerargument(strargs[4], sizeof(init.initial_tsn));
+				opt2intn(strargs[4], sizeof(init.initial_tsn));
 		case 4:
 			init.num_inbound_streams =
-				integerargument(strargs[3], sizeof(init.num_inbound_streams));
+				opt2intn(strargs[3], sizeof(init.num_inbound_streams));
 		case 3:
 			init.num_outbound_streams =
-				integerargument(strargs[2], sizeof(init.num_outbound_streams));
+				opt2intn(strargs[2], sizeof(init.num_outbound_streams));
 		case 2:
-			init.a_rwnd = integerargument(strargs[1], sizeof(init.a_rwnd));
+			init.a_rwnd = opt2intn(strargs[1], sizeof(init.a_rwnd));
 		case 1:
-			init.init_tag = integerargument(strargs[0], sizeof(init.init_tag));
+			init.init_tag = opt2intn(strargs[0], sizeof(init.init_tag));
 		}
 
 		currentchunk = grow_chunk(pack, currentchunk,

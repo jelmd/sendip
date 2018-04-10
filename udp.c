@@ -90,19 +90,19 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	udp_header *udp = (udp_header *)pack->data;
 	switch(opt[1]) {
 	case 's':
-		udp->source = integerargument(arg, 2);
+		udp->source = opt2intn(arg, 2);
 		pack->modified |= UDP_MOD_SOURCE;
 		break;
 	case 'd':
-		udp->dest = integerargument(arg, 2);
+		udp->dest = opt2intn(arg, 2);
 		pack->modified |= UDP_MOD_DEST;
 		break;
 	case 'l':
-		udp->len = integerargument(arg, 2);
+		udp->len = opt2intn(arg, 2);
 		pack->modified |= UDP_MOD_LEN;
 		break;
 	case 'c':
-		udp->check = integerargument(arg, 2);
+		udp->check = opt2intn(arg, 2);
 		pack->modified |= UDP_MOD_CHECK;
 		break;
 	}

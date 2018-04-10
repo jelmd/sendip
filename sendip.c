@@ -370,7 +370,7 @@ main(int argc, char **const argv) {
 				char sdata[BUFSIZ];
 
 				datarg = gnuoptarg;						/* save for regen */
-				datalen = stringargument(datarg, sdata, BUFSIZ);
+				datalen = opt2val(sdata, datarg, BUFSIZ);
 				data = (char *) malloc(datalen);
 				if (data == NULL) {
 					perror("Unable to process option -d ...");
@@ -671,7 +671,7 @@ while (--loopcount >= 0) {
 		char sdata[BUFSIZ];
 		int newlen;
 
-		newlen = stringargument(datarg, sdata, BUFSIZ);
+		newlen = opt2val(sdata, datarg, BUFSIZ);
 		if (newlen > datalen) {
 			free(data);
 			if ((data = (char *) malloc(datalen)) == NULL) {
