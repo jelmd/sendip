@@ -42,3 +42,4 @@ sendip
 test.c
 *.project
 makefile.dep
+man.1

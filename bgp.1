@@ -1,0 +1,121 @@
+.SS "bgp MODULE OPTIONS"
+.TP
+\-bm\ \fIhex\fR[\fB:\fIhex\fR]...
+Set the \fBBGP Marker\fR field to the given value. Each \fIhex\fR value
+represents 8 bits so {0..ff}. Not more than 16 \fIhex\fR values will be read!
+If less than 16 \fIhex\fR values are given, no adjustments will be made, i.e.
+an invalid, too short marker will be used.
+Beside the colon (\fB:\fR) one may use any non-hex ASCII character
+except '\0' as delimiter, but remember quoting if whitespaces are used and
+that leading whitespaces get chomped and thus one may loose bounderies.
+Empty or invalid strings are handled as \fB0\fR, so e.g. '::'
+becomes '00:00:00'.
+Default:\ FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF
+.TP
+\-bl\ \fIdnum\fR
+Set the total \fBMessage Length\fR to \fInum\fR {0..65535}. Default: auto
+.TP
+\-bt\ \fIrnum\fR
+Set the \fBMessage Type\fR to \fInum\fR {0..255} (1 OPEN, 2 UPDATE,
+3 NOTIFICATION, 4 KEEPALIVE). Default: 4 (KEEPALIVE)
+.TP
+\-bo\ \fIversion\fB:\fIAS_number\fB:\fIhold_time\fB:\fIID\fB:\fIolength\fR
+Append the given \fBOPEN\fR message parameters to the message. Any parameter
+can be omitted (empty string) to get the default. The parameters are:
+.RS
+.TP
+\fIversion\fR
+BGP version {0..255}. Default: 4
+.TP
+\fIAS_number\fR
+Autonomous System number {0..0xffff}. Default: 1
+.TP
+\fIhold_time\fR
+Hold Timer value in seconds {0..0xffff}. Default: 90
+.TP
+\fIID\fR
+BGP Identifier. It can be a normal IP address or a number in the
+range of {0..0xffffffff}. Default:\ 127.0.0.1
+.TP
+\fIolength\fR
+The length of the Optional Parameters field {0..255}.  Default: auto
+.RE
+
+.TP
+\-boo\ \fItype\fB:\fR[\fIlength\fR]\fB:\fIvalue\fR
+Append the given \fBOptional parameter\fR to the OPEN message. The parameters
+are:
+.RS
+.TP
+\fItype\fR
+The parameter type {0..255}.
+.TP
+\fIlength\fR
+The length of the parameter value in octets. Default:\ auto
+.TP
+\fIvalue\fR
+A sequence of max. 255 bytes given as \fIhex\fR values separated by a
+colon ('\fB:\fR').
+.RE
+
+.TP
+\-bul\ \fInum\fR
+Append the total length of \fBWithdrawn routes\fR {0..0xffff} to the UPDATE
+message. Default: auto
+.TP
+\-buw\ \fIprefix\fR[\fB:\fIlength\fR]
+Append the given \fBWithdrawn route\fR to the UPDATE message. The parameters
+are:
+.RS
+.TP
+\fIprefix\fB
+An IP address prefix in CIDR notation, i.e. x.x.x.x/n .
+.TP
+\fIlength\fR
+The length of the prefix in octets {0..255}. Default: auto.
+.RE
+
+.TP
+\-bus\ \fInum\fR
+Set the \fBAttributes length\fR to \fInum\fR {0..0xffffffff} for the UPDATE
+message.  Default: auto
+.TP
+\-bua\ \fIflags\fB:\fItype\fB:\fR[\fIlength\fR]\fB:\fIdata\fR
+Append the given \fBAttribute\fR to the UPDATE message. The parameters are:
+.RS
+.TP
+\fIflags\fR
+The flags for the attribute entry {0..255}.
+.TP
+\fItype\fR
+The attribute type {0..255}.
+.TP
+\fIlength\fR
+The length of the attribute data in octets, depending on flags {0..255}
+or {0..0xffff}. Default: auto
+.TP
+\fIdata\fR
+The attribute data to set represented as sequence of \fIhex\fR bytes separated
+by a colon ('\fB:\fR'). Depending on flags max. 255 or 0xffff bytes will be
+read.
+.RE
+
+.TP
+\-bun\ \fIprefix\fR[\fB:\fIlength\fR]
+Append the Network Layer Reachability Information (\fBNLRI\fR) to the UPDATE
+message. The parameters are the same as for \fB-buw\fR.
+
+.TP
+\-bn\ \fIcode\fB:\fIsubcode\fB:\fR[\fIdata\fR]
+Append the given \fBNotification\fR to the message. The parameters are:
+.RS
+.TP
+\fIcode\fB
+The error code to set {0..255}.
+.TP
+\fIsubcode\fR
+The error subcode to set {0..255}.
+.TP
+\fIdata\fR
+The reason for the notification. Omit for no data.
+.RE

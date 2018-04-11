@@ -1,0 +1,28 @@
+.SS "hop MODULE OPTIONS"
+.TP
+\-Hn\ \fInum\fR
+Set the Option \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+.TP
+\-H0
+Set the Option \fBpad 0\fR (use 1 byte padding).
+.TP
+\-Hp\ \fInum\fR
+Set the Option \fBpad N bytes\fR to \fInum\fR (2..257). Default:\ 2
+.TP
+\-Hr\ \fInum\fR
+Set the Option \fBrouter alert\fR to \fInum\fR (0..0xffff). Default:\ 0
+.TP
+\-Hj\ \fInum\fR
+Set the Option \fBjumbo frame length\fR to \fInum\fR (0..0xffff).
+Note that actual production of jumbo frames requires interface support.
+Default:\ 0
+.TP
+\-Hh\ \fIv6addr\fR
+Set the Option (Destination) \fBhome address\fR to the IP \fIv6addr\fRess.
+Default:\ ::1
+.TP
+\-Ht\ \fItype\fB.\fIlength\fB.\fIvalue\fR
+Set the Option \fBarbitrary TLV option\fR according to the given parameters.
+Each parameter can be specified in the usual way as hex, octal, decimal,
+literal, or rN for N random or zN for N zero bytes.
+Default:\ 0.0.0

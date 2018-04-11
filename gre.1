@@ -1,0 +1,32 @@
+.SS "gre MODULE OPTIONS"
+.TP
+\-gc\ \fInum\fR
+Set the GRE \fBsupplied checksum\fR to \fInum\fR (0..0xffff). Default:\ none
+.TP
+\-gC
+Add the \fBactual checksum\fR.
+.TP
+\-gr\ \fInum\fR
+Set the GRE \fBrouting\fR field to \fInum\fR (0..0xffffffff). Default:\ 0
+.TP
+\-gk\ \fInum\fR
+Set the GRE \fBkey\fR field to \fInum\fR (0..0xffffffff). Default:\ none
+.TP
+\-gs\ \fInum\fR
+Set the GRE \fBsequence number\fR to \fInum\fR (0..0xffffffff). Default:\ none
+.TP
+\-gS
+Turn the GRE \fBstrict source routing\fR flag on.
+.TP
+\-ge\ \fInum\fR
+Set the GRE \fBrecursion encapsulation limit\fR to \fInum\fR (0..7}. Default:\ 0
+.TP
+\-gv\ \fInum\fR
+Set the GRE \fBversion number\fR to \fInum\fR (0..7}. Default:\ 0
+.TP
+\-gp\ \fInum\fR
+Set the GRE \fBencapsulated protocol\fR to \fInum\fR (0..0xffff).
+Default:\ auto (if known, IPv4 and IPv6 only)
+.TP
+\-go\ \fInum\fR
+Set the GRE \fBoffset\fR to \fInum\fR (0..0xffff). Default:\ none

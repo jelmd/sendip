@@ -78,7 +78,7 @@ PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS) $(MECPROTOS)
 
 PSEUDO_HEADER = dest.h xorauth.h xorcrypto.h
 
-all:	$(PROGS) $(PROTOS) $(CRYPTOS)
+all:	$(PROGS) $(PROTOS) $(CRYPTOS) man
 lib:	$(DYNLIB)
 
 $(PROGS):	LDFLAGS += $(RPATH_OPT)\$$ORIGIN/../$(LIBDIR)
@@ -102,7 +102,14 @@ dest.c:
 $(PSEUDO_HEADER):
 	touch $@
 
-.PHONY:	clean distclean install depend help
+man.1: $(PROTOS:%.so=%.1) sendip.1
+	sed -e '/@MODULES@/,$$ d' sendip.1 >man.1
+	cat $(PROTOS:%.so=%.1) >>man.1
+	sed -e '1,/@MODULES@/ d' sendip.1 >>man.1
+
+man: man.1
+
+.PHONY:	clean distclean install depend help man
 
 # for maintainers to get _all_ deps wrt. source headers properly honored
 DEPENDFILE := makefile.dep
@@ -115,7 +122,7 @@ $(DEPENDFILE): *.c *.h
 
 clean:
 	rm -f *.o *~ *.so $(PROTOS) $(CRYPTOS) $(SONAME)* $(PROGS) \
-		core gmon.out a.out
+		core gmon.out a.out man.1
 
 distclean: clean
 	rm -f dest.c $(PSEUDO_HEADER) $(DEPENDFILE) *.rej *.orig
@@ -127,7 +134,7 @@ install:	$(SUBDIRS) all
 	$(INSTALL) -m 755 $(PROGS) $(DESTDIR)$(PREFIX)/$(BINDIR)
 	$(INSTALL) -m 755 $(PROTOS) $(DYNLIB) $(DESTDIR)$(PREFIX)/$(LIBDIR)
 	$(INSTALL) -m 755 $(CRYPTOS) $(DYNLIB) $(DESTDIR)$(PREFIX)/$(LIBDIR)
-	$(INSTALL) -m 644 sendip.1 $(DESTDIR)$(PREFIX)/$(MANDIR)
+	$(INSTALL) -m 644 man.1 $(DESTDIR)$(PREFIX)/$(MANDIR)/sendip.1
 	ln -sf $(DYNLIB) $(DESTDIR)$(PREFIX)/$(LIBDIR)/$(SONAME)
 	ln -sf $(DYNLIB) $(DESTDIR)$(PREFIX)/$(LIBDIR)/$(SOBN)
 

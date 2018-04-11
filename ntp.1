@@ -1,0 +1,42 @@
+.SS "ntp MODULE OPTIONS"
+The \fItimestamp\fR argument used below is a 64-bit value in the range
+of {0..0xffffffff[.0xffffffff]}.
+.TP
+-nl\ \fInum\fR
+Set the NTP \fBLeap Indicator\fR to \fInum\fR {0..3}. Default: 0 (no warning)
+.TP
+-ns\ \fInum\fR
+Set the NTP \fBstatus\fR to \fInum\fR {0..0x3f} OR NTP version (3 bit) and
+mode (3 bit). Default: 0 (clock operating OK)
+.TP
+-nt\ \fInum\fR
+Set the NTP \fBtype\fR OR \fBstratum\fR to \fInum\fR {0..255}.
+Default: 0 (unspecified)
+.TP
+-np\ \fInum\fR
+Set the NTP \fBprecision\fR field to \fInum\fR {0..255}. Default: 0
+.TP
+-ne\ \fIdouble\fR
+Set the NTP \fBestimated error\fR (root delay) to the given \fIdouble\fR value.
+Default: 0.0
+.TP
+-nd\ \fIdouble\fR
+Set the NTP \fBestimated drift\fR rate (root dispersion) to the
+given \fIdouble\fR value. Default: 0.0
+.TP
+-nr\ \fIaddr\fR|\fIID\fR
+Set the NTP \fBreference clock\fR to the given IP \fIaddr\fRess
+or \fIID\fR (string with max. 4 characters not starting with a digit).
+Default: 0
+.TP
+-nf\ \fItimestamp\fR
+Set the NTP \fBreference\fR \fItimestamp\fR. Default: 0.0
+.TP
+-no\ \fItimestamp\fR
+Set the NTP \fBoriginate\fR \fItimestamp\fR. Default: 0.0
+.TP
+-na\ \fItimestamp\fR
+Set the NTP \fBarrival (receive)\fR \fItimestamp\fR. Default: 0.0
+.TP
+-nx\ \fItimestamp\fR
+Set the NTP \fBxmit (transmit)\fR \fItimestamp\fR. Default: 0.0

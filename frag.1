@@ -1,0 +1,17 @@
+.SS "frag MODULE OPTIONS"
+.TP
+\-Fn\ \fInum\fR
+Set the Fragment \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+.TP
+\-Fr\ \fInum\fR
+Set the Fragment \fBreserved\fR field to \fInum\fR (0..255}. Default:\ 0
+.TP
+\-Fo\ \fInum\fR
+Set the Fragment \fBoffset\fR to \fInum\fR (0..0x1ffff). Default:\ 0
+.TP
+\-Ff\ \fInum\fR
+Set the Fragment \fBflags\fR to \fInum\fR {0..7} (3 bits, lsb=more fragments).
+Default:\ 0
+.TP
+\-Fi\ \fInum\fR
+Set the Fragment \fBidentification\fR to \fInum\fR (0..0xffffffff). Default:\ 0

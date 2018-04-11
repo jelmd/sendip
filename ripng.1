@@ -1,0 +1,35 @@
+.SS "ripng MODULE OPTIONS"
+.TP
+\-Rv\ \fIrnum\fR
+Set the RIP \fBversion\fR to \fInum\fR {0..255}. Default: 0
+.TP
+\-Rc\ \fIrnum\fR
+Set the RIP \fBcommand\fR {0..255} with 1=request, 2=response).
+Default:\ 1
+.TP
+\-Re\ \fIv6addr\fB|\fItag\fB|\fIlen\fB|\fImetric\fR
+Add a \fBRIP entry\fR using the given information. If a field is missing (empty
+string), the corresponding value from the default value will be used instead.
+.RS
+.TP
+\fIaddress\fR
+A normal inet address. Default:\ ::
+.TP
+\fItag\fR
+The route or authentication tag to set {0..0xffff}. Default:\ 0
+.TP
+\fIlen\fR
+The inet address of the next hop. Default:\ 128
+.TP
+\fImetric\fR
+The distance indicator to set {0..0xffffffff}. Default:\ 16
+.RE
+.TP
+\-Rd
+Create a RIP \fBdefault request\fR, i.e. get router's entire routing table.
+Do not use any other RIP options on this RIP header. Is the same as
+\-Rc\ 1\ \-Rv\ 1\ \-Rr\ 0\ \-Re\ ::\fB|\fR0\fB|\fR0\fB|\fR16
+.TP
+\-Rr\ \fIrnum\fR
+Set the value of the \fBreserved\fR field to \fInum\fR {0..0xffff}.
+Default:\ 0

@@ -1,0 +1,81 @@
+.SS "tcp MODULE OPTIONS"
+.TP
+\-ts\ \fInum\fR
+Set the TCP \fBsource port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-td\ \fInum\fR
+Set the TCP \fBdestination port\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-tn\ \fInum\fR
+Set the TCP \fBsequence number\fR to \fInum\fR {0..0xffffffff}. Default: random
+.TP
+\-ta\ \fInum\fR
+Set the TCP \fBACK sequence number\fR to \fInum\fR {0..0xffffffff}. Default: 0
+.TP
+\-tt\ \fInum\fR
+Set the TCP \fBdata offset\fR to \fInum\fR {0..15}. Default: auto
+.TP
+\-tr\ \fInum\fR
+Set the TCP header \fBreserved field\fR EXCLUDING ECN and CWR bits
+to \fInum\fR {0..15}. Default: 0
+.TP
+\-tfe\ \fInum\fR
+Set the TCP \fBECN bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+.TP
+\-tfc\ \fInum\fR
+Set the TCP \fBCWR bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+.TP
+\-tfu\ \fInum\fR
+Set the TCP \fBURG bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -tu specified
+.TP
+\-tfa\ \fInum\fR
+Set the TCP \fBACK bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -ta specified
+.TP
+\-tfp\ \fInum\fR
+Set the TCP \fBPSH bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tfr\ \fInum\fR
+Set the TCP \fBRST bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tfs\ \fInum\fR
+Set the TCP \fBSYN bit\fR to \fInum\fR {0|1}. Default: 1
+.TP
+\-tff\ \fInum\fR
+Set the TCP \fBFIN bit\fR to \fInum\fR {0|1}. Default: 0
+.TP
+\-tw\ \fInum\fR
+Set the TCP \fBwindow size\fR to \fInum\fR {0..0xffff}. Default: 65535
+.TP
+\-tc\ \fInum\fR
+Set the TCP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
+.TP
+\-tu\ \fInum\fR
+Set the TCP \fBurgent pointer\fR to \fInum\fR {0..0xffff}. Default: 0
+.TP
+\-tonum\ \fIhex\fR
+Set the \fBTCP option\fR as string of \fIhex\fR bytes (length: auto).
+Do not prefix with 0x or 0X!
+.TP
+\-toeol
+Set the TCP option \fBend of list\fR.
+.TP
+\-tonop
+Set the TCP option \fBno op\fR.
+.TP
+\-tomss\ \fInum\fR
+Set the TCP option \fBmaximum segment size\fR to \fInum\fR {0..0xffff}.
+.TP
+\-towscale\ \fInum\fR
+Set the TCP option \fBwindow scale\fR to \fInum\fR {0..255} (rfc1323).
+.TP
+\-tosackok
+Set the TCP option \fBallow selective ack\fR (rfc2018).
+.TP
+\-tosack\ \fInum\fB:\fInum\fR[\fB,\fInum\fB:\fInum\fR]...
+Set the TCP option \fBselective ack\fR (rfc2018) to the given value(s).
+The left and right edge are in the range of {0..0xffffffff}. If a value
+is missing (i.e. empty string), it is considered to be zero.
+.TP
+\-tots\ \fIval\fB:\fIsecr\fR
+Set the TCP option \fBtimestamp\fR (rfc1323) to \fIval\fR and \fIsecr\fR,
+both in the range of {0..0xffff}.

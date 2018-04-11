@@ -1,0 +1,32 @@
+.SS "wesp MODULE OPTIONS"
+.TP
+\-wv\ \fIversion\fR
+Set the WESP \fBVersion\fR {0..3}.
+Default:\ 0
+.TP
+\-we\ \fInum\fR
+Set the value of WESP \fBEncrypted Payload\fR flag {0|1}.
+Default:\ 0
+.TP
+\-wp\ \fInum\fR
+Set the value of WESP \fBPadded\fR flag (also adds 4 bytes padding) {0|1}.
+Default:\ 0
+.TP
+\-wr\ \fInum\fR
+Set the value of the WESP \fBReserved\fR field {0..15}.
+Default: 0
+.TP
+\-wh\ \fInum\fR
+Set the WESP \fBHeader Length\fR value {0..255}.
+Default:\ auto
+.TP
+\-wt\ \fInum\fR
+Set the WESP \fBTrailer Length\fR value {0..255}.
+Default:\ auto
+.TP
+\-wn\ \fInum\fR|\fIproto\fR
+Set the WESP \fBNext Header\fR to the given protocol. \fInum\fR is a protocol
+number, \fIproto\fR is the name of the protocol and needs to match an entry of
+the systems protocols database (see \fB/etc/protocols\fR) or from an internal
+hardcoded fallback table.
+Default:\ auto

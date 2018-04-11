@@ -1,0 +1,11 @@
+.SS "icmp MODULE OPTIONS"
+.TP
+\-ct\ \fInum\fR
+Set ICMP \fBmessage type\fR to \fInum\fR {0..255}.  Default: ICMP_ECHO (8), or
+ICMP6_ECHO_REQUEST (128) if embedded in an IPv6 packet.
+.TP
+\-cd\ \fInum\fR
+Set ICMP \fBcode\fR to \fInum\fR {0..255}. Default: 0
+.TP
+\-cc\ \fInum\fR
+Set ICMP \fBchecksum\fR to \fInum\fR {0.0xffff}.  Default: auto

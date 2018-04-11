@@ -1,0 +1,53 @@
+.SS "rip MODULE OPTIONS"
+.TP
+\-rv\ \fInum\fR
+Set the RIP \fBversion\fR to \fInum\fR {0..15}. Default: 2
+.TP
+\-rc\ \fInum\fR
+Set the RIP \fBcommand\fR {0..15} with 1=request, 2=response,
+3=traceon (obsolete), 4=traceoff (obsolete), 5=poll (undocumented),
+and 6=poll entry (undocumented).
+Default:\ 1
+.TP
+\-ra\ [\fIauth_type\fB:\fR]\fIpassword\fR
+Add a RIP \fBauthentication\fR entry using the given \fIpassword\fR (max.
+16 characters) and \fIauth_type\fB.
+For default basic authentication \fIauth_type\fR is optional (defaults to 2),
+but because a colon (\fB:\fR) is used as value delimiter, it is
+mandatory if the password contains a colon!
+Also note, that for RIP-2 requests this should be the first entry in the
+request.
+.TP
+\-re\ \fIfamily\fB|\fItag\fB|\fIaddress\fB|\fImask\fB|\fInext\fB|\fImetric\fR
+Add a \fBRIP entry\fR using the given information. If a field is missing (empty
+string), the corresponding value from the default value will be used instead.
+.RS
+.TP
+\fIfamily\fR
+The address family value to set {0..0xffff}. Should be 0xffff for
+authentication entry, 2 otherwise. Default:\ 2
+.TP
+\fItag\fR
+The route or authentication tag to set {0..0xffff}. Default:\ 0
+.TP
+\fIaddress\fR
+A normal inet address. Default:\ 0.0.0.0
+.TP
+\fImask\fR
+The subnet mask for the \fIaddress\fR. Default:\ 255.255.255.0
+.TP
+\fInext\fR
+The inet address of the next hop. Default:\ 0.0.0.0
+.TP
+\fImetric\fR
+The distance indicator to set {0..0xffffffff}. Default:\ 16
+.RE
+.TP
+\-rd
+Create a RIP \fBdefault request\fR, i.e. get router's entire routing table.
+Do not use any other RIP options on this RIP header. Is the same as
+\-rc\ 1\ \-re\ 0\fB|\fR0\fB|\fR0.0.0.0\fB|\fR0.0.0.0\fB|\fR16
+.TP
+\-rr\ \fInum\fR
+Set the value of the \fBreserved\fR field to \fInum\fR {0..0xffff}.
+Default:\ 0
