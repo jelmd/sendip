@@ -1,15 +1,11 @@
-/* dummy.c - example sendip module
- * Author: Mike Ricketts <mike@earth.li>
- * ChangeLog since 2.0 release:
- * 02/12/2001: added num_opts, get_opts and get_optchar functions
- * 02/12/2001: added more helpful comments
- * 03/25/2009: changed finalize to give better access to other headers
- *             (Mark Carson)
+/** dummy.c - example sendip module
+ * Created by Mike Ricketts <mike@earth.li>
  */
 
 /* To write a new sendip module:
- * * mail mike@earth.li to check that nobody else is already working on the
- * same thing.
+ * * Check https://github.com/jelmd/sendip/issues to find out, whether someone
+ *   is already working on something like this. If not, please file a new issue
+ *   (to notify people)!
  * * copy dummy.c and dummy.h
  * * replace dummy with the name of your module throughout
  * * In <your_module>.h:
@@ -26,10 +22,10 @@
  *      ones as these will exist everywhere that sendip compiles.
  *    - create a list of #defines FOO_MOD_*, one for each header field that
  *      may be modified.  The first should have value 1, the rest should be
- *      1<<x for increasing values of x.
+ *      1 << x for increasing values of x.
  *    - fill in the foo_opts array for all the options your module supports.
  *      Each entry has the format:
- *      {opt_string,arg,description,default}
+ *      { opt_string, arg, description, default }
  *      opt_string is the option that is used to set it, EXCLUDING the -x that
  *      tells sendip which module.  arg is 0 (for no value) or 1 if the option
  *      takes a value (almost always).  description should be a short
@@ -43,10 +39,23 @@
  *      that.  You can see what is used by doing
  *      grep '^const char opt_char' *.c
  *      in the sendip source directory.
+ *    - adjust the initialize() function as needed. This function gets called
+ *      each time a new packet gets created by sendip. Therefore do not use any
+ *      global or static variables. Instead put them into a separate struct and
+ *      initialize and set sendip_data->private to the pointer to this struct.
+ *      Thus, when other relevant functions gets called, you'll always get the
+ *      right data for the related package, because sendip_data gets passed to
+ *      such functions. Also note, that you need to deallocate alias free all
+ *      dynamically allocated memory (via malloc, alloc, calloc, strdup, etc.)
+ *      optimal as soon as you do not need it anymore (got copied to the data
+ *      area of the packet) and set related pointer vars to NULL (optional but
+ *      good practice to avoid double frees), but no later than in the
+ *      finalize() function to avoid memory leaks. However, sendip_data->data
+ *      gets freed by sendip itself (so do not free this one).
  *    - in the do_opt function, fill in code for all the options you defined in
  *      the header file.  Typically, the code will look a lot like:
  *      case 'option':
- *        header->thing = htons((u_int16_t)strtoul(arg, (char **)NULL, 0)); //OR
+ *        header->thing = htons((u_int16_t) strtoul(arg, NULL, 0));	// OR
  *        header->thing = opt2intn(arg, 2);         // 2 for 16-bit OR
  *        header->thing = hostargument(arg, 2);     // if not byte-swapped
  *        pack->modified |= FOO_MOD_THING;
@@ -61,11 +70,12 @@
  *      -arg contains any argument given
  *      -pack contains our headers
  *    - in the finalize function, fill in anything that needs to be computed
- *      after all the options are processed.  This function MUST NOT change
- *      the length or location of the headers in memory, else bad things will
- *      happen.  Typical things that go in here are filling in the length
+ *      after all the options are processed and free all dynamically allocated
+ *      memory (private data) to avoid memory leaks.  This function MUST NOT
+ *      change the length or location of the headers in memory, else bad things
+ *      will happen.  Typical things that go in here are filling in the length
  *      field of the header if it hasn't been overriden, computing checksums,
- *      etc.  You may also which to check that your packet is enclosed in a
+ *      etc.  You may also whish to check that your packet is enclosed in a
  *      sensible carrier.  tcp.c does all of the things.
  *      -hdrs is build by taking the opt_char for each packet in turn from the
  *       outside in, up to this packet inclusive.
@@ -91,53 +101,70 @@
  *      -u_int16_t csum(u_int16_t *data, int len)
  *       returns the standard internet checksum of the packet
  *    - If something doesn't work as expected, or you can't figure out how to
- *      do something, mail mike@earth.li and ask.
- * * In the Makefile add <your_module>.so to the PROTOS line
+ *      do something, open an issue via https://github.com/jelmd/sendip/issues
+ * * In the Makefile add <your_module>.so to on *PROTOS line
  * * Test it
- * * Mail it to mike@earth.li, either as a patch or just send the .c and .h 
- *   files you created
+ * * Use https://github.com/jelmd/sendip/pulls to create a new pull request
+ *   or open an issue via https://github.com/jelmd/sendip/issues and attach your
+ *   patch or new files you created to this issue.
  */
 
 #include <stdlib.h>
 #include <sys/types.h>
 #include "sendip_module.h"
+
+#include "common.h"
 #include "dummy.h"
 
-/* Character that identifies our options
- */
-const char opt_char='dummy';
+/* Character that identifies our options */
+const char opt_char = 'dummy';
 
-sendip_data *initialize(void) {
+sendip_data
+*initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	dummy_header *dummy = malloc(sizeof(dummy_header));
-	memset(dummy,0,sizeof(dummy_header));
+	// priv_data *priv = malloc(sizeof(priv_data));
+	memset(dummy, 0, sizeof(dummy_header));
 	ret->alloc_len = sizeof(dummy_header);
 	ret->data = dummy;
-	ret->modified=0;
+	// ret->private = priv;
+	ret->modified = 0;
 	return ret;
 }
 
-bool do_opt(char *opt, char *arg, sendip_data *pack) {
-	dummy_header *dummy = (dummy_header *)pack->data;
-	switch(opt[1]) {
+bool
+do_opt(const char *opt, const char *arg, sendip_data *pack) {
+	dummy_header *dummy = (dummy_header *) pack->data;
+
+	switch (opt[1]) {
 		//...
 	}
 	return TRUE;
-
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack) {
+bool
+finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
+	sendip_data *pack)
+{
+	// free(data->private);
 	//...
 	return TRUE;
 }
 
-int num_opts() {
-	return sizeof(dummy_opts)/sizeof(sendip_option);
+int
+num_opts() {
+	return sizeof(dummy_opts) / sizeof(sendip_option);
 }
-sendip_option *get_opts() {
+
+sendip_option
+*get_opts() {
 	return dummy_opts;
 }
-char get_optchar() {
+
+char
+get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

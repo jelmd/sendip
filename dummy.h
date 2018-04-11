@@ -1,25 +1,24 @@
-/* dummy.h
- * see dummy.c for more information
+/** dummy.h - see dummy.c for more information
  */
 #ifndef _SENDIP_dummy_H
 #define _SENDIP_dummy_H
 
 #error "Don't include this, dumbass"
 
-/* dummy HEADER
- */
+/* dummy HEADER */
 typedef struct {
 	//...
 } dummy_header;
 
-/* Defines for which parts have been modified
- */
-#define dummy_MOD_*  1<<*
+/* Defines for which parts have been modified */
+#define dummy_MOD_*  1 << *
 
-/* Options
- */
+/* Options */
 sendip_option dummy_opts[] = {
 	//...
 };
 
 #endif  /* _SENDIP_dummy_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

@@ -77,7 +77,7 @@ PROTOS= $(BASEPROTOS) $(IPPROTOS) $(UDPPROTOS) $(TCPPROTOS) $(MECPROTOS)
 
 PSEUDO_HEADER = dest.h xorauth.h xorcrypto.h
 
-all:	$(PROGS) $(PROTOS) $(CRYPTOS) sendip.spec
+all:	$(PROGS) $(PROTOS) $(CRYPTOS)
 lib:	$(DYNLIB)
 
 $(PROGS):	LDFLAGS += $(RPATH_OPT)\$$ORIGIN/../$(LIBDIR)
@@ -101,11 +101,6 @@ dest.c:
 $(PSEUDO_HEADER):
 	touch $@
 
-sendip.spec:	sendip.spec.in VERSION
-	printf '%%define ver ' >sendip.spec
-	cat VERSION sendip.spec.in >>sendip.spec
-
-
 .PHONY:	clean distclean install depend help
 
 # for maintainers to get _all_ deps wrt. source headers properly honored
@@ -122,7 +117,7 @@ clean:
 		core gmon.out a.out
 
 distclean: clean
-	rm -f sendip.spec dest.c $(PSEUDO_HEADER) $(DEPENDFILE) *.rej *.orig
+	rm -f dest.c $(PSEUDO_HEADER) $(DEPENDFILE) *.rej *.orig
 
 install:	$(SUBDIRS) all
 	$(INSTALL) -d $(DESTDIR)$(PREFIX)/$(LIBDIR)

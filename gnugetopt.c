@@ -1,10 +1,6 @@
-/* Getopt.c ripped straight out of GNU libc with some very minor modifications
-	Use this getopt not a system dependant one, as sendip is rather sensitive
-	to precise getopt behaviour.
-	JEL: removed unused bloat to make sure, everybody gets the same. Behaves
-	     per default POSIXLY_CORRECT, i.e. stop option parsing at the first
-		 non-option argument.
-*/
+/** This is a modified version of GNU libc getopt, because sendip is rather
+ * sensitive to this getopt behaviour.
+ */
 
 /*
    Copyright (C) 1987, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 2000
@@ -30,12 +26,8 @@
 #include <strings.h>
 #include <string.h>
 
+#include "parseargs.h"	/* just to get the macros */
 #include "gnugetopt.h"
-
-/* sendip does not support i10n yet. So stay consistent and do the same here */
-#ifndef _
-#define _(x)	x
-#endif
 
 /* For communication from `getopt' to the caller.
    When `getopt' finds an option that takes an argument,
@@ -90,9 +82,8 @@ int gnuoptopt = '?';
 
    If the caller did not specify anything, the default is REQUIRE_ORDER.
 
-   REQUIRE_ORDER means don't recognize them as options;
-   stop option processing when the first non-option is seen.
-   This is what Unix does.
+   REQUIRE_ORDER means stop option processing when the first non-option is seen.
+   This is what Unix does and GNU getopt, if POSIXLY_CORRECT env var is set.
    This mode of operation is selected by using `+' as the first character
    of the list of option characters.
 
@@ -271,13 +262,13 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 	 then exchange with previous non-options as if it were an option,
 	 then skip everything else like a non-option.  */
 
-      if (gnuoptind != argc && !strcmp (argv[gnuoptind], "--"))
+      if (gnuoptind != argc && strcmp(argv[gnuoptind], "--") == 0)
 	{
 	  gnuoptind++;
 
 	  if (first_nonopt != last_nonopt && last_nonopt != gnuoptind) {
-	    fprintf(stderr, "Internal error, please contact the maintainer!\n"
-			"Sent him the full command line with all arguments used.\n");
+	    ERROR("\nInternal error, please contact the maintainer!\n"
+			"Sent him the full command line with all arguments used.\n")
 		first_nonopt = gnuoptind;
 	  } else if (first_nonopt == last_nonopt) {
 	    first_nonopt = gnuoptind;
@@ -376,9 +367,9 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 
       if (ambig && !exact)
 	{
-	  if (print_errors)
-	    fprintf (stderr, _("%s: option `%s' is ambiguous\n"),
-		     argv[0], argv[gnuoptind]);
+	  if (print_errors) {
+	    DERROR ("%s: option `%s' is ambiguous", argv[0], argv[gnuoptind])
+	  }
 	  nextchar += strlen (nextchar);
 	  gnuoptind++;
 	  gnuoptopt = 0;
@@ -399,18 +390,16 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 		{
 		  if (print_errors)
 		    {
-		      if (argv[gnuoptind - 1][1] == '-')
+		      if (argv[gnuoptind - 1][1] == '-') {
 			/* --option */
-			fprintf (stderr,
-				 _("%s: option `--%s' doesn't allow an argument\n"),
-				 argv[0], pfound->name);
-		      else
+			DERROR("%s: option `--%s' doesn't allow an argument",
+				argv[0], pfound->name)
+			  } else {
 			/* +option or -option */
-			fprintf (stderr,
-				 _("%s: option `%c%s' doesn't allow an argument\n"),
-				 argv[0], argv[gnuoptind - 1][0], pfound->name);
+			DERROR ("%s: option `%c%s' doesn't allow an argument",
+				 argv[0], argv[gnuoptind - 1][0], pfound->name)
 		    }
-
+			}
 		  nextchar += strlen (nextchar);
 
 		  gnuoptopt = pfound->val;
@@ -423,10 +412,10 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 		gnuoptarg = argv[gnuoptind++];
 	      else
 		{
-		  if (print_errors)
-		    fprintf (stderr,
-			   _("%s: option `%s' requires an argument\n"),
-			   argv[0], argv[gnuoptind - 1]);
+		  if (print_errors) {
+		    DERROR ("%s: option `%s' requires an argument",
+			   argv[0], argv[gnuoptind - 1])
+		  }
 		  nextchar += strlen (nextchar);
 		  gnuoptopt = pfound->val;
 		  return optstring[0] == ':' ? ':' : '?';
@@ -452,14 +441,14 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 	{
 	  if (print_errors)
 	    {
-	      if (argv[gnuoptind][1] == '-')
+	      if (argv[gnuoptind][1] == '-') {
 		/* --option */
-		fprintf (stderr, _("%s: unrecognized option `--%s'\n"),
-			 argv[0], nextchar);
-	      else
+		DERROR("%s: unrecognized option `--%s'", argv[0], nextchar)
+		  } else {
 		/* +option or -option */
-		fprintf (stderr, _("%s: unrecognized option `%c%s'\n"),
-			 argv[0], argv[gnuoptind][0], nextchar);
+		DERROR("%s: unrecognized option `%c%s'",
+			 argv[0], argv[gnuoptind][0], nextchar)
+		  }
 	    }
 	  nextchar = (char *)(unsigned long)"";
 	  gnuoptind++;
@@ -482,8 +471,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
       {
 	if (print_errors)
 	  {
-	      fprintf (stderr, _("%s: invalid option -- %c\n"),
-		       argv[0], c);
+	      DERROR("%s: invalid option -- %c", argv[0], c)
 	  }
 	gnuoptopt = c;
 	return '?';
@@ -512,8 +500,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 	    if (print_errors)
 	      {
 		/* 1003.2 specifies the format of this message.  */
-		fprintf (stderr, _("%s: option requires an argument -- %c\n"),
-			 argv[0], c);
+		DERROR("%s: option requires an argument -- %c", argv[0], c);
 	      }
 	    gnuoptopt = c;
 	    if (optstring[0] == ':')
@@ -558,9 +545,9 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 	    }
 	if (ambig && !exact)
 	  {
-	    if (print_errors)
-	      fprintf (stderr, _("%s: option `-W %s' is ambiguous\n"),
-		       argv[0], argv[gnuoptind]);
+	    if (print_errors) {
+	      DERROR("%s: option `-W %s' is ambiguous", argv[0], argv[gnuoptind])
+		}
 	    nextchar += strlen (nextchar);
 	    gnuoptind++;
 	    return '?';
@@ -576,11 +563,10 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 		  gnuoptarg = nameend + 1;
 		else
 		  {
-		    if (print_errors)
-		      fprintf (stderr, _("\
-%s: option `-W %s' doesn't allow an argument\n"),
-			       argv[0], pfound->name);
-
+		    if (print_errors) {
+		      DERROR("%s: option `-W %s' doesn't allow an argument",
+			       argv[0], pfound->name)
+			}
 		    nextchar += strlen (nextchar);
 		    return '?';
 		  }
@@ -591,10 +577,10 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 		  gnuoptarg = argv[gnuoptind++];
 		else
 		  {
-		    if (print_errors)
-		      fprintf (stderr,
-			       _("%s: option `%s' requires an argument\n"),
-			       argv[0], argv[gnuoptind - 1]);
+		    if (print_errors) {
+		      DERROR("%s: option `%s' requires an argument",
+			       argv[0], argv[gnuoptind - 1])
+			}
 		    nextchar += strlen (nextchar);
 		    return optstring[0] == ':' ? ':' : '?';
 		  }
@@ -641,9 +627,7 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 		if (print_errors)
 		  {
 		    /* 1003.2 specifies the format of this message.  */
-		    fprintf (stderr,
-			     _("%s: option requires an argument -- %c\n"),
-			     argv[0], c);
+		    DERROR("%s: option requires an argument -- %c", argv[0], c)
 		  }
 		gnuoptopt = c;
 		if (optstring[0] == ':')
@@ -665,8 +649,9 @@ _getopt_internal (int argc, char *const *argv, const char *optstring,
 int
 gnugetopt (int argc, char *const *argv, const char *optstring)
 {
-  return _getopt_internal (argc, argv, optstring,
-			   (const struct option *) 0,
-			   (int *) 0,
-			   0);
+  return _getopt_internal (argc, argv, optstring, (const struct option *) 0,
+			   (int *) 0, 0);
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

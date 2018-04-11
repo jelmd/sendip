@@ -1,8 +1,5 @@
-/* types.h - types needed in sendip and not defined everywhere
- * Author: Mike Ricketts <mike@earth.li>
- * ChangeLog since 2.1 release:
- * 03/02/2002 Added more defines/protos for non-IPv6 systems.
- * 26/03/2002 FreeBSD style BYTE_ORDER fixes
+/** types.h - types needed in sendip and not defined everywhere
+ * Created by Mike Ricketts <mike@earth.li>
  */
 #ifndef _SENDIP_TYPES_H
 #define _SENDIP_TYPES_H
@@ -98,3 +95,6 @@ extern int inet_pton (int af, const char *cp, void *buf);
 #endif  /* not __BYTE_ORDER */
 
 #endif  /* _SENDIP_TYPES_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

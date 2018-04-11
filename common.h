@@ -8,3 +8,6 @@
 #include "headers.h"
 
 #endif  /* _COMMON_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

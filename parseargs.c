@@ -1,5 +1,5 @@
-/* parseargs.c - function to convert hex/octal/decimal/raw and special
- * strings to raw
+/** parseargs.c - functions to convert hex/octal/decimal/raw and special
+ * strings to native values. Usually used to process module options.
  */
 #include <stdio.h>
 #include <string.h>
@@ -52,7 +52,7 @@ str2val(char *output, const char *input, size_t outlen) {
 				c += *p - '0';
 			} else if (*p >= 'A' && *p <= 'F') {
 				c += *p - 'A' + 10;
-			} else if(*p >= 'a' && *p <= 'f') {
+			} else if (*p >= 'a' && *p <= 'f') {
 				c += *p - 'a' + 10;
 			} else {
 				DERROR("Character %c invalid in hex data stream", *p)
@@ -91,7 +91,7 @@ str2val(char *output, const char *input, size_t outlen) {
 				DERROR("Character %c invalid in octo data stream", *p)
 				return 0;
 			}
-			if( (i & 3) == 3 ) {
+			if ((i & 3) == 3 ) {
 				*(s++) = c;  // output every 4th char
 				c = '\0';
 				max--;
@@ -156,6 +156,7 @@ timestamp(size_t length, char *output)
 
 	if (gettimeofday(&ts, NULL) == 0)
 		return 0;
+
 	if (sizeof(ts) > length) {
 		memcpy(output, &ts, length);
 	} else {
@@ -249,7 +250,7 @@ opt2intn(const char *input, int sz)
 		int len = atoi(input + 1);
 		if (len > sz) {
 			DWARN("Reducing number of random bytes for an int from %d to %d",
-				len, sz);
+				len, sz)
 			len = sz;
 		}
 		addrand((char *) &r, len);
@@ -271,11 +272,11 @@ opt2intn(const char *input, int sz)
 
 	/* Everything else, just use strtoul, then cast and swap */
 	if (sz == 1)
-		return (u_int8_t) strtoul(input, (char **) NULL, 0);
+		return (u_int8_t) strtoul(input, NULL, 0);
 
 	return (sz == 2)
-		? htons((u_int16_t) strtoul(input, (char **) NULL, 0))
-		: htonl(strtoul(input, (char **) NULL, 0));
+		? htons((u_int16_t) strtoul(input, NULL, 0))
+		: htonl(strtoul(input, NULL, 0));
 }
 
 
@@ -317,11 +318,11 @@ opt2inth(const char *input, int sz)
 
 	/* Everything else, just use strtoul, then cast */
 	if (sz == 1)
-		return (u_int8_t) strtoul(input, (char **) NULL, 0);
+		return (u_int8_t) strtoul(input, NULL, 0);
 
 	return (sz == 2)
-		? (u_int16_t) strtoul(input, (char **) NULL, 0)
-		: strtoul(input, (char **) NULL, 0);
+		? (u_int16_t) strtoul(input, NULL, 0)
+		: strtoul(input, NULL, 0);
 }
 
 /* IPv4 dotted decimal arguments can be specified in several ways.
@@ -351,7 +352,7 @@ opt2inth(const char *input, int sz)
  * @return the parsed address, in network byte order.
  */
 in_addr_t
-cidr2addr(const char *input, char *slashpoint)
+cidr2addr(const char *input, char *slashpos)
 {
 	static char ipv4space[BUFSIZ]; /* actual max around 40 */
 	in_addr_t host;
@@ -359,10 +360,10 @@ cidr2addr(const char *input, char *slashpoint)
 	struct in_addr cidrarg;
 	int bits;
 
-	strncpy(ipv4space, input, slashpoint - input);
-	ipv4space[slashpoint - input] = '\0';
+	strncpy(ipv4space, input, slashpos - input);
+	ipv4space[slashpos - input] = '\0';
 	inet_pton(AF_INET, ipv4space, &cidrarg);
-	bits = strtol(++slashpoint, NULL, 0);
+	bits = strtol(++slashpos, NULL, 0);
 	/* Interpret weird /xx values as fixed addresses */
 	if (bits <= 0 || bits >= 32)
 		return cidrarg.s_addr;
@@ -408,15 +409,15 @@ opt2v4(const char *input, int length)
 {
 	char ipv4space[BUFSIZ]; /* actual max around 40 */
 	u_int32_t a, b, c, d;
-	char *dotpoint, *slashpoint;
+	char *dotpoint, *slashpos;
 
 	/* Special case for f* strings */
 	if (*input == 'f')
 		return opt2v4(fileargument(input + 1), length);
 
 	/* Special case for CIDR notation */
-	if ((slashpoint = strchr(input, '/')) != NULL)
-		return cidr2addr(input, slashpoint);
+	if ((slashpos = strchr(input, '/')) != NULL)
+		return cidr2addr(input, slashpos);
 
 	/* This covers the rN and fixed methods of address specification */
 	if ((dotpoint = strchr(input, '.')) == NULL)	/* aaaaaaaa */
@@ -454,7 +455,8 @@ opt2v4(const char *input, int length)
 static int
 mstrchr(const char *s, int c)
 {
-	if (!s) return isspace(c);
+	if (s == NULL)
+		return isspace(c);
 	return strchr(s, c) != NULL;
 }
 
@@ -462,24 +464,23 @@ mstrchr(const char *s, int c)
  * string, replacing the blanks with nuls. Returns the number of arguments
  * found. Does NOT check the array for size.
  *
- * Arguments:
- *	string	(in/out, changes) - string to be parsed
- *	args	(out, filled) - where to put result pointers
- *	seps	(in) - separator chars instead of space, NULL if none
+ *	@s		string to parse
+ *	@args	where to put result pointers
+ *	@seps	separator chars
  */
 int
-parseargs(char *string, char *args[], const char *seps)
+parseargs(char *s, char *args[], const char *seps)
 {
 	int i;
 
-	for (i=0; *string; ++i) {
-		while (*string && mstrchr(seps, *string))
-			*string++ = '\0';
-		if (!*string)
+	for (i = 0; *s; ++i) {
+		while (*s && mstrchr(seps, *s))
+			*s++ = '\0';
+		if (*s == '\0')
 			break;
-		args[i] = string;
-		while (*string && !mstrchr(seps, *string))
-			++string;
+		args[i] = s;
+		while (*s && !mstrchr(seps, *s))
+			++s;
 	}
 	return i;
 }
@@ -488,18 +489,18 @@ parseargs(char *string, char *args[], const char *seps)
  * the rest gets dumped into the final arg.
  */
 int
-parsenargs(char *string, char *args[], int limit, const char *seps)
+parsenargs(char *s, char *args[], int limit, const char *seps)
 {
 	int i;
 
-	for (i=0; *string && i < limit; ++i) {
-		while (*string && mstrchr(seps, *string))
-			*string++ = '\0';
-		if (!*string)
+	for (i = 0; *s && i < limit; ++i) {
+		while (*s && mstrchr(seps, *s))
+			*s++ = '\0';
+		if (*s == '\0')
 			break;
-		args[i] = string;
-		while (*string && !mstrchr(seps, *string))
-			++string;
+		args[i] = s;
+		while (*s && !mstrchr(seps, *s))
+			++s;
 	}
 	return i;
 }
@@ -510,7 +511,7 @@ printargs(char *args[], int n)
 {
 	int i;
 
-	for (i=0; i < n; ++i)
+	for (i = 0; i < n; ++i)
 		printf("%d %s ", i, args[i]);
 	printf("\n");
 }
@@ -523,7 +524,7 @@ main(int argc, char **argv)
 
 	if (argc > 1) {
 		if (argc > 2) {
-			for (i=2; i < argc; ++i) {
+			for (i = 2; i < argc; ++i) {
 				n = parseargs(argv[i], args, argv[1]);
 				printargs(args, n);
 			}
@@ -537,3 +538,6 @@ main(int argc, char **argv)
 	}
 }
 #endif
+
+/* vim: ts=4 sw=4 filetype=c
+ */

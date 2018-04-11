@@ -1,6 +1,7 @@
-/* This code in this file is a slight derivation of the algorithm published
+/** crc32.h
+ * The code in this file is a slight derivation of the algorithm published
  * in the appendix of the RFC 3309. And because sctp.c is the only consumer,
- * we make all static and pull it in as include for code separation reasons.
+ * we made it all static and pull it in as include for code separation reasons.
  *
  * Copyright (C) The Internet Society (2002).  All Rights Reserved.
  *
@@ -137,3 +138,6 @@ crc32(unsigned char *buffer, unsigned int length)
 #endif
 	return i;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

@@ -8,6 +8,7 @@ extern "C" {
  * origin.
  */
 char* get_origin(void);
+
 /* Get the origin of a program, cut off up trailing sub dirs and append tail.
  * Returns a copy of %fallback if unable to determine the origin.
  */
@@ -16,3 +17,6 @@ char* get_origin_rel(int up, const char *tail, const char *fallback);
 }
 #endif
 #endif
+
+/* vim: ts=4 sw=4 filetype=c
+ */

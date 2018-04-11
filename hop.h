@@ -1,4 +1,4 @@
-/* hop.h
+/** hop.h
  *
  * Hop-by-hop and destination options header
  *
@@ -8,7 +8,6 @@
 #define _SENDIP_HOP_H
 
 /* hop header */
-
 typedef struct ipv6_opt_hdr hop_header;	/* defined in ipv6ext.h */
 
 /* Generic ipv6 hop-by-hop option structure */
@@ -33,7 +32,7 @@ struct ipv6_hopopt {
  * 	cannot change enroute
  */
 #define IPV6_TLV_HAO            201     /* home address option (for destination
-					 *  options header) */
+										 * options header) */
 /* 201 is 110 01001 - option 9 with flags:
  * 	discard if don't understand
  * 	send ICMP parameter problem if not multicast
@@ -49,9 +48,9 @@ struct ipv6_hopopt {
 
 /* Defines for which parts have been modified */
 #define HOP_LEN_FRAG	(HDR_ALLOC-1)	/* First 3 bits are part of length */
+
 /* Hop-by-hop options we have defined. The flags don't serve
- * much purpose here, but we'll include them for the sake
- * of reference.
+ * much purpose here, but we'll include them for the sake of reference.
  */
 #define HOP_MOD_NEXTHDR (1<<3)
 #define HOP_MOD_PAD0  	(1<<4)
@@ -73,3 +72,6 @@ sendip_option hop_opts[] = {
 };
 
 #endif  /* _SENDIP_HOP_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

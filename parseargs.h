@@ -1,3 +1,5 @@
+/** parseargs.h */
+
 #ifndef _COMPACT_H
 #define _COMPACT_H
 
@@ -5,8 +7,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include "types.h"
-
-#define usage_error(x)	fprintf(stderr, (x))
 
 #define DERROR(...) \
 	fprintf(stderr, "ERROR: "); \
@@ -46,3 +46,6 @@ int parseargs(char *string, char *args[], const char *seps);
 int parsenargs(char *string, char *args[], int limit, const char *seps);
 
 #endif  /* _COMPACT_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

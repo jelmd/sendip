@@ -1,4 +1,4 @@
-/* tcp.c - tcp support for sendip
+/** tcp.c - tcp support for sendip
  * Created by Mike Ricketts <mike@earth.li>
  * TCP options taken from code by Alexander Talos <at@atat.at>
  */
@@ -23,25 +23,25 @@ tcpcsum(sendip_data *ip_hdr, sendip_data *tcp_hdr, sendip_data *data) {
 	tcp_header *tcp = (tcp_header *) tcp_hdr->data;
 	ip_header  *ip  = (ip_header *) ip_hdr->data;
 	u_int16_t *buf = malloc(12 + tcp_hdr->alloc_len + data->alloc_len);
-	u_int8_t *tempbuf = (u_int8_t *) buf;
+	u_int8_t *temp = (u_int8_t *) buf;
 
-	if (tempbuf == NULL) {
+	if (temp == NULL) {
 		PERROR("TCP checksum not computed")
 		return;
 	}
 	/* Set up the pseudo header */
 	tcp->check = 0;
-	memcpy(tempbuf, &(ip->saddr), sizeof(u_int32_t));
-	memcpy(&(tempbuf[4]), &(ip->daddr), sizeof(u_int32_t));
-	tempbuf[8] = 0;
-	tempbuf[9] = (u_int16_t) ip->protocol;
-	tempbuf[10] = (u_int16_t)
+	memcpy(temp, &(ip->saddr), sizeof(u_int32_t));
+	memcpy(&(temp[4]), &(ip->daddr), sizeof(u_int32_t));
+	temp[8] = 0;
+	temp[9] = (u_int16_t) ip->protocol;
+	temp[10] = (u_int16_t)
 		((tcp_hdr->alloc_len + data->alloc_len) & 0xFF00) >> 8;
-	tempbuf[11] = (u_int16_t)
+	temp[11] = (u_int16_t)
 		((tcp_hdr->alloc_len + data->alloc_len) & 0x00FF);
 	/* Copy the TCP header and data */
-	memcpy(tempbuf + 12, tcp_hdr->data, tcp_hdr->alloc_len);
-	memcpy(tempbuf + 12 + tcp_hdr->alloc_len, data->data, data->alloc_len);
+	memcpy(temp + 12, tcp_hdr->data, tcp_hdr->alloc_len);
+	memcpy(temp + 12 + tcp_hdr->alloc_len, data->data, data->alloc_len);
 	/* CheckSum it */
 	tcp->check = csum(buf, 12 + tcp_hdr->alloc_len + data->alloc_len);
 	free(buf);
@@ -56,8 +56,8 @@ tcp6csum(sendip_data *ipv6_hdr, sendip_data *tcp_hdr, sendip_data *data)
 
 	u_int16_t *buf =
 		malloc(sizeof(phdr) + tcp_hdr->alloc_len + data->alloc_len);
-	u_int8_t *tempbuf = (u_int8_t *) buf;
-	if (tempbuf == NULL) {
+	u_int8_t *temp = (u_int8_t *) buf;
+	if (temp == NULL) {
 		PERROR("TCP checksum not computed")
 		return;
 	}
@@ -69,11 +69,11 @@ tcp6csum(sendip_data *ipv6_hdr, sendip_data *tcp_hdr, sendip_data *data)
 	memcpy(&phdr.destination, &ipv6->ip6_dst, sizeof(struct in6_addr));
 	phdr.ulp_length = IPPROTO_TCP;
 	
-	memcpy(tempbuf, &phdr, sizeof(phdr));
+	memcpy(temp, &phdr, sizeof(phdr));
 
 	/* Copy the TCP header and data */
-	memcpy(tempbuf + sizeof(phdr), tcp_hdr->data, tcp_hdr->alloc_len);
-	memcpy(tempbuf + sizeof(phdr) + tcp_hdr->alloc_len, data->data,
+	memcpy(temp + sizeof(phdr), tcp_hdr->data, tcp_hdr->alloc_len);
+	memcpy(temp + sizeof(phdr) + tcp_hdr->alloc_len, data->data,
 		data->alloc_len);
 
 	/* CheckSum it */
@@ -87,7 +87,7 @@ addoption(u_int8_t opt, u_int8_t len, u_int8_t *data, sendip_data *pack)
 	pack->data = realloc(pack->data, pack->alloc_len + len);
 	*((u_int8_t *) pack->data + pack->alloc_len) = opt;
 	if (len > 1)
-		*((u_int8_t *) pack->data+pack->alloc_len + 1) = len;
+		*((u_int8_t *) pack->data + pack->alloc_len + 1) = len;
 	if (len > 2)
 		memcpy((u_int8_t *) pack->data + pack->alloc_len + 2, data, len - 2);
 	pack->alloc_len += len;
@@ -99,7 +99,7 @@ initialize(void) {
 	tcp_header *tcp = malloc(sizeof(tcp_header));
 	memset(tcp, 0, sizeof(tcp_header));
 	ret->alloc_len = sizeof(tcp_header);
-	ret->data = (void *)tcp;
+	ret->data = tcp;
 	ret->modified = 0;
 	return ret;
 }
@@ -108,7 +108,7 @@ bool
 do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	tcp_header *tcp = (tcp_header *)pack->data;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 's':
 		tcp->source = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_SOURCE;
@@ -138,7 +138,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		pack->modified |= TCP_MOD_RES;
 		break;
 	case 'f':
-		switch(opt[2]) {
+		switch (opt[2]) {
 		case 'e':
 			tcp->ecn = (u_int16_t) *arg & 1;
 			pack->modified |= TCP_MOD_ECN;
@@ -187,7 +187,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	case 'u':
 		tcp->urg_ptr = opt2intn(arg, 2);
 		pack->modified |= TCP_MOD_URGPTR;
-		if(!(pack->modified&TCP_MOD_URG)) {
+		if (!(pack->modified & TCP_MOD_URG)) {
 			tcp->urg = 1;
 			pack->modified |= TCP_MOD_URG;
 		}
@@ -292,85 +292,91 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			addoption(5, sizeof(comb) + 2, comb, pack);
 			free(s);
 			free(comb);
-		} else if (!strcmp(opt+2, "ts")) {
+		} else if (strcmp(opt + 2, "ts") == 0) {
 			/* Timestamp rfc1323 */
-			u_int32_t tsval=0, tsecr=0;
+			u_int32_t tsval = 0, tsecr = 0;
 			u_int8_t comb[8];
 			if (2 != sscanf(arg, "%u:%u", &tsval, &tsecr)) {
 				DERROR("Invalid value '%s' for tcp timestamp option", arg)
 				return FALSE;
 			}
-			tsval=htonl(tsval);
+			tsval = htonl(tsval);
 			memcpy(comb, &tsval, 4);
-			tsecr=htonl(tsecr);
-			memcpy(comb+4, &tsecr, 4);
-			addoption(8,10,comb,pack);
+			tsecr = htonl(tsecr);
+			memcpy(comb + 4, &tsecr, 4);
+			addoption(8, 10, comb, pack);
 		} else {
 			/* Unrecognized -to* */
-			DERROR("unsupported TCP Option '%s'", opt);
+			DERROR("unsupported TCP Option '%s'", opt)
 			return FALSE;
 		} 
 		break;
 		
 	default:
-		DERROR("unknown TCP option '-%c'", opt[1]);
+		DERROR("unknown TCP option '-%c'", opt[1])
 		return FALSE;
 	}
 
 	return TRUE;
-
 }
 
-bool finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
-				  sendip_data *pack) {
-	tcp_header *tcp = (tcp_header *)pack->data;
+bool
+finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
+	sendip_data *pack)
+{
+	tcp_header *tcp = (tcp_header *) pack->data;
 	int i;
 	
 	/* Set relevant fields */
-	if(!(pack->modified&TCP_MOD_SEQ)) {
-		tcp->seq = (u_int32_t)rand();
+	if (!(pack->modified & TCP_MOD_SEQ)) {
+		tcp->seq = (u_int32_t) rand();
 	}
-	if(!(pack->modified&TCP_MOD_OFF)) {
-		tcp->off = (u_int16_t)((pack->alloc_len+3)/4) & 0x0F;
+	if (!(pack->modified & TCP_MOD_OFF)) {
+		tcp->off = (u_int16_t)((pack->alloc_len + 3) / 4) & 0x0F;
 	}
-	if(!(pack->modified&TCP_MOD_SYN)) {
-		tcp->syn=1;
+	if (!(pack->modified & TCP_MOD_SYN)) {
+		tcp->syn = 1;
 	}
-	if(!(pack->modified&TCP_MOD_WINDOW)) {
-		tcp->window=htons((u_int16_t)65535);
+	if (!(pack->modified & TCP_MOD_WINDOW)) {
+		tcp->window = htons((u_int16_t) 65535);
 	}
 
 	/* Find enclosing IP header and do the checksum */
 	i = outer_header(hdrs, index, "i6");
-	if(hdrs[i]=='i') {
-		if(!(headers[i]->modified&IP_MOD_PROTOCOL)) {
-			((ip_header *)(headers[i]->data))->protocol=IPPROTO_TCP;
+	if (hdrs[i] == 'i') {
+		if (!(headers[i]->modified & IP_MOD_PROTOCOL)) {
+			((ip_header *) (headers[i]->data))->protocol = IPPROTO_TCP;
 			headers[i]->modified |= IP_MOD_PROTOCOL;
 		}
-		if(!(pack->modified&TCP_MOD_CHECK)) {
+		if (!(pack->modified & TCP_MOD_CHECK)) {
 			tcpcsum(headers[i],pack,data);
 		}
-	} else if(hdrs[i]=='6') {
+	} else if (hdrs[i] == '6') {
 		/* next header type gets determined in the ipv6 module */
-		if(!(pack->modified&TCP_MOD_CHECK)) {
-			tcp6csum(headers[i],pack,data);
+		if (!(pack->modified & TCP_MOD_CHECK)) {
+			tcp6csum(headers[i], pack, data);
 		}
-	} else {
-		if(!(pack->modified&TCP_MOD_CHECK)) {
-			usage_error("TCP checksum not defined when TCP is not embedded in IP\n");
-			return FALSE;
-		}
+	} else if (!(pack->modified & TCP_MOD_CHECK)) {
+		ERROR("TCP checksum not defined when TCP is not embedded in IP")
+		return FALSE;
 	}
-	
 	return TRUE;
 }
 
-int num_opts() {
-	return sizeof(tcp_opts)/sizeof(sendip_option); 
+int
+num_opts() {
+	return sizeof(tcp_opts) / sizeof(sendip_option);
 }
-sendip_option *get_opts() {
+
+sendip_option *
+get_opts() {
 	return tcp_opts;
 }
-char get_optchar() {
+
+char
+get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

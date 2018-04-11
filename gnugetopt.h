@@ -1,4 +1,4 @@
-/* Declarations for getopt.
+/** gnugetopt.h - Declarations for getopt.
    Copyright (C) 1989,90,91,92,93,94,96,97,98,99 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -125,8 +125,10 @@ extern int gnugetopt (int __argc, char *const *__argv, const char *__shortopts);
 
 /* Internal only.  Users should not call this directly.  */
 extern int _getopt_internal (int __argc, char *const *__argv,
-			     const char *__shortopts,
-		             const struct option *__longopts, int *__longind,
-			     int __long_only);
+	const char *__shortopts, const struct option *__longopts, int *__longind,
+	int __long_only);
 
 #endif /* getopt.h */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

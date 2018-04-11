@@ -1,10 +1,11 @@
+/** headers.h */
+
 #ifndef _HEADERS_H
 #define _HEADERS_H
 
 #include "types.h"
 
-/*
- *	IPV6 extension headers
+/* IPV6 extension headers
  *	In the Linux source, some of these (those also in v4)
  *	are part of an enum, but let's just pull them all together.
  */
@@ -114,3 +115,6 @@ int outer_header(const char *hdrs, int index, const char *choices);
 int inner_header(const char *hdrs, int index, const char *choices);
 
 #endif  /* _HEADERS_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

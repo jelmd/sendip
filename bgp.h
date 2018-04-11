@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------
+/**---------------------------------------------------------------------------
  * bgp.h   - bgp module for SendIP
  *
  * Copyright (C) David Ball for Project Purple, August 2001
@@ -9,9 +9,7 @@
 
 #include "sendip_module.h"
 
-/*
- * Roughly stolen from arpa/nameser.h
- */
+/* Roughly stolen from arpa/nameser.h */
 #define GETSHORT(ptr) (ntohs(					\
 	((u_int16_t)((u_int8_t *)(ptr))[0] << 8) |	\
 	((u_int16_t)((u_int8_t *)(ptr))[1])			\
@@ -38,18 +36,14 @@
 	*(((u_int8_t *)(ptr)) + 3) = v;			\
 }
 
-/*
- * Defines for which parts have been modified
- */
+/* Defines for which parts have been modified */
 const u_int32_t BGP_MOD_LENGTH =   0x00000001;
 const u_int32_t BGP_MOD_OPT_LEN =  0x00000002;
 const u_int32_t BGP_MOD_WDR_LEN =  0x00000004;
 const u_int32_t BGP_MOD_ATTR_LEN = 0x00000008;
 
 
-/*
- * Parts of BGP messages
- */
+/* Parts of BGP messages */
 typedef enum {
 	BGP_HEADER,
 	BGP_OPEN,
@@ -62,14 +56,10 @@ typedef enum {
 	BGP_NOTFN
 } bgp_msg_part;
 
-/*
- * Gaping buffer overrun - make sure this is long enough :)
- */
+/* Gaping buffer overrun - make sure this is long enough :) */
 const u_int32_t  BGP_BUFLEN = 1400;
 
-/*
- * Options
- */
+/* Options */
 sendip_option bgp_opts[] = {
 	{ "m", TRUE, "BGP Marker field (format is <hex byte>:<hex byte>:...)",
 		"FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF" },
@@ -95,3 +85,6 @@ sendip_option bgp_opts[] = {
 		"Data may be omitted for no data" },
 };
 #endif
+
+/* vim: ts=4 sw=4 filetype=c
+ */

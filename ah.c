@@ -1,8 +1,4 @@
-/* ah.c - authentication header (for IPv6)
- *
- * This currently is strictly a dummy version; eventually I hope
- * to add provisions to allow plugging in real AH modules.
- */
+/** ah.c - authentication header (for IPv6) */
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -23,7 +19,7 @@
 #include "ah.h"
 
 /* Character that identifies our options */
-const char opt_char='a';
+const char opt_char = 'a';
 
 crypto_module *cryptoah;
 
@@ -51,9 +47,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	ah_header *ah = (ah_header *) pack->data;
 	ah_private *priv = (ah_private *) pack->private;
 	char temp[BUFSIZ];
-	int length;
+	size_t len;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 's':	/* SPI (32 bits) */
 		ah->spi = opt2intn(arg, 4);
 		pack->modified |= AH_MOD_SPI;
@@ -63,22 +59,21 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= AH_MOD_SEQUENCE;
 		break;
 	case 'd':	/* Authentication data (variable length) */
-		/* For right now, we will do either random generation
-		 * or a user-provided string.
-		 */
-		length = opt2val(temp, arg, BUFSIZ);
-		pack->data = realloc(ah, sizeof(ah_header)+length);
-		pack->alloc_len = sizeof(ah_header)+length;
-		ah = (ah_header *)pack->data;
-		memcpy(ah->auth_data, temp, length);
+		/* For right now, we will do either random generation or a
+		   user-provided string.  */
+		len = opt2val(temp, arg, BUFSIZ);
+		pack->data = realloc(ah, sizeof(ah_header) + len);
+		pack->alloc_len = sizeof(ah_header) + len;
+		ah = (ah_header *) pack->data;
+		memcpy(ah->auth_data, temp, len);
 		/* as per RFC 4302 */
-		ah->hdrlen = 1 + length/4;
+		ah->hdrlen = 1 + len / 4;
 		pack->modified |= AH_MOD_AUTHDATA;
 		break;
 	case 'k':       /* Key */
-		length = opt2val(temp, arg, BUFSIZ);
-		priv->keylen = length;
-		priv = (ah_private *) realloc(priv, sizeof(ah_private) + length);
+		len = opt2val(temp, arg, BUFSIZ);
+		priv->keylen = len;
+		priv = (ah_private *) realloc(priv, sizeof(ah_private) + len);
 		memcpy(priv->key, temp, priv->keylen);
 		pack->private = priv;
 		pack->modified |= AH_MOD_KEY;
@@ -89,7 +84,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 			return FALSE;
 		/* Call any init routine */
 		if (cryptoah->cryptoinit)
-			return (*cryptoah->cryptoinit)(pack);
+			return (*cryptoah->cryptoinit) (pack);
 		break;
 
 	case 'n':	/* Next header */
@@ -102,21 +97,21 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 }
 
 bool
-finalize(char *hdrs, sendip_data *headers[], int index,
-			sendip_data *data, sendip_data *pack)
+finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
+	sendip_data *pack)
 {
-	ah_header *ah = (ah_header *)pack->data;
+	ah_header *ah = (ah_header *) pack->data;
 	ah_private *priv = (ah_private *) pack->private;
 	int ret = TRUE;
 
-	if (!(pack->modified&AH_MOD_NEXTHDR))
-		ah->nexthdr = header_type(hdrs[index+1]);
+	if (!(pack->modified & AH_MOD_NEXTHDR))
+		ah->nexthdr = header_type(hdrs[index + 1]);
 	/* Let crypto module fill in auth data into the packet, if there is one */
 	if (cryptoah && cryptoah->cryptomod) {
 		ret = (*cryptoah->cryptomod) (priv, hdrs, headers, index, data, pack);
 	}
 	/* Free the private data as no longer required */
-	free((void *) priv);
+	free(priv);
 	pack->private = NULL;
 	return ret;
 }
@@ -124,7 +119,7 @@ finalize(char *hdrs, sendip_data *headers[], int index,
 int
 num_opts(void)
 {
-	return sizeof(ah_opts)/sizeof(sendip_option);
+	return sizeof(ah_opts) / sizeof(sendip_option);
 }
 
 sendip_option *
@@ -138,3 +133,6 @@ get_optchar(void)
 {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

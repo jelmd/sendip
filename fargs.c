@@ -1,10 +1,12 @@
-#include <errno.h>
+/** fargs.c - provide the -fPATH option support, i.e. read option from file */
+
 #include <search.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#include "parseargs.h"		/* actually only the macros are needed */
 #include "fargs.h"
 
 /* a file cache entry */
@@ -44,7 +46,8 @@ fc_free(fc *f) {
 
 	for (i = f->len - 1; i >= 0; i--)
 		free(f->lines[i]);
-	free((void *)(unsigned long)f->path);
+	/* to get rid off the const compiler warning use a casting trick ;-) */
+	free((void *) (unsigned long) f->path);
 	free(f);
 }
 
@@ -94,25 +97,25 @@ fc_create(const char *path)
 		capacity = 4;
 	f = (fc *) malloc(sizeof(fc) + capacity * sizeof(char *));
 	if (f == NULL) {
-		perror("Unable to create file contents table");
+		PERROR("fargs - Unable to create file contents table")
 		return NULL;
 	}
 	if ((f->path = strdup(path)) == NULL) {
-		perror("Unable to populate file contents table");
+		PERROR("fargs - Unable to populate file contents table")
 		fc_free(f);
 		return NULL;
 	}
 	/* read the lines into memory */
-	errno = 0;
 	for (i = 0; (s = fgets(line, LINE_MAX, fp)) != NULL; i++) {
 		if (i >= capacity) {
 			capacity *= 2;
 			t = (fc *) realloc(f, sizeof(fc) + capacity * sizeof(char *));
 			if (t == NULL) {
-				snprintf(line, LINE_MAX, "Unable to extent file contents table "
-					"to %d lines for '%s'", capacity, path);
-				i--;
-				break;
+				PERROR("Unable to extent file contents table to %d lines for "
+					"'%s' - dropping the file contents.", capacity, path)
+				fclose(fp);
+				fc_free(f);
+				return NULL;
 			}
 			f = t;
 		}
@@ -120,23 +123,13 @@ fc_create(const char *path)
 		if (len > 0 && line[len - 1] == '\n')
 			line[--len] = '\0';
 		if (len == 0)
-			fprintf(stderr, "Warning: empty line (%s: %d)\n", path, i);
+			DWARN("empty line %d in '%s'", i, path)
 		f->lines[i] = strdup(line);
 		line[0] = '\0';
 	}
 	f->len = i;
-	i = errno;
 	fclose(fp);
-	if (i != 0) {
-		if (line[0] == '\0') {
-			snprintf(line, LINE_MAX, "Stopped reading file '%s' on line %d",
-				path, f->len);
-		}
-		fprintf(stderr, "%s: %s\n", line, strerror(i));
-		fc_free(f);
-		return NULL;
-	}
-	f->idx=0;
+	f->idx = 0;
 	return f;
 }
 
@@ -220,3 +213,6 @@ main(int argc, char **argv)
 	fargs_destroy();
 }
 #endif
+
+/* vim: ts=4 sw=4 filetype=c
+ */

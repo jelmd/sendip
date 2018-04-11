@@ -1,4 +1,5 @@
-/* wesp.h - wrapped ESP header */
+/** wesp.h - wrapped ESP header */
+
 #ifndef _SENDIP_WESP_H
 #define _SENDIP_WESP_H
 
@@ -14,7 +15,7 @@
  */
 #define WESP_VERSION_MASK	0xc0
 #define	WESP_ENCRYPTED		0x20
-#define	WESP_PADDED		0x10
+#define	WESP_PADDED			0x10
 #define WESP_RESERVED_MASK	0x0f
 
 typedef struct ip_wesp_phdr {
@@ -28,14 +29,14 @@ typedef struct ip_wesp_phdr {
 	 */
 #if defined(__LITTLE_ENDIAN_BITFIELD) || defined(_LITTLE_ENDIAN)
 	u_int8_t	reserved:4,
-			padded:1,
-			encrypted:1,
-			version:2;
+				padded:1,
+				encrypted:1,
+				version:2;
 #elif defined(__BIG_ENDIAN_BITFIELD) || defined(_BIG_ENDIAN)
 	u_int8_t 	version:2,
-			encrypted:1,
-			padded:1,
-			reserved:4;
+				encrypted:1,
+				padded:1,
+				reserved:4;
 #else
 #error  "Please fix <asm/byteorder.h>"
 #endif
@@ -52,13 +53,16 @@ typedef struct ip_wesp_phdr {
 
 /* Options */
 sendip_option wesp_opts[] = {
-	{"v",1,"WESP Version","0"},
-	{"e",1,"WESP Encrypted Payload flag","0"},
-	{"p",1,"WESP Padded flag (also adds 4 bytes padding)","0"},
-	{"r",1,"WESP Reserved field","0"},
-	{"h",1,"WESP Header Length","Correct"},
-	{"t",1,"WESP Trailer Length","Correct"},
-	{"n",1,"WESP Next Header","Correct"},
+	{ "v", 1, "WESP Version", "0" },
+	{ "e", 1, "WESP Encrypted Payload flag", "0" },
+	{ "p", 1, "WESP Padded flag (also adds 4 bytes padding)", "0" },
+	{ "r", 1, "WESP Reserved field", "0" },
+	{ "h", 1, "WESP Header Length", "Correct" },
+	{ "t", 1, "WESP Trailer Length", "Correct" },
+	{ "n", 1, "WESP Next Header", "Correct" },
 };
 
 #endif  /* _SENDIP_WESP_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

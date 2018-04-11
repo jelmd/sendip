@@ -1,4 +1,4 @@
-/* ripng.h */
+/** ripng.h */
 #ifndef _SENDIP_RIPNG_H
 #define _SENDIP_RIPNG_H
 
@@ -41,3 +41,6 @@ sendip_option rip_opts[] = {
 	((d)->data) + ((d)->alloc_len >> 2) - (sizeof(ripng_entry) >> 2)))
 
 #endif  /* _SENDIP_RIPNG_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

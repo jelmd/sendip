@@ -1,8 +1,4 @@
-/* esp.c - esp header (for IPv6)
- *
- * This currently is strictly a dummy version; eventually I hope
- * to add provisions to allow plugging in real ESP modules.
- */
+/** esp.c - esp header (for IPv6) */
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -22,7 +18,7 @@
 #include "esp.h"
 
 /* Character that identifies our options */
-const char opt_char='e';
+const char opt_char = 'e';
 
 crypto_module *authesp, *cryptoesp;
 
@@ -30,21 +26,19 @@ sendip_data *
 initialize(void)
 {
 	sendip_data *ret = malloc(sizeof(sendip_data));
-	/* We allocate an additional 4 bytes to ensure we have
-	 * enough space for any padding in finalize(). In reality,
-	 * we will only need at most 3 bytes, but this should
-	 * help keep things aligned better.
-	 */
+	/* We allocate an additional 4 bytes to ensure we have enough space for
+	   any padding in finalize(). In reality, we will only need at most
+	   3 bytes, but this should help keep things aligned better. */
 	esp_header *esp = malloc(sizeof(esp_header) + ESP_MIN_PADDING);
 	esp_private *priv = malloc(sizeof(esp_private));
 
-	memset(esp,0,sizeof(esp_header)+ESP_MIN_PADDING);
-	memset(priv,0,sizeof(esp_private));
-	ret->alloc_len = sizeof(esp_header)+ESP_MIN_PADDING;
+	memset(esp, 0, sizeof(esp_header) + ESP_MIN_PADDING);
+	memset(priv, 0, sizeof(esp_private));
+	ret->alloc_len = sizeof(esp_header) + ESP_MIN_PADDING;
 	ret->data = esp;
 	priv->type = IPPROTO_ESP;
 	ret->private = priv;
-	ret->modified=0;
+	ret->modified = 0;
 	return ret;
 }
 
@@ -56,7 +50,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	char temp[BUFSIZ];
 	int length;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 's':	/* SPI (32 bits) */
 		esp->hdr.spi = opt2intn(arg, 4);
 		pack->modified |= ESP_MOD_SPI;
@@ -66,52 +60,47 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ESP_MOD_SEQUENCE;
 		break;
 	case 'p':	/* padding (variable length) */
-		/* We initially put the padding at the end of the
-		 * header, then move it past the payload in finalize.
-		 */
-		length = strtoul(arg, (char **)NULL, 0);
+		/* We initially put the padding at the end of the header, then move it
+		   past the payload in finalize.  */
+		length = strtoul(arg, NULL, 0);
 		if (length > OCTET_MAX) {
-			usage_error("Padding length can't be over 255\n");
+			ERROR("esp padding length can't be over 255")
 			return FALSE;
 		}
 		esp->tail.padlen = length;
 		if (length >  ESP_MIN_PADDING) {
-			pack->alloc_len += length-ESP_MIN_PADDING;
+			pack->alloc_len += length - ESP_MIN_PADDING;
 			pack->data = realloc(esp, pack->alloc_len);
 		}
-		/* We don't bother doing anything with the padding
-		 * contents right now
-		 */
+		/* We don't bother doing anything with the padding contents right now */
 		pack->modified |= ESP_MOD_PADDING;
 		break;
 	case 'i':	/* IV data (variable length) */
-		/* For right now, we will do either random generation
-		 * or a user-provided string. We put it in the header,
-		 * where in finalize it will constitute the beginning
-		 * of the payload area.
-		 */
+		/* For right now, we will do either random generation or a
+		   user-provided string. We put it in the header, where in finalize it
+		   will constitute the beginning of the payload area. */
 		length = opt2val(temp, arg, BUFSIZ);
 		priv->ivlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
 		esp = (esp_header *)pack->data;
 		/* Check if we have an ICV we have to shove down */
-		if (priv->icvlen)
-			memmove(&esp->tail.ivicv[priv->ivlen],
-				&esp->tail.ivicv[0], priv->icvlen);
+		if (priv->icvlen) {
+			memmove(&esp->tail.ivicv[priv->ivlen], &esp->tail.ivicv[0],
+				priv->icvlen);
+		}
 		memcpy(&esp->tail.ivicv[0], temp, priv->ivlen);
 		pack->modified |= ESP_MOD_IV;
 		break;
 	case 'I':	/* ICV data (variable length) */
-		/* For right now, we will do either random generation
-		 * or a user-provided string. We put it in the header,
-		 * then move it into the trailer in finalize.
-		 */
+		/* For right now, we will do either random generation or a
+		   user-provided string. We put it in the header, then move it into
+		   the trailer in finalize. */
 		length = opt2val(temp, arg, BUFSIZ);
 		priv->icvlen = length;
 		pack->alloc_len += length;
 		pack->data = realloc(esp, pack->alloc_len);
-		esp = (esp_header *)pack->data;
+		esp = (esp_header *) pack->data;
 		memcpy(&esp->tail.ivicv[priv->ivlen], temp, priv->icvlen);
 		pack->modified |= ESP_MOD_ICV;
 		break;
@@ -150,39 +139,36 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 }
 
 bool
-finalize(char *hdrs, sendip_data *headers[], int index,
-			sendip_data *data, sendip_data *pack)
+finalize(char *hdrs, sendip_data *headers[], int index, sendip_data *data,
+	sendip_data *pack)
 {
-	esp_header *esp = (esp_header *)pack->data;
-	esp_private *priv = (esp_private *)pack->private;
+	esp_header *esp = (esp_header *) pack->data;
+	esp_private *priv = (esp_private *) pack->private;
 	/* Let's just be stupid! */
 	u_int8_t padlen, nexthdr;
 	u_int8_t *iv, *icv, *where;
 	int ret = TRUE;
 
-	if (!(pack->modified&ESP_MOD_NEXTHDR))
-		esp->tail.nexthdr = header_type(hdrs[index+1]);
+	if (!(pack->modified & ESP_MOD_NEXTHDR))
+		esp->tail.nexthdr = header_type(hdrs[index + 1]);
 	/* figure out padding if not already set */
-	if (!(pack->modified&ESP_MOD_PADDING)) {
-		/* We need to pad out IV+packet data length
-		 * to be equal to 2 mod 4. I'll subtract it
-		 * from 6 rather than 2 to keep signs positive.
-		 *
-		 * 0->2  (6-0) -> 2
-		 * 1->1	 (6-1) -> 1
-		 * 2->0	 (6-2) -> 0
-		 * 3->3  (6-3) -> 3
+	if (!(pack->modified & ESP_MOD_PADDING)) {
+		/* We need to pad out IV+packet data length to be equal to 2 mod 4.
+		   I'll subtract it from 6 rather than 2 to keep signs positive.
+
+		   0->2  (6-0) -> 2
+		   1->1	 (6-1) -> 1
+		   2->0	 (6-2) -> 0
+		   3->3  (6-3) -> 3
 		 */
-		esp->tail.padlen = (6 - ((data->alloc_len + priv->ivlen)&03))&03;
-		/* We preallocated 4 bytes for padding above,
-		 * so we will actually be trimming a little bit.
-		 */
+		esp->tail.padlen = (6 - ((data->alloc_len + priv->ivlen) & 03)) & 03;
+		/* We preallocated 4 bytes for padding above, so we will actually be
+		   trimming a little bit. */
 		pack->alloc_len -= ESP_MIN_PADDING-esp->tail.padlen;
 
 	}
 
-	/* Now move the tail past the data portion of the packet
-	 * Premove layout:
+	/* Now move the tail past the data portion of the packet Premove layout:
 	 * esp header:	SPI
 	 * 		sequence number
 	 * 		pad length
@@ -202,19 +188,18 @@ finalize(char *hdrs, sendip_data *headers[], int index,
 	 * 		next header
 	 * 		ICV
 	 */
-	/* For the sake of clarity, we do all of this in the
-	 * most straightforward, stupid manner possible.
-	 */
+	/* For the sake of clarity, we do all of this in the most straightforward,
+	   stupid manner possible.  */
 	padlen = esp->tail.padlen;
 	nexthdr = esp->tail.nexthdr;
 	if (priv->ivlen) {
-		iv = (u_int8_t *)malloc(priv->ivlen);
+		iv = (u_int8_t *) malloc(priv->ivlen);
 		memcpy(iv, &esp->tail.ivicv[0], priv->ivlen);
 	} else {
 		iv = NULL;
 	}
 	if (priv->icvlen) {
-		icv = (u_int8_t *)malloc(priv->icvlen);
+		icv = (u_int8_t *) malloc(priv->icvlen);
 		memcpy(icv, &esp->tail.ivicv[priv->ivlen], priv->icvlen);
 	} else {
 		icv = NULL;
@@ -223,22 +208,19 @@ finalize(char *hdrs, sendip_data *headers[], int index,
 	/* Now fill out the packet */
 	where = esp->hdr.enc_data;
 	/* This can't overwrite the packet data, as the iv space was already
-	 * in the original oversized "header."
-	 */
+	   in the original oversized "header" */
 	if (iv) {
 		memcpy(where, iv, priv->ivlen);
 		where += priv->ivlen;
-		free((void *)iv);
+		free(iv);
 	}
-	/* I think memcpy would work, too (at least, the implementations
-	 * of it that I have seen), but since technically this could
-	 * be an "overlapping" move, we'll use memmove.
-	 */
+	/* I think memcpy would work, too (at least, the implementations of it
+	   that I have seen), but since technically this could be an "overlapping"
+	   move, we'll use memmove. */
 	memmove(where, data->data, data->alloc_len);
 	/* Move the data pointer to the new payload head for the benefit of any
-	 * crypto module that wants to know where things are.
-	 */
-	data->data = (void *) (where - priv->ivlen);
+	   crypto module that wants to know where things are. */
+	data->data = where - priv->ivlen;
 	/* Move our work pointer past the packet data and fill out the trailer */
 	where += data->alloc_len;
 	memset(where, 0, padlen);
@@ -248,7 +230,7 @@ finalize(char *hdrs, sendip_data *headers[], int index,
 	if (icv) {
 		memcpy(where, icv, priv->icvlen);
 		where += priv->icvlen;
-		free((void *)icv);
+		free(icv);
 	}
 
 	/* Now let's testify to the real lengths */
@@ -256,38 +238,33 @@ finalize(char *hdrs, sendip_data *headers[], int index,
 	data->alloc_len += priv->ivlen + padlen + priv->icvlen + 2;
 
 	/* Call any authentication and/or encryption modules, in that order, and
-	 * let them work their magic.
-	 */
+	   let them work their magic. */
 	if (authesp && authesp->cryptomod) {
-		ret = (*authesp->cryptomod)(priv, hdrs, headers, index,
-			data, pack);
+		ret = (*authesp->cryptomod)(priv, hdrs, headers, index, data, pack);
 	}
-	if (ret == TRUE) {
-		if (cryptoesp && cryptoesp->cryptomod) {
-			ret = (*cryptoesp->cryptomod)(priv, hdrs, headers,
-				index, data, pack);
-		}
+	if (ret == TRUE && (cryptoesp && cryptoesp->cryptomod)) {
+		ret = (*cryptoesp->cryptomod)(priv, hdrs, headers, index, data, pack);
 	}
 
 	/* We can't free the private data, as WESP needs it */
-	/* free((void *)priv); pack->private = NULL; */
+	/* TODO: free(priv); pack->private = NULL; */
 	return ret;
 }
 
 int
-num_opts(void)
-{
-	return sizeof(esp_opts)/sizeof(sendip_option);
+num_opts(void) {
+	return sizeof(esp_opts) / sizeof(sendip_option);
 }
 
 sendip_option *
-get_opts(void)
-{
+get_opts(void) {
 	return esp_opts;
 }
 
 char
-get_optchar(void)
-{
+get_optchar(void) {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

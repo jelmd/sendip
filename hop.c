@@ -1,4 +1,4 @@
-/* hop.c - hop-by-hop and destination options headers
+/** hop.c - hop-by-hop and destination options headers
  *
  * Note that we compile two different versions of this
  * extension, one for the hop-by-hop option header (0)
@@ -29,9 +29,9 @@
 
 /* Character that identifies our options */
 #if defined(HOP_OPT)
-const char opt_char='H';	/* 'h' gives help message */
+const char opt_char = 'H';	/* 'h' gives help message */
 #elif defined(DEST_OPT)
-const char opt_char='d';
+const char opt_char = 'd';
 #else
 #error "option character not defined"
 #endif
@@ -42,13 +42,13 @@ const char opt_char='d';
  * options and not introducing any additional variables.
  *
  * Here's how it works: While assembling the options, the hop
- * header length field contains length/8 - that is, the total
+ * header length field contains length / 8 - that is, the total
  * length consumed divided by 8 (remainder discarded). Note this
- * is *not* (necessarily) the proper final value ((length-8)/8) for
+ * is *not* (necessarily) the proper final value ((length - 8) / 8) for
  * the transmitted packet, but this will be adjusted below.
  *
  * The low three bits of pack->modified contain the amount of the
- * final 8-byte segment used - that is, length%8. As always,
+ * final 8-byte segment used - that is, length % 8. As always,
  * pack->alloc_len says how much (in bytes) has actually been
  * allocated.
  *
@@ -58,15 +58,14 @@ const char opt_char='d';
  * if necessary.
  */
 
-/* The minimum legal option header length is 8 bytes (HDR_ALLOC).
- */
+/* The minimum legal option header length is 8 bytes (HDR_ALLOC). */
 sendip_data *
 initialize(void)
 {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	hop_header *hop = malloc(HDR_ALLOC);
 
-	memset(hop,0,HDR_ALLOC);
+	memset(hop, 0, HDR_ALLOC);
 	hop->hdrlen = 0;
 	ret->modified = sizeof(hop_header);	/* for the opt header itself */
 	ret->alloc_len = HDR_ALLOC;
@@ -83,182 +82,154 @@ addopt(sendip_data *pack, struct ipv6_hopopt *opt)
 	int hoplen;
 	int optlen;
 
-	hoplen = hop->hdrlen*HDR_ALLOC + (pack->modified&(HDR_ALLOC-1));
-	/* The PAD0 option doesn't have a real header, so we
-	 * have to special-case it.
-	 */
-	if (opt && opt->hopt_type) {
-		optlen = opt->hopt_len+2;
-	} else {
-		optlen = 1;
-	}
+	hoplen = hop->hdrlen * HDR_ALLOC + (pack->modified & (HDR_ALLOC - 1));
+	/* The PAD0 option doesn't have a real header, so we have to
+	   special-case it. */
+	optlen = (opt && opt->hopt_type) ? opt->hopt_len + 2 : 1;
 
-	/* See if we're past our allocation. If so, we'll have
-	 * to add space.
-	 */
+	/* See if we're past our allocation. If so, we'll have to add space. */
 	if (hoplen + optlen > alloclen) {
-		alloclen = (1 + (hoplen+optlen)/HDR_ALLOC)*HDR_ALLOC;
-		hop = realloc((void *)hop, alloclen);
+		alloclen = (1 + (hoplen + optlen) / HDR_ALLOC) * HDR_ALLOC;
+		hop = realloc((void *) hop, alloclen);
 		pack->data = hop;
 		pack->alloc_len = alloclen;
 	}
-	where = ((u_int8_t *)hop) + hoplen;
+	where = ((u_int8_t *) hop) + hoplen;
 
 	/* Special case, part 2 */
 	if (opt && opt->hopt_type) {
-		memcpy((void *)where, (void *)opt, optlen);
+		memcpy(where, opt, optlen);
 	} else {
 		*where = 0;
 	}
 
 	hoplen += optlen;
-	hop->hdrlen = hoplen/HDR_ALLOC;
-	pack->modified &= ~(HDR_ALLOC-1);
-	pack->modified |= (hoplen%HDR_ALLOC);
+	hop->hdrlen = hoplen / HDR_ALLOC;
+	pack->modified &= ~(HDR_ALLOC - 1);
+	pack->modified |= (hoplen % HDR_ALLOC);
 	return TRUE;
 }
 
-bool do_opt(const char *opt, const char *arg, sendip_data *pack)
+bool
+do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
-	hop_header *hop = (hop_header *)pack->data;
+	hop_header *hop = (hop_header *) pack->data;
 	struct ipv6_hopopt *hopt;
-	u_int32_t value;
-	u_int16_t svalue;
+	u_int32_t val;
+	u_int16_t sval;
 	struct in6_addr addr;
 	u_int8_t type;
 	char temp[BUFSIZ];
-	int length;
+	int len;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 'n':	/* next header */
 		hop->nexthdr = name_to_proto(arg);
 		pack->modified |= HOP_MOD_NEXTHDR;
 		break;
 	case '0':	/* pad 0 - pad with 1 byte */
 		pack->modified |= HOP_MOD_PAD0;
-		/* The pad0 option doesn't really use the TLV option
-		 * format; it's just a single zero byte. So since
-		 * we have to special-case it anyway, let's go all
-		 * the way...
-		 */
+		/* The pad0 option doesn't really use the TLV option format; it's just
+		   a single zero byte. So since we have to special-case it anyway,
+		   let's go all the way... */
 		if (!addopt(pack, NULL))
 			return FALSE;
 		break;
 	case 'p':	/* pad N - pad with N bytes */
 		pack->modified |= HOP_MOD_PADN;
-		svalue = strtoul(arg, (char **)NULL, 0);
-
-		if (svalue < 2) {
-			usage_error("Too small a pad value\n");
+		sval = strtoul(arg, NULL, 0);
+		if (sval < 2) {
+			DERROR("hop/dst - pad value too small (%d < 2)", sval)
 			return FALSE;
 		}
-		if (svalue > OCTET_MAX+2) {
-			usage_error("Too big a pad value\n");
+		if (sval > OCTET_MAX + 2) {
+			DERROR("hop/dst - pad value too big (%d < %d)", sval, OCTET_MAX + 2)
 			return FALSE;
 		}
 
-		hopt = (struct ipv6_hopopt *)
-			malloc(svalue);
+		hopt = (struct ipv6_hopopt *) malloc(sval);
 		hopt->hopt_type = IPV6_TLV_PADN;
-		hopt->hopt_len = svalue-2;
-		memset(hopt->hopt_data, 0, svalue-2);
+		hopt->hopt_len = sval - 2;
+		memset(hopt->hopt_data, 0, sval - 2);
 		if (!addopt(pack, hopt))
 			return FALSE;
-		free((void *)hopt);
+		free(hopt);
 		break;
 	case 'r':	/* router alert */
 		pack->modified |= HOP_MOD_RA;
-		svalue = opt2intn(arg, 2);
-		hopt = (struct ipv6_hopopt *)
-			malloc(sizeof(struct ipv6_hopopt) + 2);
+		sval = opt2intn(arg, 2);
+		hopt = (struct ipv6_hopopt *) malloc(sizeof(struct ipv6_hopopt) + 2);
 		hopt->hopt_type = IPV6_TLV_ROUTERALERT;
 		hopt->hopt_len = 2;
-		memcpy(hopt->hopt_data, &svalue, 2);
+		memcpy(hopt->hopt_data, &sval, 2);
 		if (!addopt(pack, hopt))
 			return FALSE;
-		free((void *)hopt);
+		free(hopt);
 		break;
 	case 'j':	/* jumbo frame length */
 		pack->modified |= HOP_MOD_JUMBO;
-		value = opt2intn(arg, 4);
-		hopt = (struct ipv6_hopopt *)
-			malloc(sizeof(struct ipv6_hopopt) + 4);
+		val = opt2intn(arg, 4);
+		hopt = (struct ipv6_hopopt *) malloc(sizeof(struct ipv6_hopopt) + 4);
 		hopt->hopt_type = IPV6_TLV_JUMBO;
 		hopt->hopt_len = 4;
-		memcpy(hopt->hopt_data, &value, 4);
+		memcpy(hopt->hopt_data, &val, 4);
 		if (!addopt(pack, hopt))
 			return FALSE;
-		free((void *)hopt);
+		free(hopt);
 		break;
 	case 'h':	/* (destination option only) home address */
 		if (inet_pton(AF_INET6, arg, &addr)) {
 			pack->modified |= HOP_MOD_HAO;
 			hopt = (struct ipv6_hopopt *)
-				malloc(sizeof(struct ipv6_hopopt)
-					+ sizeof(struct in6_addr));
+				malloc(sizeof(struct ipv6_hopopt) + sizeof(struct in6_addr));
 			hopt->hopt_type = IPV6_TLV_HAO;
 			hopt->hopt_len = sizeof(struct in6_addr);
 			memcpy(hopt->hopt_data, &addr, sizeof(struct in6_addr));
 			if (!addopt(pack, hopt))
 				return FALSE;
-			free((void *)hopt);
+			free(hopt);
 		} else {
-			fprintf(stderr, "Couldn't parse home address %s\n",
-				arg);
+			DERROR("hop/dst - couldn't parse home address '%s'", arg)
 			return FALSE;
 		}
 		break;
 	case 'a':	/* arbitrary tlv data */
 		pack->modified |= HOP_MOD_TLV;
-		/* The argument passed in should be t.l.v, that
-		 * is, type.length.value. The value can be specified
-		 * in the usual way as octal, hex, literal, or "rN"
-		 * for N random bytes.
-		 */
-		svalue = strtoul(arg, (char **)NULL, 0);
-		if (svalue > OCTET_MAX) {
-			usage_error("Too big a type value\n");
+		/* The argument passed in should be t.l.v, that is, type.length.value */
+		sval = strtoul(arg, NULL, 0);
+		if (sval > OCTET_MAX) {
+			DERROR("hop/dst - type value too big (%d > %d)", sval, OCTET_MAX)
 			return FALSE;
 		}
-		type = svalue;
+		type = sval;
 
 		arg = index(arg, '.');
-		if (arg) {
-			++arg;
-			svalue = strtoul(arg, (char **)NULL, 0);
-		} else {
-			svalue = 0;
-		}
-		if (svalue > OCTET_MAX) {
-			usage_error("Too big a length value\n");
+		sval = arg ? strtoul(arg, NULL, 0) : 0;
+		if (sval > OCTET_MAX) {
+			DERROR("hop/dst - length value too big (%d > %d)", sval, OCTET_MAX)
 			return FALSE;
 		}
 
 		arg = index(arg, '.');
-		if (arg) {
-			++arg;
-			length = opt2val(temp, arg, BUFSIZ);
-		} else {
-			length = 0;
-		}
-		hopt = (struct ipv6_hopopt *)
-			malloc(sizeof(struct ipv6_hopopt) + length);
+		len = arg ? opt2val(temp, ++arg, BUFSIZ) : 0;
+		hopt = (struct ipv6_hopopt *) malloc(sizeof(struct ipv6_hopopt) + len);
 		hopt->hopt_type = type;
-		hopt->hopt_len = svalue;
-		if (length != 0) {
-			memset(hopt->hopt_data, 0, length);
-			memcpy((void *) hopt->hopt_data, (void *) temp, length);
+		hopt->hopt_len = sval;
+		if (len != 0) {
+			memset(hopt->hopt_data, 0, len);
+			memcpy(hopt->hopt_data, temp, len);
 		}
 		if (!addopt(pack, hopt))
 			return FALSE;
-		free((void *)hopt);
+		free(hopt);
 		break;
 	}
 	return TRUE;
 }
 
-bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
-	int index, __attribute__((unused)) sendip_data *data, sendip_data *pack)
+bool
+finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[], int index,
+	__attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
 	hop_header *hop = (hop_header *) pack->data;
 	int alloclen = pack->alloc_len;
@@ -286,17 +257,20 @@ bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
 	return TRUE;
 }
 
-int num_opts(void)
-{
+int
+num_opts(void) {
 	return sizeof(hop_opts) / sizeof(sendip_option);
 }
 
-sendip_option *get_opts(void)
-{
+sendip_option *
+get_opts(void) {
 	return hop_opts;
 }
 
-char get_optchar(void)
-{
+char
+get_optchar(void) {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

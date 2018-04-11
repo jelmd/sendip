@@ -1,4 +1,4 @@
-/* esp.h */
+/** esp.h */
 #ifndef _SENDIP_ESP_H
 #define _SENDIP_ESP_H
 
@@ -52,23 +52,26 @@ typedef struct ip_esp_private {		/* keep track of things privately */
 #ifdef _ESP_MAIN
 /* Options */
 sendip_option esp_opts[] = {
-	{"s",1,"ESP Security Parameters Index","0"},
-	{"q",1,"ESP Sequence Number","0"},
-	{"p",1,"ESP Padding Length","Minimum needed for alignment"},
-	{"n",1,"ESP Next Header","Correct"},
-	{"i",1,"ESP IV (string, zN for N zero bytes, or rN for N random bytes)",
-		"None"},
-	{"I",1,"ESP ICV (string, zN for N zero bytes, or rN for N random bytes)",
-		"None"},
-	{"k",1,"ESP Key (string, zN for N zero bytes, or rN for N random bytes) "
+	{ "s", 1, "ESP Security Parameters Index", "0" },
+	{ "q", 1, "ESP Sequence Number", "0" },
+	{ "p", 1, "ESP Padding Length", "Minimum needed for alignment" },
+	{ "n", 1, "ESP Next Header", "Correct" },
+	{ "i", 1, "ESP IV (string, zN for N zero bytes, or rN for N random bytes)",
+		"None" },
+	{ "I", 1, "ESP ICV (string, zN for N zero bytes, or rN for N random bytes)",
+		"None" },
+	{ "k", 1, "ESP Key (string, zN for N zero bytes, or rN for N random bytes) "
 		"Not transmitted in the packet, but passed to the cryptographic "
 		"module(s), if any.",
-		"none"},
-	{"a",1,"ESP authentication module", "none"},
-	{"c",1,"ESP cryptographic (encryption/privacy) module", "none"},
+		"none" },
+	{ "a", 1, "ESP authentication module", "none" },
+	{ "c", 1, "ESP cryptographic (encryption/privacy) module", "none" },
 };
 #endif
 
 #define MAXAUTH	8192	/* maximum length of IV or ICV data */
 
 #endif  /* _SENDIP_ESP_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

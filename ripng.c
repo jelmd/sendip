@@ -1,8 +1,5 @@
-/* ripng.c - RIPng (version 1) code for sendip
+/** ripng.c - RIPng (version 1) code for sendip
  * Created by hacking rip code
- * ChangeLog since 2.2 release:
- * 15/10/2002 Read the spec
- * 24/11/2002 Made it compile on archs needing alignment
  */
 
 #include <stdlib.h>
@@ -46,7 +43,7 @@ sendip_data *initialize(void) {
 	ripng_header *rip = malloc(sizeof(ripng_header));
 	memset(rip, 0, sizeof(ripng_header));
 	ret->alloc_len = sizeof(ripng_header);
-	ret->data = (void *) rip;
+	ret->data = rip;
 	ret->modified = 0;
 	return ret;
 }
@@ -65,7 +62,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	char *p, *q, c = '\0';
 	int len;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 'v': /* version */
 		rippack->version = opt2inth(arg, 1);
 		pack->modified |= RIPNG_MOD_VERSION;
@@ -119,7 +116,7 @@ finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
 	__attribute__((unused)) sendip_data *pack)
 {
 	if (hdrs[index - 1] != 'u') {
-		WARN("RIPng should be contained in an UDP packet");
+		WARN("RIPng should be contained in an UDP packet")
 	}
 	return TRUE;
 }
@@ -138,3 +135,6 @@ char
 get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

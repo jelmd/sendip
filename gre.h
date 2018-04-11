@@ -1,4 +1,4 @@
-/* gre.h
+/** gre.h
  */
 #ifndef _SENDIP_GRE_H
 #define _SENDIP_GRE_H
@@ -37,7 +37,7 @@ typedef struct {
 #define GRE_FLAGS       (0x00F8)
 #define GRE_VERSION     (0x0007)
 
-#define GRE_MAX_REC	7	/* three-bit value */
+#define GRE_MAX_REC		7	/* three-bit value */
 #define GRE_MAX_VERSION	7	/* three-bit value */
 #define GRE_REC_SHIFT	3
 
@@ -49,8 +49,7 @@ typedef struct {
 #define ETH_P_IPX	0x8137		/* IPX over DIX			*/
 
 
-/* Defines for which parts have been modified
- */
+/* Defines for which parts have been modified */
 #define GRE_MOD_CHECKSUM  	(1)
 #define GRE_MOD_ROUTING		(1<<1)
 #define GRE_MOD_KEY			(1<<2)
@@ -61,8 +60,7 @@ typedef struct {
 #define GRE_MOD_PROTOCOL	(1<<7)
 #define GRE_MOD_OFFSET		(1<<8)
 
-/* Options
- * Let's use
+/* Options. Let's use
  * 	lower case - needs value
  * 	upper case - doesn't need value
  */
@@ -80,3 +78,6 @@ sendip_option gre_opts[] = {
 };
 
 #endif  /* _SENDIP_GRE_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

@@ -1,4 +1,4 @@
-/* protoname.c - protocol number/name conversion */
+/** protoname.c - protocol number/name conversion */
 
 /* Based on some code in ipv6header from ip6tables:
  * Original idea: Brad Chapman
@@ -15,9 +15,10 @@
 
 #include "types.h"
 #include "headers.h"
+#include "parseargs.h"	/* just for the macros */
 
 /* A few hardcoded protocols for 'all' and in case the user has no
- *    /etc/protocols */
+   /etc/protocols */
 struct pprot {
 	const char *name;
 	u_int8_t num;
@@ -76,7 +77,7 @@ name_to_proto(const char *s) {
 
 	/* Check for a number */
 	if (isdigit(*s))
-		return (u_int8_t) strtoul(s, (char **) NULL, 0);
+		return (u_int8_t) strtoul(s, NULL, 0);
 	/* If we have /etc/protocols, use that */
 	if ((pent = getprotobyname(s)))
 		proto = pent->p_proto;
@@ -90,10 +91,13 @@ name_to_proto(const char *s) {
 		}
 
 		if (i == sizeof(chain_protos) / sizeof(struct pprot)) {
-			fprintf(stderr, "unknown header `%s' specified", s);
+			DERROR("unknown header `%s' specified", s)
 			exit(1);
 		}
 	}
 
 	return (u_int8_t) proto;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

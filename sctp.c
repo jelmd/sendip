@@ -1,4 +1,4 @@
-/* sctp.c - stream control transmission protocol */
+/** sctp.c - stream control transmission protocol */
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -52,7 +52,7 @@ add_chunk(sendip_data *pack, u_int8_t type)
 	memset(chunk, 0, sizeof(sctp_chunk_header));
 	chunk->type = type;
 	chunk->length = ntohs(sizeof(sctp_chunk_header));
-	fprintf(stderr, "Adding %ld byte SCTP chunk header, total SCTP length %d\n",
+	printf("Adding %ld byte SCTP chunk header, total SCTP length %d\n",
 		sizeof(sctp_chunk_header), pack->alloc_len);
 	return chunk;
 }
@@ -73,8 +73,8 @@ grow_chunk(sendip_data *pack, sctp_chunk_header *chunk,
 	offset = ntohs(chunk->length);
 	chunk->length = htons(offset + length);
 	if (data)
-		memcpy((void *)((u_int8_t *) chunk + offset), data, length);
-	fprintf(stderr, "Adding %d data bytes, total SCTP length %d\n",
+		memcpy(chunk + offset, data, length);
+	printf("Adding %d data bytes, total SCTP length %d\n",
 		length, pack->alloc_len);
 	return chunk;
 }
@@ -88,14 +88,12 @@ grow_chunk(sendip_data *pack, sctp_chunk_header *chunk,
  * include the padding.
  */
 static int
-round2(int number)
-{
+round2(int number) {
 	return (number & 1) ? (number + 1) : number;
 }
 
 static int
-round4(int number)
-{
+round4(int number) {
 	return (number & 3) ? (number + 4 - (number & 3)) : number;
 }
 
@@ -120,10 +118,10 @@ grow_chunk_round4(sendip_data *pack, sctp_chunk_header *chunk,
 	offset = ntohs(chunk->length);
 	chunk->length = htons(offset + roundup);
 	if (data)
-		memcpy((void *) ((u_int8_t *) chunk + offset), data, length);
-	fprintf(stderr, "Rounding %d to %d data bytes, total SCTP length %d\n",
+		memcpy(chunk + offset, data, length);
+	printf("Rounding %d to %d data bytes, total SCTP length %d\n",
 		length, roundup, pack->alloc_len);
-	memset((void *) ((u_int8_t *) chunk + offset + length), 0, roundup-length);
+	memset(chunk + offset + length, 0, roundup - length);
 	return chunk;
 }
 
@@ -137,41 +135,36 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	u_int32_t length;
 	static sctp_chunk_header *currentchunk;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	/* Overall header arguments are lowercase; chunk args are upper */
 	case 's':	/* SCTP source port (16 bits) */
 		pack->modified |= SCTP_MOD_SOURCE;
 		sctp->source = opt2intn(arg, 2);
 		break;
-
 	case 'd':	/* SCTP destination port (16 bits) */
 		pack->modified |= SCTP_MOD_DEST;
 		sctp->dest = opt2intn(arg, 2);
 		break;
-
 	case 'v':	/* SCTP vtag (32 bits) */
 		pack->modified |= SCTP_MOD_VTAG;
 		/* While the value should be 32 bits, let them specify whatever they
-		 * want. We only try to fit four bytes, however.
-		 */
+		   want. We only try to fit four bytes, however.  */
 		length = opt2val(temp, arg, BUFSIZ);
 		if (length < sizeof(u_int32_t)) {
 			sctp->vtag = 0;
-			memcpy((void *) &sctp->vtag, temp, length);
+			memcpy(&sctp->vtag, temp, length);
 		} else {
-			memcpy((void *) &sctp->vtag, temp, sizeof(u_int32_t));
+			memcpy(&sctp->vtag, temp, sizeof(u_int32_t));
 		}
 		break;
-
 	case 'c':	/* SCTP checksum (32 bits) */
 		pack->modified |= SCTP_MOD_CHECKSUM;
 		sctp->dest = opt2intn(arg, 4);
 		break;
-
 	case 'T':	/* SCTP chunk type (8 bits) */
-		svalue = strtoul(arg, (char **) NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > OCTET_MAX) {
-			usage_error("Too big a type value\n");
+			DERROR("sctp - type value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
 		}
 		currentchunk = add_chunk(pack, svalue);
@@ -182,9 +175,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 		break;
 	case 'F':	/* SCTP chunk flags (8 bits) */
-		svalue = strtoul(arg, (char **) NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > OCTET_MAX) {
-			usage_error("Too big a flags value\n");
+			DERROR("sctp - flags value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
 		}
 		if (!currentchunk ) {
@@ -192,9 +185,8 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 		currentchunk->flags = svalue;
 		break;
-
 	case 'L':	/* SCTP chunk length (16 bits) */
-		svalue = strtoul(arg, (char **) NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
@@ -204,15 +196,13 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		 */
 		currentchunk->length = htons(svalue);
 		break;
-
 	case 'D':	/* arbitrary SCTP chunk data */
 		length = opt2val(temp, arg, BUFSIZ);
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
-		currentchunk = grow_chunk(pack, currentchunk, length, (void *) temp);
+		currentchunk = grow_chunk(pack, currentchunk, length, temp);
 		break;
-
 	case 'I':	/* SCTP Init chunk (complete) */
 	{
 		sctp_inithdr_t init;
@@ -221,7 +211,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		int nargs;
 		char *args = strdup(arg);
 		if (args == NULL) {
-			PERROR("Unable to process sctp '-I' option")
+			PERROR("sctp - unable to process sctp '-I' option")
 			return FALSE;
 		}
 
@@ -237,8 +227,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		/* Note the cheesy reverse fallthrough */
 		switch (nargs) {
 		case 5:
-			init.initial_tsn =
-				opt2intn(strargs[4], sizeof(init.initial_tsn));
+			init.initial_tsn = opt2intn(strargs[4], sizeof(init.initial_tsn));
 		case 4:
 			init.num_inbound_streams =
 				opt2intn(strargs[3], sizeof(init.num_inbound_streams));
@@ -252,11 +241,10 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_inithdr_t), (void *) &init);
+				sizeof(sctp_inithdr_t), &init);
 		free(args);
 		break;
 	}
-
 	case '4':	/* IPv4 address parameter */
 		{
 		sctp_ipv4addr_param_t v4param;
@@ -264,14 +252,13 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		v4param.param_hdr.type = htons(SCTP_PARAM_IPV4_ADDRESS);
 		v4param.param_hdr.length = htons(sizeof(sctp_ipv4addr_param_t));
 		if (inet_aton(arg, &v4param.addr) == 0) {
-			fprintf(stderr, "Couldn't parse v4 address %s\n", arg);
+			DERROR("sctp - couldn't parse v4 address '%s'", arg)
 			return FALSE;
 		}
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_ipv4addr_param_t), (void *)&v4param);
+			sizeof(sctp_ipv4addr_param_t), &v4param);
 		}
 		break;
-
 	case 'H':	/* Host name address */
 		{
 		sctp_hostname_param_t hostnameparam;
@@ -284,12 +271,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		hostnameparam.param_hdr.length =
 			htons(sizeof(sctp_hostname_param_t) + strlen(arg) + 1);
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_hostname_param_t), (void *) &hostnameparam);
-		currentchunk = grow_chunk_round4(pack, currentchunk,
-			strlen(arg) + 1, arg);
+			sizeof(sctp_hostname_param_t), &hostnameparam);
+		currentchunk =
+			grow_chunk_round4(pack, currentchunk, strlen(arg) + 1, arg);
 		}
 		break;
-
 	case 'A':	/* Supported address types */
 	{
 		/* The supported address type parameter is, somewhat clumsily, an array
@@ -306,24 +292,23 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		char *args = strdup(arg);
 
 		if (args == NULL) {
-			PERROR("Unable to process sctp '-A' option");
+			PERROR("sctp - unable to process sctp '-A' option")
 			return FALSE;
 		}
 		supportedaddrs.param_hdr.type =
 			htons(SCTP_PARAM_SUPPORTED_ADDRESS_TYPES);
 		naddrs = parsenargs(args, straddrs, MAXSUPPORTEDADDRS, " ,:.");
-		for (i=0; i < naddrs; ++i)
+		for (i = 0; i < naddrs; ++i)
 			addrs[i] = htons(atoi(straddrs[i]));
 		addrs[i] = 0;
 		supportedaddrs.param_hdr.length =
 			htons(sizeof(sctp_supported_addrs_param_t) + 2 * naddrs);
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_supported_addrs_param_t), (void *) &supportedaddrs);
+			sizeof(sctp_supported_addrs_param_t), &supportedaddrs);
 		currentchunk = grow_chunk(pack, currentchunk, 2* round2(naddrs), addrs);
 		free(args);
 		break;
 	}
-
 	case 'E':	/* ECN capable */
 	{
 		sctp_ecn_capable_param_t ecncapable;
@@ -334,10 +319,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		ecncapable.param_hdr.type = htons(SCTP_PARAM_ECN_CAPABLE);
 		ecncapable.param_hdr.length = htons(sizeof(sctp_ecn_capable_param_t));
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_ecn_capable_param_t), (void *) &ecncapable);
+			sizeof(sctp_ecn_capable_param_t), &ecncapable);
 		break;
 	}
-
 	case 'W':	/* Forward TSN supported */
 	{
 		sctp_forward_tsn_param_t forward_tsn;
@@ -346,10 +330,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		forward_tsn.param_hdr.type = htons(SCTP_PARAM_FWD_TSN_SUPPORT);
 		forward_tsn.param_hdr.length = htons(sizeof(sctp_forward_tsn_param_t));
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_forward_tsn_param_t), (void *) &forward_tsn);
+			sizeof(sctp_forward_tsn_param_t), &forward_tsn);
 		break;
 	}
-
 	case 'Y':	/* Adaptation layer indication */
 		{
 		sctp_adaptation_ind_param_t adaptationparam;
@@ -361,13 +344,12 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		adaptationparam.param_hdr.type = htons(SCTP_PARAM_ADAPTATION_LAYER_IND);
 		adaptationparam.param_hdr.length =
 			htons(sizeof(sctp_adaptation_ind_param_t));
-		lvalue = strtoul(arg, (char **) NULL, 0);
+		lvalue = strtoul(arg, NULL, 0);
 		adaptationparam.adaptation_ind = htonl(lvalue);
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_adaptation_ind_param_t), (void *) &adaptationparam);
+			sizeof(sctp_adaptation_ind_param_t), &adaptationparam);
 		}
 		break;
-
 	case '6':	/* IPv6 address parameter */
 		{
 		sctp_ipv6addr_param_t v6param;
@@ -375,14 +357,13 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		v6param.param_hdr.type = htons(SCTP_PARAM_IPV6_ADDRESS);
 		v6param.param_hdr.length = htons(sizeof(sctp_ipv6addr_param_t));
 		if (inet_pton(AF_INET6, arg, &v6param.addr) == 0) {
-			fprintf(stderr, "Couldn't parse v6 address %s\n", arg);
+			DERROR("sctp - couldn't parse v6 address '%s'", arg)
 			return FALSE;
 		}
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_ipv6addr_param_t), (void *) &v6param);
+			sizeof(sctp_ipv6addr_param_t), &v6param);
 		}
 		break;
-
 	case 'C':	/* Cookie preservative */
 		{
 		sctp_cookie_preserve_param_t cookieparam;
@@ -390,13 +371,12 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		cookieparam.param_hdr.type = htons(SCTP_PARAM_STATE_COOKIE);
 		cookieparam.param_hdr.length =
 			htons(sizeof(sctp_cookie_preserve_param_t));
-		lvalue = strtoul(arg, (char **) NULL, 0);
+		lvalue = strtoul(arg, NULL, 0);
 		cookieparam.lifespan_increment = htonl(lvalue);
 		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_cookie_preserve_param_t), (void *) &cookieparam);
+			sizeof(sctp_cookie_preserve_param_t), &cookieparam);
 		}
 		break;
-
 	}
 	return TRUE;
 }
@@ -413,24 +393,27 @@ bool finalize(__attribute__((unused)) char *hdrs,
 		 * However, this is too bloated, has too many Linux and GNUisms, so
 		 * that portability becomes an issue. Therefore JEL has choosen to use
 		 * the implementation show in RFC 3309, which should be sufficient for
-		 * this use case.
+		 * this use case. (jelmd)
 		 */
 		sctp->checksum = crc32((void *) sctp, pack->alloc_len);
 	}
 	return TRUE;
 }
 
-int num_opts()
-{
+int
+num_opts() {
 	return sizeof(sctp_opts) / sizeof(sendip_option);
 }
 
-sendip_option *get_opts()
-{
+sendip_option *
+get_opts() {
 	return sctp_opts;
 }
 
-char get_optchar()
-{
+char
+get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

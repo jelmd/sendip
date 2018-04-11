@@ -1,5 +1,5 @@
-/* tcp.h
- */
+/** tcp.h */
+
 #ifndef _SENDIP_TCP_H
 #define _SENDIP_TCP_H
 
@@ -47,8 +47,7 @@ typedef struct {
 
 } tcp_header;
 
-/* Defines for which parts have been modified
- */
+/* Defines for which parts have been modified */
 #define TCP_MOD_SOURCE 1
 #define TCP_MOD_DEST   1<<1
 #define TCP_MOD_SEQ    1<<2
@@ -67,34 +66,36 @@ typedef struct {
 #define TCP_MOD_CHECK  1<<15
 #define TCP_MOD_URGPTR 1<<16
 
-/* Options
- */
+/* Options */
 sendip_option tcp_opts[] = {
-	{"s",1,"TCP source port","0"},
-	{"d",1,"TCP destination port","0"},
-	{"n",1,"TCP sequence number","Random"},
-	{"a",1,"TCP ack number","0"},
-	{"t",1,"TCP data offset","Correct"},
-	{"r",1,"TCP header reserved field EXCLUDING ECN and CWR bits","0"},
-	{"fe",1,"TCP ECN bit (rfc2481)","0 (options are 0,1,r)"},
-	{"fc",1,"TCP CWR bit (rfc2481)","0 (options are 0,1,r)"},
-	{"fu",1,"TCP URG bit","0, or 1 if -tu specified (options are 0,1,r)"},
-	{"fa",1,"TCP ACK bit","0, or 1 if -ta specified (options are 0,1,r)"},
-	{"fp",1,"TCP PSH bit","0 (options are 0,1,r)"},
-	{"fr",1,"TCP RST bit","0 (options are 0,1,r)"},
-	{"fs",1,"TCP SYN bit","1 (options are 0,1,r)"},
-	{"ff",1,"TCP FIN bit","0 (options are 0,1,r)"},
-	{"w",1,"TCP window size","65535"},
-	{"c",1,"TCP checksum","Correct"},
-	{"u",1,"TCP urgent pointer","0"},
-	{"onum",1,"TCP option as string of hex bytes (length is always correct)","(no options)"},
-	{"oeol",0,"TCP option: end of list", NULL },
-	{"onop",0,"TCP option: no op", NULL },
-	{"omss",1,"TCP option: maximum segment size", NULL },
-	{"owscale",1,"TCP option: window scale (rfc1323)", NULL },
-	{"osackok",0,"TCP option: allow selective ack (rfc2018)", NULL },
-	{"osack",1,"TCP option: selective ack (rfc2018), format is l_edge1:r_edge1,l_edge2:r_edge2...", NULL },
-	{"ots",1,"TCP option: timestamp (rfc1323), format is tsval:tsecr", NULL }
+	{ "s", 1, "TCP source port", "0" },
+	{ "d", 1, "TCP destination port", "0" },
+	{ "n", 1, "TCP sequence number", "Random" },
+	{ "a", 1, "TCP ack number", "0" },
+	{ "t", 1, "TCP data offset", "Correct" },
+	{ "r", 1, "TCP header reserved field EXCLUDING ECN and CWR bits", "0" },
+	{ "fe", 1, "TCP ECN bit (rfc2481)", "0 (options are 0,1,r)" },
+	{ "fc", 1, "TCP CWR bit (rfc2481)", "0 (options are 0,1,r)" },
+	{ "fu", 1, "TCP URG bit", "0, or 1 if -tu specified (options are 0,1,r)" },
+	{ "fa", 1, "TCP ACK bit", "0, or 1 if -ta specified (options are 0,1,r)" },
+	{ "fp", 1, "TCP PSH bit", "0 (options are 0,1,r)" },
+	{ "fr", 1, "TCP RST bit", "0 (options are 0,1,r)" },
+	{ "fs", 1, "TCP SYN bit", "1 (options are 0,1,r)" },
+	{ "ff", 1, "TCP FIN bit", "0 (options are 0,1,r)" },
+	{ "w", 1, "TCP window size", "65535" },
+	{ "c", 1, "TCP checksum", "Correct" },
+	{ "u", 1, "TCP urgent pointer", "0" },
+	{ "onum", 1, "TCP option as string of hex bytes (length is always correct)", "(no options)" },
+	{ "oeol", 0, "TCP option: end of list", NULL },
+	{ "onop", 0, "TCP option: no op", NULL },
+	{ "omss", 1, "TCP option: maximum segment size", NULL },
+	{ "owscale", 1, "TCP option: window scale (rfc1323)", NULL },
+	{ "osackok", 0, "TCP option: allow selective ack (rfc2018)", NULL },
+	{ "osack", 1, "TCP option: selective ack (rfc2018), format is l_edge1:r_edge1,l_edge2:r_edge2...", NULL },
+	{ "ots", 1,"TCP option: timestamp (rfc1323), format is tsval:tsecr", NULL }
 };
 
 #endif  /* _SENDIP_TCP_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

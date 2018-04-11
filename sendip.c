@@ -1,4 +1,4 @@
-/* sendip.c - main program code for sendip
+/** sendip.c - main program code for sendip
  * Copyright 2001 Mike Ricketts <mike@earth.li>
  * License: see LICENSE
  */
@@ -49,7 +49,7 @@ typedef struct {
 	char ss_padding[122];
 } _sockaddr_storage;
 
-static int num_opts=0;
+static int num_opts = 0;
 
 static char *progname;
 
@@ -75,7 +75,7 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 	int tolen;
 
 	if (to == NULL) {
-		PERROR("Unable to send packet");
+		PERROR("Unable to send packet")
 		return -3;
 	}
 	if ((host = gethostbyname2(hostname, af_type)) == NULL) {
@@ -102,16 +102,16 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 		return -2;
 	}
 
-	if(verbose) { 
+	if (verbose) {
 		int i, j;  
 		printf("Final packet data:\n");
-		for(i=0; i<data->alloc_len; ) {
-			for(j=0; j<4 && i+j<data->alloc_len; j++)
-				printf("%02X ", ((unsigned char *)(data->data))[i+j]); 
+		for (i = 0; i < data->alloc_len; ) {
+			for (j = 0; j < 4 && i + j < data->alloc_len; j++)
+				printf("%02X ", ((unsigned char *)(data->data))[i + j]);
 			printf("  ");
-			for(j=0; j<4 && i+j<data->alloc_len; j++) {
-				int c=(int) ((unsigned char *)(data->data))[i+j];
-				printf("%c", isprint(c)?((char *)(data->data))[i+j]:'.'); 
+			for (j = 0; j < 4 && i + j < data->alloc_len; j++) {
+				int c = (int) ((unsigned char *)(data->data))[i + j];
+				printf("%c", isprint(c) ? ((char *)(data->data))[i + j] : '.');
 			}
 			printf("\n");
 			i+=j;
@@ -119,7 +119,7 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 	}
 
 	if ((s = socket(af_type, SOCK_RAW, IPPROTO_RAW)) < 0) {
-		perror("Couldn't open RAW socket");
+		PERROR("Couldn't open RAW socket")
 		free(to);
 		return -1;
 	}
@@ -144,7 +144,7 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 			setipv6opts = FALSE;
 			break;
 		default:
-			DWARN("Invalid socket option '%c' ignored", *p);
+			DWARN("Invalid socket option '%c' ignored", *p)
 			break;
 		}
 	}
@@ -158,7 +158,7 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 	}
 	if (setipv6opts) {
 		ipv6_header *iphdr = (ipv6_header *) data->data;
-		if(verbose)
+		if (verbose)
 			printf(" IPV6_UNICAST_HOPS\n");
 		/* Setting various IPV6 header option requires using setsockopt, as
 		   in RFCs 3493, 3542, 2292. */
@@ -190,22 +190,22 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 		if (setsockopt(s, IPPROTO_IP, IP_OPTIONS,
 			(char *)(data->data) + 20, optlen))
 		{
-			PERROR("Couldn't setsockopt IP_OPTIONS");
+			PERROR("Couldn't setsockopt IP_OPTIONS")
 			goto error;
 		}
 	}
 #endif /* __sun */
 
 	/* Send the packet */
-	sent = sendto(s, (char *)data->data, data->alloc_len, 0, (void *)to, tolen);
+	sent =
+		sendto(s, (char *) data->data, data->alloc_len, 0, (void *) to, tolen);
 	if (sent == data->alloc_len) {
 		if (verbose)
 			printf("Sent %d bytes to %s\n", sent, hostname);
 	} else if (sent < 0) {
-		PERROR("Packet not sent");
+		PERROR("Packet not sent")
 	} else if (verbose) {
-		DWARN("Only sent %d of %d bytes to %s\n",
-			sent, data->alloc_len, hostname);
+		DWARN("Only sent %d/%d bytes to %s", sent, data->alloc_len, hostname)
 	}
 error:
 	free(to);
@@ -313,25 +313,26 @@ main(int argc, char **const argv) {
 	num_opts = 0;	
 	first = last = NULL;
 
-	progname=strrchr(argv[0], '/');
+	progname = strrchr(argv[0], '/');
 	if (progname == NULL)
 		progname = argv[0];
 	else
 		progname++;
 
 	/* magic random seed that gives 4 really random octets */
-	srandom(time(NULL) ^ (getpid()+(42<<15)));
+	srandom(time(NULL) ^ (getpid() + (42 << 15)));
 
 	/* First, get all the builtin options, and load the modules */
-	gnuopterr=0; gnuoptind=0;
+	gnuopterr = 0;
+	gnuoptind = 0;
 	while(gnuoptind < argc
 		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:s:t:"))))
 	{
-		switch(optc) {
+		switch (optc) {
 		case 's':
 			sockopts = strdup(gnuoptarg);
 			if (sockopts == NULL) {
-				PERROR("Couldn't allocate memory for socket options");
+				PERROR("Couldn't allocate memory for socket options")
 				return 1;
 			}
 			break;
@@ -345,7 +346,7 @@ main(int argc, char **const argv) {
 			if ((mod = load_sendip_module(gnuoptarg, &i)) != NULL) {
 				e = malloc(sizeof(sendip_mod_li));
 				if (e == NULL) {
-					perror("Unable to process option -p ...");
+					PERROR("Unable to process option -p ...");
 					return 1;
 				}
 				e->prev = last;
@@ -363,7 +364,7 @@ main(int argc, char **const argv) {
 			}
 			break;
 		case 'v':
-			verbosity=TRUE;
+			verbosity = TRUE;
 			break;
 		case 'd':
 			if (datafile == -1) {
@@ -373,12 +374,12 @@ main(int argc, char **const argv) {
 				datalen = opt2val(sdata, datarg, BUFSIZ);
 				data = (char *) malloc(datalen);
 				if (data == NULL) {
-					perror("Unable to process option -d ...");
+					PERROR("Unable to process option -d ...")
 					return 1;
 				}
 				memcpy(data, sdata, datalen);
 			} else {
-				fprintf(stderr,"Only one -d or -f option can be given\n");
+				ERROR("Only one -d or -f option can be given")
 				usage = 1;
 			}
 			break;
@@ -386,31 +387,31 @@ main(int argc, char **const argv) {
 			usage = 2;
 			break;
 		case 'f':
-			if(data == NULL) {
-				datafile=open(gnuoptarg,O_RDONLY);
-				if(datafile == -1) {
-					perror("Couldn't open data file");
-					fprintf(stderr,"No data will be included\n");
+			if (data == NULL) {
+				datafile = open(gnuoptarg, O_RDONLY);
+				if (datafile == -1) {
+					PERROR("Couldn't open data file")
+					WARN("No data will be included")
 				} else {
-					datalen = lseek(datafile,0,SEEK_END);
-					if(datalen == -1) {
-						perror("Error reading data file: lseek()");
-						fprintf(stderr,"No data will be included\n");
-						datalen=0;
-					} else if(datalen == 0) {
-						fprintf(stderr,"Data file is empty\nNo data will be included\n");
+					datalen = lseek(datafile, 0, SEEK_END);
+					if (datalen == -1) {
+						PERROR("Error reading data file: lseek()")
+						WARN("No data will be included")
+						datalen = 0;
+					} else if (datalen == 0) {
+						WARN("Data file is empty.\nNo data will be included")
 					} else {
-						data = mmap(NULL,datalen,PROT_READ,MAP_SHARED,datafile,0);
-						if(data == MAP_FAILED) {
-							perror("Couldn't read data file: mmap()");
-							fprintf(stderr,"No data will be included\n");
+						data = mmap(NULL, datalen, PROT_READ, MAP_SHARED, datafile, 0);
+						if (data == MAP_FAILED) {
+							PERROR("Couldn't read data file: mmap()")
+							WARN("No data will be included")
 							data = NULL;
-							datalen=0;
+							datalen = 0;
 						}
 					}
 				}
 			} else {
-				fprintf(stderr,"Only one -d or -f option can be given\n");
+				ERROR("Only one -d or -f option can be given")
 				usage = 1;
 			}
 			break;
@@ -430,11 +431,11 @@ while (--loopcount >= 0) {
 	/* Build the getopt listings */
 	opts = malloc((1 + num_opts) * sizeof(struct option));
 	if (opts == NULL) {
-		PERROR("Unable to process options");
+		PERROR("Unable to process module options")
 		return 1;
 	}
-	memset(opts,'\0',(1+num_opts)*sizeof(struct option));
-	i=0;
+	memset(opts, 0, (1 + num_opts) * sizeof(struct option));
+	i = 0;
 	for (e = first; e != NULL; e = e->next) {
 		mod = e->mod;
 		int j;
@@ -471,13 +472,13 @@ while (--loopcount >= 0) {
 	 * separate arguments for multiply-invoked modules, e.g. for creating ipip
 	 * tunneled packets.
 	 */
-	gnuopterr=1;
-	gnuoptind=0;
+	gnuopterr = 1;
+	gnuoptind = 0;
 	current_e = NULL;
 	while(EOF != (optc =
 		_getopt_internal(argc, argv, "p:vd:hf:l:s:t:", opts, &longindex, 1)))
 	{
-		switch(optc) {
+		switch (optc) {
 		case 'p':
 			current_e = (current_e) ? current_e->next : first;
 			break;
@@ -492,12 +493,11 @@ while (--loopcount >= 0) {
 			break;
 		case ':':
 			usage = 1;
-			fprintf(stderr,"Option %s requires an argument\n",
-					  opts[longindex].name);
+			DERROR("Option '%s' requires an argument", opts[longindex].name)
 			break;
 		case '?':
 			usage = 1;
-			fprintf(stderr,"Option starting %c not recognized\n", gnuoptopt);
+			DERROR("Option starting with '%c' not recognized\n", gnuoptopt)
 			break;
 		default:
 			/* check current mod first */
@@ -515,12 +515,12 @@ while (--loopcount >= 0) {
 			}
 			if (mod) {
 				/* Random option arguments */
-				if(gnuoptarg != NULL && !strcmp(gnuoptarg,"r")) {
+				if (gnuoptarg != NULL && strcmp(gnuoptarg,"r") == 0) {
 					/* need a 32 bit number, but random() is signed and
-						nonnegative so only 31bits - we simply repeat one */
-					unsigned long r = (unsigned long)random()<<1;
-					r+=(r&0x00000040)>>6;
-					sprintf(rbuff,"%lu",r);
+					   nonnegative so only 31bits - we simply repeat one */
+					unsigned long r = (unsigned long) random() << 1;
+					r += (r & 0x00000040) >> 6;
+					sprintf(rbuff, "%lu", r);
 					gnuoptarg = rbuff;
 				}
 
@@ -533,32 +533,33 @@ while (--loopcount >= 0) {
 	}
 
 	/* gnuoptind is the first thing that is not an option - should have exactly
-		one hostname...
-	*/
+	   one hostname... */
 	if (usage == 0) {
 		if (argc != gnuoptind + 1) {
  			usage = 1;
-			if (argc - gnuoptind < 1)
-				fprintf(stderr, "No hostname specified\n");
-			else
-				fprintf(stderr, "More than one hostname specified\n");
+			if (argc - gnuoptind < 1) {
+				ERROR("No hostname specified")
+			} else {
+				ERROR("More than one hostname specified")
+			}
 		} else if (first && first->mod->set_addr) {
 			first->mod->set_addr(argv[gnuoptind], first->pack);
 		}
 	}
 
 	/* free opts now we have finished with it */
-	for(i = 0; i <= num_opts; i++) {
+	for (i = 0; i <= num_opts; i++) {
 		if (opts[i].name != NULL)
-			free((void *)(unsigned long) opts[i].name);
+			/* little trick to workaround const compiler warning */
+			free((void *) (unsigned long) opts[i].name);
 	}
 	free(opts); /* don't need them any more */
 
 	if (usage) {
 		print_usage();
 		unload_mods(TRUE, verbosity);
-		if(datafile != -1) {
-			munmap(data,datalen);
+		if (datafile != -1) {
+			munmap(data, datalen);
 			close(datafile);
 			datafile = -1;
 		}
@@ -590,10 +591,10 @@ while (--loopcount >= 0) {
 	if (data != NULL)
 		packet.alloc_len += datalen;
 	packet.data = malloc(packet.alloc_len);
-	for(i = 0, e = first; e != NULL; e = e->next) {
-		memcpy((char *)packet.data + i, e->pack->data, e->pack->alloc_len);
+	for (i = 0, e = first; e != NULL; e = e->next) {
+		memcpy((char *) packet.data + i, e->pack->data, e->pack->alloc_len);
 		free(e->pack->data);
-		e->pack->data = (char *)packet.data+i;
+		e->pack->data = (char *)packet.data + i;
 		i += e->pack->alloc_len;
 	}
 
@@ -608,9 +609,9 @@ while (--loopcount >= 0) {
 		sendip_data d;
 
 		d.alloc_len = datalen;
-		d.data = (char *)packet.data+packet.alloc_len-datalen;
+		d.data = (char *) packet.data+packet.alloc_len - datalen;
 
-		for(i = 0, e = first; e != NULL; e = e->next, i++) {
+		for (i = 0, e = first; e != NULL; e = e->next, i++) {
 			hdrs[i] = e->mod->optchar;
 			headers[i] = e->pack;
 		}
@@ -628,7 +629,7 @@ while (--loopcount >= 0) {
 			e->mod->finalize(hdrs, headers, i, &d, e->pack);
 
 			/* Get everything ready for the next call */
-			d.data = (char *)d.data - e->pack->alloc_len;
+			d.data = (char *) d.data - e->pack->alloc_len;
 			d.alloc_len += e->pack->alloc_len;
 		}
 		/* Trim back the packet length if need be */
@@ -640,9 +641,9 @@ while (--loopcount >= 0) {
 	/* And send the packet */
 	{
 		int af_type;
-		if(first==NULL) {
-			if(data == NULL) {
-				fprintf(stderr,"Nothing specified to send!\n");
+		if (first == NULL) {
+			if (data == NULL) {
+				ERROR("Nothing specified to send!")
 				print_usage();
 				free(packet.data);
 				unload_mods(FALSE, verbosity);
@@ -657,13 +658,13 @@ while (--loopcount >= 0) {
 		else if (first->mod->optchar == '6')
 			af_type = AF_INET6;
 		else {
-			fprintf(stderr,"Either IPv4 or IPv6 must be the outermost packet\n");
+			ERROR("Either IPv4 or IPv6 must be the outermost packet")
 			free(packet.data);
 			unload_mods(FALSE, verbosity);
 			free(sockopts);
 			return 1;
 		}
-		i = sendpacket(&packet,argv[gnuoptind],af_type,verbosity, sockopts);
+		i = sendpacket(&packet, argv[gnuoptind], af_type, verbosity, sockopts);
 		free(packet.data);
 	}
 	/* Regenerate data on subsequent loop calls */
@@ -675,7 +676,7 @@ while (--loopcount >= 0) {
 		if (newlen > datalen) {
 			free(data);
 			if ((data = (char *) malloc(datalen)) == NULL) {
-				perror("Unable to allocate data memory");
+				PERROR("Unable to allocate data memory")
 				break;
 			}
 		}
@@ -698,3 +699,6 @@ while (--loopcount >= 0) {
 
 	return 0;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

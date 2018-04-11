@@ -1,4 +1,4 @@
-/* sctp.h - stream control transmission protocol
+/** sctp.h - stream control transmission protocol
  *
  * stream control transmission protocol (RFC 4960)
  *
@@ -26,8 +26,7 @@ typedef struct sctp_chunk {
 	u_int16_t length;
 } sctp_chunk_header;
 
-/* Chunk types - taken from the Linux kernel sctp header: */
-
+/* Chunk types */
 typedef enum {
 	SCTP_CID_DATA				= 0,
 	SCTP_CID_INIT				= 1,
@@ -237,35 +236,38 @@ typedef struct sctp_forward_tsn_param {
 
 /* Options */
 sendip_option sctp_opts[] = {
-	{"s", 1, "SCTP source port", "0"},
-	{"d", 1, "SCTP dest port", "0"},
-	{"v", 1, "SCTP vtag. May be specified "
+	{ "s", 1, "SCTP source port", "0" },
+	{ "d", 1, "SCTP dest port", "0" },
+	{ "v", 1, "SCTP vtag. May be specified "
 		"as number, string, or rN for N (should be 4) random bytes",
-		"0 if init chunk, 1 otherwise"},
-	{"c", 1, "SCTP CRC checksum", "Correct"},
-	{"T", 1, "SCTP chunk type - note that "
+		"0 if init chunk, 1 otherwise" },
+	{ "c", 1, "SCTP CRC checksum", "Correct" },
+	{ "T", 1, "SCTP chunk type - note that "
 		"multiple chunks may be included. Each chunk type begins a new "
 		"chunk; subsequent chunk-related fields are applied to that chunk.",
-		"0 (i.e., a data chunk)"},
-	{"F", 1, "SCTP chunk flags", "0"},
-	{"L", 1, "SCTP chunk length", "Correct"},
-	{"D", 1, "SCTP chunk data (hex, octal, decimal, literal, "
-		"zN for N zero bytes or rN for N random bytes).", "0"},
-	{"I", 1, "SCTP INIT chunk. "
+		"0 (i.e., a data chunk)" },
+	{ "F", 1, "SCTP chunk flags", "0" },
+	{ "L", 1, "SCTP chunk length", "Correct" },
+	{ "D", 1, "SCTP chunk data (hex, octal, decimal, literal, "
+		"zN for N zero bytes or rN for N random bytes).", "0" },
+	{ "I", 1, "SCTP INIT chunk. "
 		"Creates a complete INIT chunk with the specified initiate tag, "
 		"receiver window credit, number of outbound and inbound streams, and "
 		"initial TSN, in that order. Each field may be specified as number, "
 		"string, or rN for N (should be 2 or 4) random bytes. "
 		"Other variable parameters may be appended to this chunk.",
-		"1.0x1000.1.1.1"},
-	{"4", 1, "SCTP IPv4 address TLV", "none"},
-	{"6", 1, "SCTP IPv6 address TLV", "none"},
-	{"C", 1, "SCTP cookie preservative TLV", "none"},
-	{"H", 1, "SCTP host name address TLV", "none"},
-	{"A", 1, "SCTP supported address types TLV", "none"},
-	{"E", 0, "SCTP ECN capable (boolean)", "(false)"},
-	{"W", 0, "SCTP forward TSN supported (boolean)", "(false)"},
-	{"Y", 1, "SCTP adaptation layer indication parameter", "none"},
+		"1.0x1000.1.1.1" },
+	{ "4", 1, "SCTP IPv4 address TLV", "none" },
+	{ "6", 1, "SCTP IPv6 address TLV", "none" },
+	{ "C", 1, "SCTP cookie preservative TLV", "none" },
+	{ "H", 1, "SCTP host name address TLV", "none" },
+	{ "A", 1, "SCTP supported address types TLV", "none" },
+	{ "E", 0, "SCTP ECN capable (boolean)", "(false)" },
+	{ "W", 0, "SCTP forward TSN supported (boolean)", "(false)" },
+	{ "Y", 1, "SCTP adaptation layer indication parameter", "none" },
 };
 
 #endif  /* _SENDIP_SCTP_H */
+
+/* vim: ts=4 sw=4 filetype=c
+ */

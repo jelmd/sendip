@@ -1,4 +1,4 @@
-/* route.c - (IPv6) routing extension header
+/** route.c - (IPv6) routing extension header
  *
  * TBD - create a version that works for IPv4 as well.
  */
@@ -20,7 +20,7 @@
 #include "parseargs.h"
 
 /* Character that identifies our options */
-const char opt_char='o';	/* s'o'urce routing - r and R already used */
+const char opt_char = 'o';	/* s'o'urce routing - r and R already used */
 
 sendip_data *
 initialize(void)
@@ -35,7 +35,7 @@ initialize(void)
 	memset(route,0,sizeof(struct rt0_hdr));
 	ret->alloc_len = sizeof(struct rt0_hdr);
 	ret->data = route;
-	ret->modified=0;
+	ret->modified = 0;
 	return ret;
 }
 
@@ -51,7 +51,7 @@ readaddrs(const char *arg, sendip_data *pack)
 	char *args = strdup(arg);
 
 	if (args == NULL) {
-		PERROR("Unable to parse addresses");
+		PERROR("route - unable to parse addresses")
 		return FALSE;
 	}
 	count = parsenargs(args, addrs, ADDRMAX, ", ");
@@ -59,9 +59,9 @@ readaddrs(const char *arg, sendip_data *pack)
 		sizeof(struct rt0_hdr) + count * sizeof(struct in6_addr));
 	rt = (struct rt0_hdr *) pack->data;
 	pack->alloc_len = sizeof(struct rt0_hdr) + count * sizeof(struct in6_addr);
-	for (i=0; i < count; ++i) {
+	for (i = 0; i < count; ++i) {
 		if (!inet_pton(AF_INET6, addrs[i], &rt->addr[i])) {
-			DERROR("Can't parse address '%s'", addrs[i]);
+			DERROR("Can't parse address '%s'", addrs[i])
 			free(args);
 			return FALSE;
 		}
@@ -74,31 +74,30 @@ readaddrs(const char *arg, sendip_data *pack)
 bool
 do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
-	route_header *route = (route_header *)pack->data;
-	/* We'll use the type 0 routing header to get at the
-	 * other fields.
-	 */
-	struct rt0_hdr *rt = (struct rt0_hdr *)route;
+	route_header *route = (route_header *) pack->data;
+	/* We'll use the type 0 routing header to get at the other fields. */
+	struct rt0_hdr *rt = (struct rt0_hdr *) route;
 	u_int16_t svalue;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 'n':	/* Route next header */
 		route->nexthdr = name_to_proto(arg);
 		pack->modified |= ROUTE_MOD_NEXTHDR;
 		break;
 	case 't':	/* Type */
-		svalue = strtoul(arg, (char **)NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > OCTET_MAX) {
-			usage_error("Too big a type value\n");
+			DERROR("route - type value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
 		}
 		route->type = svalue;
 		pack->modified |= ROUTE_MOD_TYPE;
 		break;
 	case 's':	/* Segments left */
-		svalue = strtoul(arg, (char **)NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > OCTET_MAX) {
-			usage_error("Too big a segments left value\n");
+			DERROR("route - segments left value too big (%d > %d)",
+				svalue, OCTET_MAX)
 			return FALSE;
 		}
 		route->segments_left = svalue;
@@ -118,8 +117,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 }
 
-bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
-	int index, __attribute__((unused)) sendip_data *data, sendip_data *pack)
+bool
+finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[], int index,
+	__attribute__((unused)) sendip_data *data, sendip_data *pack)
 {
 	route_header *route = (route_header *) pack->data;
 
@@ -128,17 +128,20 @@ bool finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[],
 	return TRUE;
 }
 
-int num_opts()
-{
+int
+num_opts() {
 	return sizeof(route_opts) / sizeof(sendip_option);
 }
 
-sendip_option *get_opts()
-{
+sendip_option *
+get_opts() {
 	return route_opts;
 }
 
-char get_optchar()
-{
+char
+get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

@@ -1,4 +1,4 @@
-/* xorauth.c - this is a dummy "authentication" module that
+/** xorauth.c - this is a dummy "authentication" module that
  * demonstrates the interfaces for an external authentication
  * module.
  *
@@ -37,7 +37,9 @@ cryptoinit(sendip_data *pack)
 {
 	u_int32_t type;
 
-	if (!pack || !pack->private) return FALSE; /* don't mess with me! */
+	if (!pack || !pack->private)
+		return FALSE; /* don't mess with me! */
+
 	type = *(u_int32_t *) pack->private;
 	switch (type) {
 	case IPPROTO_AH:
@@ -80,10 +82,8 @@ cryptoinit(sendip_data *pack)
  * elements are enough, so I left it at that.
  */
 void
-xoricv(u_int8_t *key, u_int32_t keylen,
-	u_int8_t *icv, u_int32_t icvlen,
-	u_int8_t *data1, u_int32_t data1len,
-	u_int8_t *data2, u_int32_t data2len)
+xoricv(u_int8_t *key, u_int32_t keylen, u_int8_t *icv, u_int32_t icvlen,
+	u_int8_t *data1, u_int32_t data1len, u_int8_t *data2, u_int32_t data2len)
 {
 	u_int32_t d, k, i;
 
@@ -94,7 +94,7 @@ xoricv(u_int8_t *key, u_int32_t keylen,
 	 * initial value, but anyone who wants to do that is free to
 	 * write his or her own authentication module ...
 	 */
-	(void) memset((void *)icv, 0, icvlen);
+	memset(icv, 0, icvlen);
 
 	for (d = 0, k = 0, i = 0; d < data1len;
 		++d, k = (k + 1) % keylen, i = (i + 1) % icvlen)
@@ -102,7 +102,7 @@ xoricv(u_int8_t *key, u_int32_t keylen,
 		icv[i] ^= (key[k] ^ data1[d]);
 	}
 	for (d = 0, k = 0, i = 0; d < data2len;
-		++d, k = (k +1 ) % keylen, i = (i + 1) % icvlen)
+		++d, k = (k + 1) % keylen, i = (i + 1) % icvlen)
 	{
 		icv[i] ^= (key[k] ^ data2[d]);
 	}
@@ -123,26 +123,25 @@ bool
 ahipv4(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 	sendip_data *data, sendip_data *pack)
 {
-	ip_header *realip = (ip_header *)ipack->data;
+	ip_header *realip = (ip_header *) ipack->data;
 	ip_header pseudoip;
-	ah_header *ah = (ah_header *)pack->data;
+	ah_header *ah = (ah_header *) pack->data;
 	u_int32_t keylen;
 	u_int32_t authlen;
 	u_int8_t *key;
 	static u_int8_t fakekey;
 
-	(void) memset(&pseudoip, 0, sizeof(pseudoip));
+	memset(&pseudoip, 0, sizeof(pseudoip));
 	if (!(ipack->modified & IP_MOD_VERSION))
 		pseudoip.version = 4;
 	else
 		pseudoip.version = realip->version;
 	if (!(ipack->modified & IP_MOD_HEADERLEN))
-		pseudoip.header_len = (ipack->alloc_len+3)/4;
+		pseudoip.header_len = (ipack->alloc_len + 3) / 4;
 	else
 		pseudoip.header_len = realip->header_len;
 	if (!(ipack->modified & IP_MOD_TOTLEN)) {
-		pseudoip.tot_len = ipack->alloc_len +
-			pack->alloc_len + data->alloc_len;
+		pseudoip.tot_len = ipack->alloc_len + pack->alloc_len + data->alloc_len;
 #ifndef __FreeBSD
 		pseudoip.tot_len = htons(pseudoip.tot_len);
 #endif
@@ -153,14 +152,14 @@ ahipv4(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 	 * solution, though it is a nasty violation of module
 	 * boundaries...
 	 */
-	if(!(ipack->modified & IP_MOD_ID)) {
+	if (!(ipack->modified & IP_MOD_ID)) {
 		pseudoip.id = realip->id = rand();
 		ipack->modified |= IP_MOD_ID;
 	} else
 		pseudoip.id = realip->id;
-	if (!(ipack->modified&IP_MOD_PROTOCOL)) {
+	if (!(ipack->modified & IP_MOD_PROTOCOL)) {
                 /* New default: actual type of following header */
-		pseudoip.protocol = header_type(hdrs[index+1]);
+		pseudoip.protocol = header_type(hdrs[index + 1]);
 	} else
 		pseudoip.protocol = realip->protocol;
 	/* set_addr is called before finalize, so we know the
@@ -183,16 +182,16 @@ ahipv4(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 		key = &fakekey;
 		keylen = 1;
 	} else {
-		key = (u_int8_t *)apriv->key;
+		key = (u_int8_t *) apriv->key;
 		keylen = apriv->keylen;
 	}
 	/* We allow odd ICV lengths, so we use this rather than
 	 * calculate from the length value in the AH header.
 	 */
 	authlen = pack->alloc_len - sizeof(ah_header);
-	xoricv(key, keylen, (u_int8_t *)ah->auth_data, authlen,
-		(u_int8_t *)&pseudoip, sizeof(pseudoip),
-		(u_int8_t *)data->data, data->alloc_len);
+	xoricv(key, keylen, (u_int8_t *) ah->auth_data, authlen,
+		(u_int8_t *) &pseudoip, sizeof(pseudoip),
+		(u_int8_t *) data->data, data->alloc_len);
 	return TRUE;
 }
 
@@ -200,28 +199,28 @@ bool
 ahipv6(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 	sendip_data *data, sendip_data *pack)
 {
-	ipv6_header *realip = (ipv6_header *)ipack->data;
+	ipv6_header *realip = (ipv6_header *) ipack->data;
 	ipv6_header pseudoip;
-	ah_header *ah = (ah_header *)pack->data;
+	ah_header *ah = (ah_header *) pack->data;
 	u_int32_t keylen;
 	u_int32_t authlen;
 	u_int8_t *key;
 	static u_int8_t fakekey;
 
-	(void) memset(&pseudoip, 0, sizeof(pseudoip));
+	memset(&pseudoip, 0, sizeof(pseudoip));
 	if (!(ipack->modified & IPV6_MOD_VERSION)) {
 		pseudoip.ip6_vfc &= 0x0F;
 		pseudoip.ip6_vfc |= (6 << 4);
 	} else
 		pseudoip.ip6_vfc = realip->ip6_vfc;
 	if (!(ipack->modified & IPV6_MOD_PLEN)) {
-		pseudoip.ip6_plen = htons(ipack->alloc_len + pack->alloc_len
-			+ data->alloc_len);
+		pseudoip.ip6_plen =
+			htons(ipack->alloc_len + pack->alloc_len + data->alloc_len);
 	} else
 		pseudoip.ip6_plen = realip->ip6_plen;
-	if (!(ipack->modified&IPV6_MOD_NXT)) {
+	if (!(ipack->modified & IPV6_MOD_NXT)) {
                 /* New default: actual type of following header */
-		pseudoip.ip6_nxt = header_type(hdrs[index+1]);
+		pseudoip.ip6_nxt = header_type(hdrs[index + 1]);
 	} else
 		pseudoip.ip6_nxt = realip->ip6_nxt;
 	/* set_addr is called before finalize, so we know the
@@ -240,16 +239,16 @@ ahipv6(ah_private *apriv, char *hdrs, int index, sendip_data *ipack,
 		key = &fakekey;
 		keylen = 1;
 	} else {
-		key = (u_int8_t *)apriv->key;
+		key = (u_int8_t *) apriv->key;
 		keylen = apriv->keylen;
 	}
 	/* We allow odd ICV lengths, so we use this rather than
 	 * calculate from the length value in the AH header.
 	 */
 	authlen = pack->alloc_len - sizeof(ah_header);
-	xoricv(key, keylen, (u_int8_t *)ah->auth_data, authlen,
-		(u_int8_t *)&pseudoip, sizeof(pseudoip),
-		(u_int8_t *)data->data, data->alloc_len);
+	xoricv(key, keylen, (u_int8_t *) ah->auth_data, authlen,
+		(u_int8_t *) &pseudoip, sizeof(pseudoip),
+		(u_int8_t *) data->data, data->alloc_len);
 	return TRUE;
 }
 
@@ -322,3 +321,6 @@ cryptomod(void *priv, char *hdrs, sendip_data *headers[],
 	}
 	return FALSE;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

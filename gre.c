@@ -1,4 +1,4 @@
-/* gre.c - Generic Routing Encapsulation
+/** gre.c - Generic Routing Encapsulation
  * By Mark Carson
  */
 
@@ -17,7 +17,7 @@
 #include "gre.h"
 
 /* Character that identifies our options */
-const char opt_char='g';
+const char opt_char = 'g';
 
 /* Our initial allocation only includes the non-optional fields. Others
  * are added in response to the appropriate options.
@@ -27,10 +27,10 @@ initialize(void)
 {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	gre_header *gre = malloc(sizeof(gre_header));
-	memset(gre,0,sizeof(gre_header));
+	memset(gre, 0, sizeof(gre_header));
 	ret->alloc_len = sizeof(gre_header);
 	ret->data = gre;
-	ret->modified=0;
+	ret->modified = 0;
 	return ret;
 }
 
@@ -58,8 +58,7 @@ gre_where(u_int16_t flags, u_int16_t addflag)
 {
 	int where;
 
-	/* Let's be as stupidly explicit as possible */
-	/* Order of options:
+	/* Let's be as stupidly explicit as possible. Order of options:
 	 *
 	 * 0: checksum : offset
 	 * 1: key
@@ -69,18 +68,16 @@ gre_where(u_int16_t flags, u_int16_t addflag)
 	if (addflag == htons(GRE_CSUM)) {
 		where = 0;
 	} else if (addflag == htons(GRE_KEY)) {
-		where = (flags&htons(GRE_CSUM)) ? 1 : 0;
+		where = (flags & htons(GRE_CSUM)) ? 1 : 0;
 	} else if (addflag == htons(GRE_SEQ)) {
-		where = (flags&htons(GRE_CSUM)) ? 1 : 0;
-		if (flags&htons(GRE_KEY))
+		where = (flags & htons(GRE_CSUM)) ? 1 : 0;
+		if (flags & htons(GRE_KEY))
 			++where;
 	} else if (addflag == htons(GRE_ROUTING)) {
-		/* Routing always requires checksum/offset field
-		 * to be allocated
-		 */
-		/*if (flags&GRE_CSUM)*/
-		where = (flags&htons(GRE_KEY)) ? 2 : 1;
-		if (flags&htons(GRE_SEQ))
+		/* Routing always requires checksum/offset field to be allocated */
+		/*if (flags & GRE_CSUM)*/
+		where = (flags & htons(GRE_KEY)) ? 2 : 1;
+		if (flags & htons(GRE_SEQ))
 			++where;
 	} else {
 		where = 0;
@@ -93,46 +90,48 @@ gre_resize(sendip_data *pack, u_int16_t flags, u_int16_t addflag)
 {
 	u_int16_t size;
 	int ourspot, endspot;
-	u_int16_t newflags=(flags|addflag);
-	gre_header *gre = (gre_header *)pack->data;
+	u_int16_t newflags = (flags | addflag);
+	gre_header *gre = (gre_header *) pack->data;
 
 	/* First, check whether we already have one of these */
-	if (newflags == flags) return gre;
+	if (newflags == flags)
+		return gre;
 
 	/* Oy, is this stupid or what? */
 	size = sizeof(gre_header);
-	if (newflags&htons(GRE_CSUM))
+	if (newflags & htons(GRE_CSUM))
 		size += sizeof(u_int32_t);
-	if (newflags&htons(GRE_KEY))
+	if (newflags & htons(GRE_KEY))
 		size += sizeof(u_int32_t);
-	if (newflags&htons(GRE_SEQ))
+	if (newflags & htons(GRE_SEQ))
 		size += sizeof(u_int32_t);
-	if (newflags&htons(GRE_ROUTING)) {
+	if (newflags & htons(GRE_ROUTING)) {
 		size += sizeof(u_int32_t);
 		/* Routing requires the space for checksum/offset
 		 * to be allocated as well. We'll just make a
 		 * recursive call to handle it.
 		 */
-		if (!(newflags&htons(GRE_CSUM))) {
+		if (!(newflags & htons(GRE_CSUM))) {
 			gre = gre_resize(pack, flags, htons(GRE_CSUM));
 			size += sizeof(u_int32_t);
 		}
 	}
 
 	/* Allocate any additional space needed */
-	if (pack->alloc_len >= size) return gre; /* ?? */
+	if (pack->alloc_len >= size)
+		return gre; /* ?? */
+
 	pack->data = realloc(pack->data, size);
 	pack->alloc_len = size;
-	gre = (gre_header *)pack->data;
+	gre = (gre_header *) pack->data;
 
 	/* Now shove any preexisting options down to allow space for
 	 * our new one.
 	 */
 	ourspot = gre_where(flags, addflag);
-	endspot = (size-sizeof(gre_header))/sizeof(u_int32_t);
+	endspot = (size - sizeof(gre_header)) / sizeof(u_int32_t);
 	while (--endspot > ourspot) {
-		gre->gre_info.thirtytwo[endspot] =
-			gre->gre_info.thirtytwo[endspot-1];
+		gre->gre_info.thirtytwo[endspot] = gre->gre_info.thirtytwo[endspot - 1];
 	}
 	/* Zero out the new option just for fun */
 	gre->gre_info.thirtytwo[ourspot] = 0;
@@ -142,25 +141,25 @@ gre_resize(sendip_data *pack, u_int16_t flags, u_int16_t addflag)
 bool
 do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
-	gre_header *gre = (gre_header *)pack->data;
+	gre_header *gre = (gre_header *) pack->data;
 	u_int16_t svalue;
 
-	switch(opt[1]) {
+	switch (opt[1]) {
 	case 'c':
-		if (gre->gre_flag&htons(GRE_CSUM)) {
-			usage_error("Already have a checksum specified\n");
+		if (gre->gre_flag & htons(GRE_CSUM)) {
+			ERROR("gre - already have a checksum specified")
 			return FALSE;
 		}
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_CSUM));
 		gre->gre_flag |= htons(GRE_CSUM);
 		/* There's only one place for the checksum field to go! */
 		gre->gre_info.sixteen[GRE_CHECKSUM_FIELD] =
-			htons((u_int16_t)strtoul(arg, (char **)NULL, 0));
+			htons((u_int16_t) strtoul(arg, NULL, 0));
 		pack->modified |= GRE_MOD_CHECKSUM;
 		break;
 	case 'C':
-		if (gre->gre_flag&htons(GRE_CSUM)) {
-			usage_error("Already have a checksum specified\n");
+		if (gre->gre_flag & htons(GRE_CSUM)) {
+			ERROR("gre - already have a checksum specified")
 			return FALSE;
 		}
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_CSUM));
@@ -173,49 +172,50 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	case 'r':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_ROUTING));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_ROUTING))] =
-			htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+			htonl((u_int32_t) strtoul(arg, NULL, 0));
 		gre->gre_flag |= htons(GRE_ROUTING);
 		pack->modified |= GRE_MOD_ROUTING;
 		break;
 	case 'k':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_KEY));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_KEY))] =
-			htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+			htonl((u_int32_t) strtoul(arg, NULL, 0));
 		gre->gre_flag |= htons(GRE_KEY);
 		pack->modified |= GRE_MOD_KEY;
 		break;
 	case 's':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_SEQ));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_SEQ))] =
-			htonl((u_int32_t)strtoul(arg, (char **)NULL, 0));
+			htonl((u_int32_t) strtoul(arg, NULL, 0));
 		gre->gre_flag |= htons(GRE_SEQ);
 		pack->modified |= GRE_MOD_SEQUENCE;
 		break;
 	case 'S':
-		/* Logically, this only makes sense if routing info
-		 * is supplied, but of course we won't enforce this.
-		 */
+		/* Logically, this only makes sense if routing info is supplied,
+		   but of course we won't enforce this. */
 		gre->gre_flag |= htons(GRE_STRICT);
 		pack->modified |= GRE_MOD_STRICT;
 		break;
 	case 'e':
-		svalue = strtoul(arg, (char **)NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > GRE_MAX_REC) {
-			usage_error("Too big a recursion limit\n");
+			DERROR("gre - recursion limit too big (%d > %d)",
+				svalue, GRE_MAX_REC)
 			return FALSE;
 		}
 		gre->gre_flag &= ~htons(GRE_REC);
-		gre->gre_flag |= (htons(GRE_REC)&htons(svalue<<GRE_REC_SHIFT));
+		gre->gre_flag |= (htons(GRE_REC) & htons(svalue << GRE_REC_SHIFT));
 		pack->modified |= GRE_MOD_RECURSION;
 		break;
 	case 'v':
-		svalue = strtoul(arg, (char **)NULL, 0);
+		svalue = strtoul(arg, NULL, 0);
 		if (svalue > GRE_MAX_VERSION) {
-			usage_error("Too big a version number\n");
+			DERROR("gre - version number too big (%d > %d)",
+				svalue, GRE_MAX_VERSION)
 			return FALSE;
 		}
 		gre->gre_flag &= ~htons(GRE_VERSION);
-		gre->gre_flag |= (htons(GRE_VERSION)&htons(svalue));
+		gre->gre_flag |= (htons(GRE_VERSION) & htons(svalue));
 		pack->modified |= GRE_MOD_VERSION;
 		break;
 	case 'p':
@@ -234,12 +234,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_CSUM));
 		/* There's only one place for the offset field to go! */
 		gre->gre_info.sixteen[GRE_OFFSET_FIELD] =
-			htonl((u_int16_t)strtoul(arg, (char **)NULL, 0));
+			htonl((u_int16_t) strtoul(arg, NULL, 0));
 		pack->modified |= GRE_MOD_OFFSET;
 		break;
 	}
 	return TRUE;
-
 }
 
 bool
@@ -248,9 +247,8 @@ finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[], int index,
 {
 	gre_header *gre = (gre_header *) pack->data;
 
-	/* Note that GRE uses the Ethernet protocol value and not the
-	 * IP one! Because it's "generic," you see.
-	 */
+	/* Note that GRE uses the Ethernet protocol value and not the IP one!
+	   Because it's "generic," you see. */
 	if (!(pack->modified & GRE_MOD_PROTOCOL)) {
 		switch (hdrs[inner_header(hdrs, index, "i6")]) {
 		case 'i':
@@ -277,12 +275,20 @@ finalize(char *hdrs, __attribute__((unused)) sendip_data *headers[], int index,
 
 }
 
-int num_opts() {
-	return sizeof(gre_opts)/sizeof(sendip_option);
+int
+num_opts() {
+	return sizeof(gre_opts) / sizeof(sendip_option);
 }
-sendip_option *get_opts() {
+
+sendip_option *
+get_opts() {
 	return gre_opts;
 }
-char get_optchar() {
+
+char
+get_optchar() {
 	return opt_char;
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

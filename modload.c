@@ -1,3 +1,5 @@
+/** modload.c - helper to load sendip modules */
+
 #define _CRYPTO_MAIN
 #define _SENDIP_MAIN
 
@@ -10,6 +12,7 @@
 #include "c_origin.h"
 #include "sendip_module.h"
 #include "crypto_module.h"
+#include "parseargs.h"		/* just to get the macros */
 #include "modload.h"
 
 typedef struct _sm {
@@ -54,9 +57,9 @@ dlopen_module(const char *modname) {
 				snprintf(name, MAXPATHLEN, "%s/%s", libdir, modname);
 				if (NULL == (handle = dlopen(name, RTLD_NOW)) ) {
 					char *error3 = strdup(dlerror());
-					fprintf(stderr, "Couldn't open module %s, tried:\n"
-						"  %s\n  %s\n  %s\n  %s\n",
-						modname, error0, error1, error2, error3);
+					DERROR("Couldn't open module %s, tried:\n"
+						"  %s\n  %s\n  %s\n  %s",
+						modname, error0, error1, error2, error3)
 					free(error3);
 					return NULL;
 				}
@@ -82,7 +85,7 @@ load_crypto_module(const char *modname) {
 
 	newmod = malloc(sizeof(crypto_module));
 	if (newmod == NULL) {
-		perror("Unable to allocate module memory");
+		PERROR("Unable to load crypto module '%s'", modname)
 		return NULL;
 	}
 
@@ -95,13 +98,12 @@ load_crypto_module(const char *modname) {
 #pragma GCC diagnostic ignored "-Wpedantic"
 	/* Initialize is optional */
 	if (NULL == (newmod->cryptoinit = dlsym(handle, "cryptoinit")) ) {
-		fprintf(stderr, "Warning: %s doesn't have an cryptoinit function: %s\n",
-			modname, dlerror());
+		DWARN("%s doesn't have a cryptoinit function: %s", modname, dlerror())
 	}
 	/* cryptomod is not */
 	if (NULL == (newmod->cryptomod = dlsym(handle, "cryptomod")) ) {
-		fprintf(stderr, "%s doesn't contain a cryptomod function: %s\n",
-			modname, dlerror());
+		DERROR("%s doesn't contain a cryptomod function: %s",
+			modname, dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -110,7 +112,7 @@ load_crypto_module(const char *modname) {
 #pragma error_messages (default, E_ASSIGNMENT_TYPE_MISMATCH)
 	newmod->name = malloc(strlen(modname) + 1);
 	if (newmod->name == NULL) {
-		perror("No space left to copy module name");
+		PERROR("Unable to load crypto module '%s'", modname)
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -119,7 +121,7 @@ load_crypto_module(const char *modname) {
 
 	cur = malloc(sizeof(crypto_mod_entry));
 	if (cur == NULL) {
-		perror("Unable to add crypto module");
+		PERROR("Unable to load crypto module '%s'", modname)
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -157,7 +159,7 @@ load_sendip_module(const char *modname, int *cached) {
 	*cached = 0;
 	newmod = malloc(sizeof(sendip_module));
 	if (newmod == NULL) {
-		perror("Unable to allocate module memory");
+		PERROR("Unable to load module '%s'", modname)
 		return NULL;
 	}
 	if (NULL == (handle = dlopen_module(modname)) ) {
@@ -168,40 +170,38 @@ load_sendip_module(const char *modname, int *cached) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 	if (NULL == (newmod->initialize = dlsym(handle, "initialize")) ) {
-		fprintf(stderr, "%s doesn't have an initialize function: %s\n",
-			modname, dlerror());
+		DERROR("%s doesn't have an initialize function: %s", modname, dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
 	}
 	if (NULL == (newmod->do_opt = dlsym(handle, "do_opt")) ) {
-		fprintf(stderr, "%s doesn't contain a do_opt function: %s\n",
-			modname, dlerror());
+		DERROR("%s doesn't contain a do_opt function: %s", modname, dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
 	}
 	newmod->set_addr = dlsym(handle, "set_addr"); // don't care if fails
 	if (NULL == (newmod->finalize = dlsym(handle, "finalize")) ) {
-		fprintf(stderr, "%s\n", dlerror());
+		DERROR("%s", dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
 	}
 	if (NULL == (n_opts = dlsym(handle, "num_opts")) ) {
-		fprintf(stderr, "%s\n", dlerror());
+		DERROR("%s", dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
 	}
 	if (NULL == (get_opts = dlsym(handle, "get_opts")) ) {
-		fprintf(stderr, "%s\n", dlerror());
+		DERROR("%s", dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
 	}
 	if (NULL == (get_optchar = dlsym(handle, "get_optchar")) ) {
-		fprintf(stderr, "%s\n", dlerror());
+		DERROR("%s", dlerror())
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -210,7 +210,7 @@ load_sendip_module(const char *modname, int *cached) {
 #pragma error_messages (default, E_ASSIGNMENT_TYPE_MISMATCH)
 	newmod->name = malloc(strlen(modname) + 1);
 	if (newmod->name == NULL) {
-		perror("No space left to copy module name");
+		PERROR("Unable to load module '%s'", modname)
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -223,7 +223,7 @@ load_sendip_module(const char *modname, int *cached) {
 
 	cur = malloc(sizeof(sendip_mod_entry));
 	if (cur == NULL) {
-		perror("Unable to add sendip module");
+		PERROR("Unable to load module '%s'", modname)
 		dlclose(handle);
 		free(newmod);
 		return NULL;
@@ -274,3 +274,6 @@ unload_modules(int verbosity) {
 	if (p_crypto)
 		free(p_crypto);
 }
+
+/* vim: ts=4 sw=4 filetype=c
+ */

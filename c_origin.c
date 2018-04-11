@@ -201,3 +201,6 @@ main(int argc, char **argv) {
 #undef ORIGIN_BINARY
 
 #endif /* ORIGIN_TEST_MAIN */
+
+/* vim: ts=4 sw=4 filetype=c
+ */
