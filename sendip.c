@@ -219,7 +219,7 @@ static void print_usage(void) {
 	char lbuf[LINE_MAX];
 
 	printf(
-"\nUsage: %s [-vh] [-d data] [-f datafile] [-l count] [-t time] \\ \n"
+"\nUsage: %s [-hVv] [-d data] [-f datafile] [-l count] [-t time] \\ \n"
 "         \t[-s socket_opts] [-p module]... [module_option]... hostname\n"
 "\n"
 "Packet data, header fields:\n"
@@ -326,9 +326,13 @@ main(int argc, char **const argv) {
 	gnuopterr = 0;
 	gnuoptind = 0;
 	while(gnuoptind < argc
-		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:s:t:"))))
+		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:s:t:V"))))
 	{
 		switch (optc) {
+		case 'V':
+			printf("sendip v%s - see https://github.com/jelmd/sendip\n",
+				VERSION);
+			return 0;
 		case 's':
 			sockopts = strdup(gnuoptarg);
 			if (sockopts == NULL) {
@@ -476,7 +480,7 @@ while (--loopcount >= 0) {
 	gnuoptind = 0;
 	current_e = NULL;
 	while(EOF != (optc =
-		_getopt_internal(argc, argv, "p:vd:hf:l:s:t:", opts, &longindex, 1)))
+		_getopt_internal(argc, argv, "p:vd:hf:l:s:t:V", opts, &longindex, 1)))
 	{
 		switch (optc) {
 		case 'p':
@@ -489,6 +493,7 @@ while (--loopcount >= 0) {
 		case 'l':
 		case 's':
 		case 't':
+		case 'V':
 			/* Processed above */
 			break;
 		case ':':
