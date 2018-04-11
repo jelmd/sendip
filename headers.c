@@ -26,7 +26,7 @@ struct sendip_headers sendip_headers[] = {
 	{'r', IPPROTO_NONE},		/* rip */
 	{'R', IPPROTO_NONE},		/* ripng */
 	/* These are base flags and can't be used for headers:
-	 * d f h l p s t V v
+	 * d f h L p S T V v
 	 */
 };
 

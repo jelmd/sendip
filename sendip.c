@@ -219,8 +219,8 @@ static void print_usage(void) {
 	char lbuf[LINE_MAX];
 
 	printf(
-"\nUsage: %s [-hVv] [-d data] [-f datafile] [-l count] [-t time] \\ \n"
-"         \t[-s socket_opts] [-p module]... [module_option]... hostname\n"
+"\nUsage: %s [-hVv] [-d data] [-f datafile] [-L count] [-T time] \\ \n"
+"         \t[-S socket_opts] [-p module]... [module_option]... hostname\n"
 "\n"
 "Packet data, header fields:\n"
 "  fF  .. next line from file F\n"
@@ -326,24 +326,24 @@ main(int argc, char **const argv) {
 	gnuopterr = 0;
 	gnuoptind = 0;
 	while(gnuoptind < argc
-		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:l:s:t:V"))))
+		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:L:S:T:V"))))
 	{
 		switch (optc) {
 		case 'V':
 			printf("sendip v%s - see https://github.com/jelmd/sendip\n",
 				VERSION);
 			return 0;
-		case 's':
+		case 'S':
 			sockopts = strdup(gnuoptarg);
 			if (sockopts == NULL) {
 				PERROR("Couldn't allocate memory for socket options")
 				return 1;
 			}
 			break;
-		case 'l':
+		case 'L':
 			loopcount = atoi(gnuoptarg);
 			break;
-		case 't':
+		case 'T':
 			delaytime = atoi(gnuoptarg);
 			break;
 		case 'p':
@@ -480,7 +480,7 @@ while (--loopcount >= 0) {
 	gnuoptind = 0;
 	current_e = NULL;
 	while(EOF != (optc =
-		_getopt_internal(argc, argv, "p:vd:hf:l:s:t:V", opts, &longindex, 1)))
+		_getopt_internal(argc, argv, "p:vd:hf:L:S:T:V", opts, &longindex, 1)))
 	{
 		switch (optc) {
 		case 'p':
@@ -490,9 +490,9 @@ while (--loopcount >= 0) {
 		case 'd':
 		case 'f':
 		case 'h':
-		case 'l':
-		case 's':
-		case 't':
+		case 'L':
+		case 'S':
+		case 'T':
 		case 'V':
 			/* Processed above */
 			break;

@@ -9,7 +9,7 @@ sendip \- a tool to send arbitrary IP packets
 .\" no alignment
 .na
 .HP
-\fBsendip\fR [\-h] [\-V] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-l\ \fInum\fR] [\-t\ time] [\-s sock_opt]... [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
+\fBsendip\fR [\-h] [\-V] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-L\ \fInum\fR] [\-T\ time] [\-S sock_opt]... [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
 .\" re-enable hyphenation and aligment
 .ad
 .hy
@@ -56,7 +56,19 @@ Print version and exit.
 \-v
 Be verbose.
 .TP
-\-s\ \fIsopt\fR
+\-L\ \fInum\fR
+After all general options have been read and modules initialized, run the
+related packet generator \fInum\fR times (0 means indefinitely). Each time
+a new packet gets generated, all module specific options applied and the
+packet finally sent. So each packet sent will be identical unless
+random (\fBr\fIN\fR) or file (\fBf\fIfile\fR) option values are used.
+.TP
+\-T\ \fItime\fR
+Wait \fItime\fR seconds before generating and sending the next packet (the
+default value 0 means no waiting, run as fast as possible).
+Ignored if no loop parameter was given.
+.TP
+\-S\ \fIsopt\fR
 Uses the setsockopt() call of the OS to change the flags or values. For now the
 following \fIsopt\fR are supported:
 .RS
@@ -76,20 +88,8 @@ given, to \fB32\fR.
 .RE
 
 .TP
-\-t\ \fItime\fR
-Wait \fItime\fR seconds before generating and sending the next packet (the
-default value 0 means no waiting, run as fast as possible).
-Ignored if no loop parameter was given.
-.TP
 \-p\ \fImodule\fR
 Load the given \fImodule\fR. Can be specified multiple times.
-.TP
-\-l\ \fInum\fR
-After all general options have been read and modules initialized, run the
-related packet generator \fInum\fR times (0 means indefinitely). Each time
-a new packet gets generated, all module specific options applied and the
-packet finally sent. So each packet sent will be identical unless
-random (\fBr\fIN\fR) or file (\fBf\fIfile\fR) option values are used.
 .TP
 \-f\ \fIfile\fR
 Read the given \fIfile\fR and use its contents as payload.
