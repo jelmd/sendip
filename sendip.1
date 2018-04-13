@@ -9,7 +9,7 @@ sendip \- a tool to send arbitrary IP packets
 .\" no alignment
 .na
 .HP
-\fBsendip\fR [\-h] [\-V] [\-v] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-L\ \fInum\fR] [\-T\ time] [\-S sock_opt]... [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
+\fBsendip\fR [\-h] [\-V] [\-v] [\-D\ \fIotype\fR] [\-d\ \fIdata\fR\ |\ \-f\ \fIfile\fR] [\-L\ \fInum\fR] [\-T\ time] [\-S sock_opt]... [\-p\ \fImodule\fR]... [\fImodule_options\fR]... \fIhostname\fR
 .\" re-enable hyphenation and aligment
 .ad
 .hy
@@ -56,6 +56,11 @@ Print version and exit.
 \-v
 Be verbose.
 .TP
+\-D\ \fIotype\fR
+Print a hex dump from each packet before sending it out. \fIotype\fR determines
+how the byte offset gets printed. Use \fBh\fR for hexadecimal, \fBd\fR or
+anything else for decimal.
+.TP
 \-L\ \fInum\fR
 After all general options have been read and modules initialized, run the
 related packet generator \fInum\fR times (0 means indefinitely). Each time
@@ -93,7 +98,6 @@ Load the given \fImodule\fR. Can be specified multiple times.
 .TP
 \-f\ \fIfile\fR
 Read the given \fIfile\fR and use its contents as payload.
-
 .TP
 \-d\ \fIdata\fR
 Use the given \fIdata\fR as payload. The following formats are understood and

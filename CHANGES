@@ -199,3 +199,4 @@ Changes between sendip-2.5-mec-3 and sendip-2.6.0-jel
 
 Changes between sendip-2.6.0-jel and sendip-2.6.1-jel
 * rename aweful long function names in compact.c and merge it to parseargs.*
+* new option '-D {h|d}' for packet data dumps, better dumping

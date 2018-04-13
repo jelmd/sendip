@@ -28,6 +28,7 @@
 #include "common.h"
 #include "modload.h"
 #include "ipv6.h"
+#include "dump.h"
 
 /* housekeeping for loaded modules and their packet data */
 typedef struct _sml {
@@ -55,7 +56,7 @@ static char *progname;
 
 static int
 sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
-	const char *sockopts)
+	char dump, const char *sockopts)
 {
 	_sockaddr_storage *to = malloc(sizeof(_sockaddr_storage));
 	const char *p;
@@ -102,20 +103,11 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 		return -2;
 	}
 
-	if (verbose) {
-		int i, j;  
-		printf("Final packet data:\n");
-		for (i = 0; i < data->alloc_len; ) {
-			for (j = 0; j < 4 && i + j < data->alloc_len; j++)
-				printf("%02X ", ((unsigned char *)(data->data))[i + j]);
-			printf("  ");
-			for (j = 0; j < 4 && i + j < data->alloc_len; j++) {
-				int c = (int) ((unsigned char *)(data->data))[i + j];
-				printf("%c", isprint(c) ? ((char *)(data->data))[i + j] : '.');
-			}
-			printf("\n");
-			i+=j;
-		}
+	if (dump) {
+		char buf[BUFSIZ];
+
+		bdump(data->data, data->alloc_len, buf, BUFSIZ, dump == 'h');
+		printf("Final packet data:\n%s\n", buf);
 	}
 
 	if ((s = socket(af_type, SOCK_RAW, IPPROTO_RAW)) < 0) {
@@ -219,8 +211,8 @@ static void print_usage(void) {
 	char lbuf[LINE_MAX];
 
 	printf(
-"\nUsage: %s [-hVv] [-d data] [-f datafile] [-L count] [-T time] \\ \n"
-"         \t[-S socket_opts] [-p module]... [module_option]... hostname\n"
+"\nUsage: %s [-hVv] [-D otype] [-d data] [-f datafile] [-L count] [-T time]\\"
+"\n         \t[-S socket_opts] [-p module]... [module_option]... hostname\n"
 "\n"
 "Packet data, header fields:\n"
 "  fF  .. next line from file F\n"
@@ -294,7 +286,7 @@ main(int argc, char **const argv) {
 
 	bool verbosity = FALSE;
 
-	char *data = NULL;
+	char *data = NULL, dump = '\0';
 	int datafile = -1;
 	int datalen = 0;
 	char *datarg = NULL;
@@ -326,7 +318,7 @@ main(int argc, char **const argv) {
 	gnuopterr = 0;
 	gnuoptind = 0;
 	while(gnuoptind < argc
-		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vd:hf:L:S:T:V"))))
+		&& (EOF != (optc = gnugetopt(argc, argv, "-p:vD:d:hf:L:S:T:V"))))
 	{
 		switch (optc) {
 		case 'V':
@@ -369,6 +361,9 @@ main(int argc, char **const argv) {
 			break;
 		case 'v':
 			verbosity = TRUE;
+			break;
+		case 'D':
+			dump = gnuoptarg[0] == 'h' ? 'h' : 'd';
 			break;
 		case 'd':
 			if (datafile == -1) {
@@ -480,13 +475,14 @@ while (--loopcount >= 0) {
 	gnuoptind = 0;
 	current_e = NULL;
 	while(EOF != (optc =
-		_getopt_internal(argc, argv, "p:vd:hf:L:S:T:V", opts, &longindex, 1)))
+		_getopt_internal(argc, argv, "p:vD:d:hf:L:S:T:V", opts, &longindex, 1)))
 	{
 		switch (optc) {
 		case 'p':
 			current_e = (current_e) ? current_e->next : first;
 			break;
 		case 'v':
+		case 'D':
 		case 'd':
 		case 'f':
 		case 'h':
@@ -669,7 +665,8 @@ while (--loopcount >= 0) {
 			free(sockopts);
 			return 1;
 		}
-		i = sendpacket(&packet, argv[gnuoptind], af_type, verbosity, sockopts);
+		i = sendpacket(&packet, argv[gnuoptind], af_type, verbosity, dump,
+			sockopts);
 		free(packet.data);
 	}
 	/* Regenerate data on subsequent loop calls */
