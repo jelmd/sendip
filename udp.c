@@ -32,11 +32,9 @@ udpcsum(sendip_data *ip_hdr, sendip_data *udp_hdr, sendip_data *data) {
 	memcpy(temp, &(ip->saddr), sizeof(u_int32_t));
 	memcpy(&(temp[4]), &(ip->daddr), sizeof(u_int32_t));
 	temp[8] = 0;
-	temp[9] = (u_int16_t) ip->protocol;
-	temp[10] = (u_int16_t)
-		((udp_hdr->alloc_len + data->alloc_len) & 0xFF00) >> 8;
-	temp[11] = (u_int16_t)
-		((udp_hdr->alloc_len + data->alloc_len) & 0x00FF);
+	temp[9] = ip->protocol;
+	temp[10] = ((udp_hdr->alloc_len + data->alloc_len) & 0xFF00) >> 8;
+	temp[11] = ((udp_hdr->alloc_len + data->alloc_len) & 0x00FF);
 	/* Copy the UDP header and data */
 	memcpy(temp + 12, udp_hdr->data, udp_hdr->alloc_len);
 	memcpy(temp + 12 + udp_hdr->alloc_len, data->data, data->alloc_len);
@@ -95,19 +93,19 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch (opt[1]) {
 	case 's':
-		udp->source = opt2intn(arg, 2);
+		udp->source = opt2intn(arg, NULL, 2);
 		pack->modified |= UDP_MOD_SOURCE;
 		break;
 	case 'd':
-		udp->dest = opt2intn(arg, 2);
+		udp->dest = opt2intn(arg, NULL, 2);
 		pack->modified |= UDP_MOD_DEST;
 		break;
 	case 'l':
-		udp->len = opt2intn(arg, 2);
+		udp->len = opt2intn(arg, NULL, 2);
 		pack->modified |= UDP_MOD_LEN;
 		break;
 	case 'c':
-		udp->check = opt2intn(arg, 2);
+		udp->check = opt2intn(arg, NULL, 2);
 		pack->modified |= UDP_MOD_CHECK;
 		break;
 	}

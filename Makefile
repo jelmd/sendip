@@ -1,4 +1,4 @@
-VERSION ?= "2.6.0.1"
+VERSION ?= "3.0.0"
 PREFIX ?= /usr
 BINDIR ?= bin
 MANDIR ?= share/man/man1
@@ -21,7 +21,8 @@ OPTIMZE_gcc ?= -O3
 OPTIMZE ?= -g $(OPTIMZE_$(CC))
 
 CFLAGS_cc = -xcode=pic32
-CFLAGS_cc += -errtags -erroff=%none,E_UNRECOGNIZED_PRAGMA_IGNORED,E_ATTRIBUTE_UNKNOWN,E_NONPORTABLE_BIT_FIELD_TYPE -errwarn=%all -D_XOPEN_SOURCE=600 -D__EXTENSIONS__=1
+# strtoull() needs c99+
+CFLAGS_cc += -errtags -erroff=%none,E_UNRECOGNIZED_PRAGMA_IGNORED,E_ATTRIBUTE_UNKNOWN,E_NONPORTABLE_BIT_FIELD_TYPE -errwarn=%all -D_XOPEN_SOURCE=600 -D__EXTENSIONS__=1 -std=c99
 CFLAGS_cc += -pedantic -v
 CFLAGS_gcc = -fPIC -fsigned-char -pipe -Wno-unknown-pragmas -Wno-unused-result
 CFLAGS_gcc += -fdiagnostics-show-option -Wall -Werror
@@ -140,8 +141,8 @@ install:	$(SUBDIRS) all
 	ln -sf $(DYNLIB) $(DESTDIR)$(PREFIX)/$(LIBDIR)/$(SOBN)
 
 help: $(PROGS) $(PROTOS)
-	ln -sf $(DYNLIB) $(SONAME)
-	LD_LIBRARY_PATH_$(MACH)=. LD_LIBRARY_PATH=. \
+	@ln -sf $(DYNLIB) $(SONAME)
+	@LD_LIBRARY_PATH_$(MACH)=. LD_LIBRARY_PATH=. \
 		./sendip -p $(PROTOS:%.so=% -p) tcp -h
 
 

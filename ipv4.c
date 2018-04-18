@@ -132,15 +132,15 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		pack->modified |= IP_MOD_DADDR;
 		break;
 	case 'h':
-		iph->header_len = (unsigned int) strtoul(arg, NULL, 0) & 0xF;
+		iph->header_len = opt2inth(arg, NULL, 1)  & 0xF;
 		pack->modified |= IP_MOD_HEADERLEN;
 		break;
 	case 'v':
-		iph->version = (unsigned int) strtoul(arg, NULL, 0) & 0xF;
+		iph->version = opt2inth(arg, NULL, 1) & 0xF;
 		pack->modified |= IP_MOD_VERSION;
 		break;
 	case 'y':
-		iph->tos = (u_int8_t) strtoul(arg, NULL, 0);
+		iph->tos = opt2inth(arg, NULL, 1);
 		pack->modified |= IP_MOD_TOS;
 		break;
 	case 'l':
@@ -148,14 +148,14 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		   in FreeBSD have to be passed in host, rather than network byte order.
 		   They are flipped (if need be) in the kernel before transmission. */
 #ifdef __FreeBSD
-		iph->tot_len = opt2inth(arg, 2);
+		iph->tot_len = opt2inth(arg, NULL, 2);
 #else
-		iph->tot_len = opt2intn(arg, 2);
+		iph->tot_len = opt2intn(arg, NULL, 2);
 #endif
 		pack->modified |= IP_MOD_TOTLEN;
 		break;
 	case 'i':
-		iph->id = opt2intn(arg, 2);
+		iph->id = opt2intn(arg, NULL, 2);
 		pack->modified |= IP_MOD_ID;
 		break;
 	case 'f':
@@ -180,22 +180,21 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				break;
 			}
 		} else {
-			IP_SET_FRAGOFF(iph,
-				(u_int16_t) strtoul(arg, NULL, 0) & (u_int16_t) 0x1FFF)
+			IP_SET_FRAGOFF(iph, opt2inth(arg, NULL, 4) & (u_int16_t) 0x1FFF)
 			pack->modified |= IP_MOD_FRAGOFF;
 			break;
 		}
 		break;
 	case 't':
-		iph->ttl = opt2intn(arg, 1);
+		iph->ttl = opt2intn(arg, NULL, 1);
 		pack->modified |= IP_MOD_TTL;
 		break;
 	case 'p':
-	   iph->protocol = opt2intn(arg, 1);
+	   iph->protocol = opt2intn(arg, NULL, 1);
 		pack->modified |= IP_MOD_PROTOCOL;
 		break;
 	case 'c':
-		iph->check = opt2intn(arg, 2);
+		iph->check = opt2intn(arg, NULL, 2);
 		pack->modified |= IP_MOD_CHECK;
 		break;
 	case 'o':
@@ -229,7 +228,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			char *data = strdup(arg);
 			u_int8_t len;
 			if (data == NULL) {
-				PERROR("ipv4 - unable to process option '-o'")
+				PERROR("ipv4 - unable to process option '-orr'")
 				return FALSE;
 			}
 			len = buildroute(data);
@@ -238,6 +237,46 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				return FALSE;
 			} else {
 				addoption(0, 0, 7, len + 2, (u_int8_t *) data, pack);
+				free(data);
+			}
+		} else if (strcmp(opt + 2, "ssr") == 0) {
+			/* Strict Source Route. Format is identical to loose source route */
+			char *data = strdup(arg);
+			u_int8_t len;
+			if (!data) {
+				PERROR("ipv4 - unable to process '-ossr' option")
+				return FALSE;
+			}
+			len = buildroute(data);
+			if (len == 0) {
+				free(data);
+				return FALSE;
+			} else {
+				addoption(1, 0, 9, len + 2, (u_int8_t *) data, pack);
+				free(data);
+			}
+		} else if (strcmp(opt + 2, "lsr") == 0) {
+			/* Loose Source Route
+			 * Format is:
+			 *  type (131, 8bit)
+			 *  length (automatic, 8bit)
+			 *  pointer (>=4, 8bit)
+			 *  ip address0 (32bit)
+			 *  ip address1 (32bit)
+			 *  ...
+			 */
+			char *data = strdup(arg);
+			u_int8_t len;
+			if (!data) {
+				PERROR("ipv4 - unable to process '-olsr' option")
+				return FALSE;
+			}
+			len = buildroute(data);
+			if (len == 0) {
+				free(data);
+				return FALSE;
+			} else {
+				addoption(1, 0, 3, len + 2, (u_int8_t *) data, pack);
 				free(data);
 			}
 		} else if (strcmp(opt + 2, "ts") == 0) {
@@ -298,7 +337,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				return FALSE;
 			}
 			*(next++) = 0;
-			i = atoi(data_in);
+			i = opt2inth(data_in, NULL, 1);
 			if (i > 15) {
 				ERROR("ipbv4 - timestamp overflow (max. 15)")
 				free(data);
@@ -315,7 +354,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				return FALSE;
 			}
 			*(next++) = 0;
-			i = atoi(data_in);
+			i = opt2inth(data_in, NULL, 1);
 			if (i > 15) {
 				ERROR("ipv4 - timestamp flag too big (max. 15)")
 				free(data);
@@ -348,7 +387,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 				next = strchr(next, ':');
 				if (next)
 					*(next++) = 0;
-				ts = opt2intn(data_in, 4);
+				ts = opt2intn(data_in, NULL, 4);
 				memcpy(data_out, &ts, 4);
 				data_out += 4;
 				data_in = next;
@@ -356,50 +395,10 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			addoption(0, 2, 4, data_out - data + 2, (u_int8_t *) data, pack);
 			free(data);
 			/* End of timestamp parsing */
-		} else if (strcmp(opt + 2, "lsr") == 0) {
-			/* Loose Source Route 
-			 * Format is:
-			 *  type (131, 8bit)
-			 *  length (automatic, 8bit)
-			 *  pointer (>=4, 8bit)
-			 *  ip address0 (32bit)
-			 *  ip address1 (32bit) 
-			 *  ...
-			 */
-			char *data = strdup(arg);
-			u_int8_t len;
-			if (!data) {
-				PERROR("ipv4 - unable to process '-o ts' option")
-				return FALSE;
-			}
-			len = buildroute(data);
-			if (len == 0) {
-				free(data);
-				return FALSE;
-			} else {
-				addoption(1, 0, 3, len + 2, (u_int8_t *) data, pack);
-				free(data);
-			}
 		} else if (strcmp(opt + 2, "sid") == 0) {
 			/* Stream ID (RFC791) */
-			u_int16_t sid = opt2intn(arg, 2);
+			u_int16_t sid = opt2intn(arg, NULL, 2);
 			addoption(1, 0, 8, 4, (u_int8_t *) &sid, pack);
-		} else if (strcmp(opt + 2, "ssr") == 0) {
-			/* Strict Source Route. Format is identical to loose source route */
-			char *data = strdup(arg);
-			u_int8_t len;
-			if (!data) {
-				PERROR("ipv4 - unable to process '-o ssr' option")
-				return FALSE;
-			}
-			len = buildroute(data);
-			if (len == 0) {
-				free(data);
-				return FALSE;
-			} else {
-				addoption(1, 0, 9, len + 2, (u_int8_t *) data, pack);
-				free(data);
-			}
 		} else {
 			DERROR("ipv4 - unsupported IP option '%s' val '%s'", opt, arg)
 			return FALSE;

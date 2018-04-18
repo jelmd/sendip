@@ -53,13 +53,13 @@ typedef struct ip_wesp_phdr {
 
 /* Options */
 sendip_option wesp_opts[] = {
-	{ "v", 1, "WESP Version", "0" },
-	{ "e", 1, "WESP Encrypted Payload flag", "0" },
-	{ "p", 1, "WESP Padded flag (also adds 4 bytes padding)", "0" },
-	{ "r", 1, "WESP Reserved field", "0" },
-	{ "h", 1, "WESP Header Length", "Correct" },
-	{ "t", 1, "WESP Trailer Length", "Correct" },
-	{ "n", 1, "WESP Next Header", "Correct" },
+	{ "v", 1, "Version", "0" },
+	{ "e", 1, "Flag encrypted payload", "0" },
+	{ "p", 1, "Flag padded", "0" },
+	{ "r", 1, "Reserved field", "0" },
+	{ "h", 1, "Header Length", "Correct" },
+	{ "t", 1, "Trailer Length", "Correct" },
+	{ "n", 1, "Next header protocol", "Correct" },
 };
 
 #endif  /* _SENDIP_WESP_H */

@@ -43,3 +43,4 @@ test.c
 *.project
 makefile.dep
 man.1
+core

@@ -197,6 +197,9 @@ Changes between sendip-2.5-mec-3 and sendip-2.6.0-jel
   by using 'const char *' (jelmd)
 * misc fixes + code cleanups (jelmd)
 
-Changes between sendip-2.6.0-jel and sendip-2.6.1-jel
+Changes between sendip-2.6.0-jel and sendip-3.0.0-jel
 * rename aweful long function names in compact.c and merge it to parseargs.*
 * new option '-D {h|d}' for packet data dumps, better dumping
+* optn2intn(), opt2inth(): add endpointer parameter
+* ntp: fix endianess, fix double and timestamp serialization
+* sync man OPTIONS and help output with src code; make help output _short_

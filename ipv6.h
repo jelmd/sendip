@@ -1,5 +1,4 @@
-/** ipv6.h
- */
+/** ipv6.h */
 #ifndef _SENDIP_IPV6_H
 #define _SENDIP_IPV6_H
 
@@ -47,15 +46,16 @@ typedef struct {
 
 /* Options */
 sendip_option ipv6_opts[] = {
-	{ "f", 1, "IPv6 flow ID", "32" },
-	{ "t", 1, "IPv6 traffic class", "0" },	/* also in flow label*/
-	{ "v", 1, "IP version (you probably don't want to change this)", NULL },
-	{ "p", 1, "IPv6 priority", "0" },
-	{ "l", 1, "IPv6 payload length", "Correct" },
-	{ "h", 1, "IPv6 hop limit", "32" },
-	{ "n", 1, "IPv6 next header", "Correct" },
-	{ "s", 1, "IPv6 source address", "::1" },
-	{ "d", 1, "IPv6 destination address", "Correct" }
+	{ "v", 1, "Version", NULL },
+	{ "p", 1, "Priority", "0" },
+	{ "t", 1, "Traffic class", "0" },
+	{ "e", 1, "ECN value", "0" },
+	{ "f", 1, "Flow ID", "0" },
+	{ "l", 1, "Payload length", "Correct" },
+	{ "n", 1, "Next header protocol", "Correct" },
+	{ "h", 1, "Hop limit", "32" },
+	{ "s", 1, "Source address", "::1" },
+	{ "d", 1, "Destination address", "Correct" }
 };
 
 #endif  /* _SENDIP_IPV6_H */

@@ -43,11 +43,11 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch (opt[1]) {
 	case 'v': /* version */
-		rippack->version = opt2intn(arg, 1);
+		rippack->version = opt2intn(arg, NULL, 1);
 		pack->modified |= RIP_MOD_VERSION;
 		break;
 	case 'c': /* command */
-		rippack->command = opt2intn(arg, 1);
+		rippack->command = opt2intn(arg, NULL, 1);
 		pack->modified |= RIP_MOD_COMMAND;
 		break;
 	case 'a': /* authenticate */
@@ -60,7 +60,8 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		ripopt->addressFamily = 0xFFFF;
 		s = q = strdup(arg == NULL ? "" : arg);
 		NEXT_FIELD
-		ripopt->routeTagOrAuthenticationType = opt2intn(c == '|' ? p : "2", 2);
+		ripopt->routeTagOrAuthenticationType =
+			opt2intn(c == '|' ? p : "2", NULL, 2);
 		if (c == '|') {
 			NEXT_FIELD
 		}
@@ -83,9 +84,10 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		ripopt = RIP_OPTION(pack);
 		s = q = strdup(arg == NULL ? "" : arg);
 		NEXT_FIELD
-		ripopt->addressFamily = opt2intn(len == 0 ? "2" : p, 2);
+		ripopt->addressFamily = opt2intn(len == 0 ? "2" : p, NULL, 2);
 		NEXT_FIELD
-		ripopt->routeTagOrAuthenticationType = opt2intn(len == 0 ? "2" : p, 2);
+		ripopt->routeTagOrAuthenticationType =
+			opt2intn(len == 0 ? "2" : p, NULL, 2);
 		NEXT_FIELD
 		ripopt->address = opt2v4(len == 0 ? "0.0.0.0" : p, 4);
 		NEXT_FIELD
@@ -93,7 +95,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		NEXT_FIELD
 		ripopt->nextHop = opt2v4(len == 0 ? "0.0.0.0" : p, 4);
 		NEXT_FIELD
-		ripopt->metric = opt2intn(len == 0 ? p : "16", 4);
+		ripopt->metric = opt2intn(len == 0 ? p : "16", NULL, 4);
 		free(s);
 		break;
 	case 'd': /* default request */
@@ -111,7 +113,7 @@ bool do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		ripopt->metric = htons((u_int16_t) 16);
 		break;
 	case 'r': /* set reserved field */
-		rippack->res = opt2intn(arg, 2);
+		rippack->res = opt2intn(arg, NULL, 2);
 		pack->modified |= RIP_MOD_RESERVED;
 		break;
 	default:

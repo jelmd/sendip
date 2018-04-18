@@ -52,17 +52,17 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 	switch (opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		esp->hdr.spi = opt2intn(arg, 4);
+		esp->hdr.spi = opt2intn(arg, NULL, 4);
 		pack->modified |= ESP_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		esp->hdr.seq_no = opt2intn(arg, 4);
+		esp->hdr.seq_no = opt2intn(arg, NULL, 4);
 		pack->modified |= ESP_MOD_SEQUENCE;
 		break;
 	case 'p':	/* padding (variable length) */
 		/* We initially put the padding at the end of the header, then move it
 		   past the payload in finalize.  */
-		length = strtoul(arg, NULL, 0);
+		length = opt2inth(arg, NULL, 1);
 		if (length > OCTET_MAX) {
 			ERROR("esp padding length can't be over 255")
 			return FALSE;

@@ -143,12 +143,12 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 		break;
 	case 'l':
 		pd = (u_int8_t *) pack->data + 16;
-		PUTSHORT(pd, (u_int16_t) strtoul(optarg, NULL, 10))
+		PUTSHORT(pd, opt2inth(optarg, NULL, 2))
 		pack->modified |= BGP_MOD_LENGTH;
 		break;
 	case 't':
 		pd = (u_int8_t *) pack->data + 18;
-		*pd = (u_int8_t) strtoul(optarg, NULL, 0);
+		*pd = (u_int8_t) opt2inth(optarg, NULL, 1);
 		break;
 	case 'o':
 		switch (optstring[2]) {
@@ -158,21 +158,21 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				rc = FALSE;
 			} else {
 				/* version */
-				*pe = (u_int8_t) strtoul(optarg, &q, 10);
+				*pe = (u_int8_t) strtoul(optarg, &q, 0);
 				if (optarg == q) {
 					*pe = 4;
 				}
 				pe++;
 				/* AS number */
 				p = (*q == '\0' ) ? q : q + 1;
-				PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 10))
+				PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 0))
 				if (p == q) {
 					PUTSHORT(pe, 1)
 				}
 				pe += 2;
 				/* hold time */
 				p = (*q == '\0' ) ? q : q + 1;
-				PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 10))
+				PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 0))
 				if (p == q) {
 					PUTSHORT(pe, 90)
 				}
@@ -191,7 +191,7 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				pe += 4;
 				/* olength */
 				p = (*q == '\0' ) ? q : q + 1;
-				*pe = (u_int8_t) strtoul(p, &q, 10);
+				*pe = (u_int8_t) strtoul(p, &q, 0);
 				if (p == q) {
 					*pe = 0;
 				} else {
@@ -209,10 +209,10 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				rc = FALSE;
 			} else {
 				pd = pe;
-				*pe++ = (u_int8_t) strtoul(optarg, &q, 10);
+				*pe++ = (u_int8_t) strtoul(optarg, &q, 0);
 				p = (*q == '\0') ? q : q + 1;
 
-				*pe = (u_int8_t) strtoul(p, &q, 10);
+				*pe = (u_int8_t) strtoul(p, &q, 0);
 				if (p == q) {
 					*pe = 0;
 				} else {
@@ -244,7 +244,7 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				rc = FALSE;
 			} else {
 				bgp_wdr_len_ptr = pe;
-				PUTSHORT(pe, (u_int16_t) strtoul(optarg, NULL, 10))
+				PUTSHORT(pe, (u_int16_t) strtoul(optarg, NULL, 0))
 				pe += 2;
 				pack->modified |= BGP_MOD_WDR_LEN;
 				bgp_prev_part = BGP_UPDATE_WDR_LEN;
@@ -289,7 +289,7 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				rc = FALSE;
 			} else {
 				bgp_attr_len_ptr = pe;
-				PUTSHORT(pe, (u_int16_t) strtoul(optarg, NULL, 10))
+				PUTSHORT(pe, opt2inth(optarg, NULL, 2))
 				pe += 2;
 				pack->modified |= BGP_MOD_ATTR_LEN;
 				bgp_prev_part = BGP_UPDATE_ATTR_LEN;
@@ -317,13 +317,13 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 					"Attribute Length (-us), or after header")
 				rc = FALSE;
 			} else {
-				*pe++ = (u_int8_t) strtoul(optarg, &q, 16);
+				*pe++ = (u_int8_t) strtoul(optarg, &q, 0);
 				p = (*q == '\0') ? q : q + 1;
 
-				*pe++ = (u_int8_t) strtoul(p, &q, 10);
+				*pe++ = (u_int8_t) strtoul(p, &q, 0);
 				p = (*q == '\0') ? q : q + 1;
 
-				bytes = (u_int8_t) strtoul(p, &q, 10);
+				bytes = (u_int8_t) strtoul(p, &q, 0);
 				if (p != q) {
 					bytes = (bytes <= 1) ? 1 : 2;
 				} else {
@@ -332,9 +332,9 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				p = (*q == '\0') ? q : q + 1;
 
 				if (bytes == 1) {
-					*pe++ = (u_int8_t) strtoul(p, &q, 10);
+					*pe++ = (u_int8_t) strtoul(p, &q, 0);
 				} else {
-					PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 10))
+					PUTSHORT(pe, (u_int16_t) strtoul(p, &q, 0))
 					pe += 2;
 				}
 				if (p != q) {
@@ -392,7 +392,6 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 				bgp_prev_part = BGP_UPDATE_NLRI;
 			}
 			break;
-			
 		default:
 			DERROR("Unrecognised bgp UPDATE option '%s'", optstring)
 			rc = FALSE;
@@ -403,10 +402,10 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 			ERROR("bgp Notification (-n) must come immediately after header")
 			rc = FALSE;
 		} else {
-			*pe++ = (u_int8_t)strtoul(optarg, &q, 10);
+			*pe++ = (u_int8_t) strtoul(optarg, &q, 0);
 			p = (*q == '\0') ? q : q + 1;
 
-			*pe++ = (u_int8_t) strtoul(p, &q, 10);
+			*pe++ = (u_int8_t) strtoul(p, &q, 0);
 			p = (*q == '\0') ? q : q + 1;
 
 			pe += bgp_parse_bytes(pe, p, NULL, 0xFFFF, 16);
@@ -420,7 +419,7 @@ do_opt (const char *optstring, const char *optarg, sendip_data *pack)
 	}
 	
 	if (rc) {
-		pack->alloc_len = pe - (u_int8_t *)pack->data;
+		pack->alloc_len = pe - (u_int8_t *) pack->data;
 		if (!(pack->modified & BGP_MOD_LENGTH)) {
 			PUTSHORT(bgp_len_ptr, pack->alloc_len)
 		}

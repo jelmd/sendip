@@ -22,11 +22,11 @@ typedef struct ipv6_frag_hdr	frag_header;
 
 /* Options */
 sendip_option frag_opts[] = {
-	{ "n", 1, "Fragment next header", "Correct" },
-	{ "r", 1, "Fragment reserved (1 byte)", "0" },
-	{ "o", 1, "Fragment offset", "0" },
-	{ "f", 1, "Fragment flags (3 bits, lsb=more fragments)", "0" },
-	{ "i", 1, "Fragment identification", "0" },
+	{ "n", 1, "Next header protocol", "Correct" },
+	{ "r", 1, "Reserved", "0" },
+	{ "o", 1, "Offset", "0" },
+	{ "f", 1, "Flags", "0" },
+	{ "i", 1, "Identification", "0" },
 };
 
 #endif  /* _SENDIP_FRAG_H */

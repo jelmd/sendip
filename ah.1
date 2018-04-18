@@ -8,20 +8,21 @@ Default:\ 1
 Set the AH \fBSequence Number\fR to \fInum\fR (0..0xffff). Default:\ 1
 .TP
 \-ad\ \fIdata\fR
-Append the AH \fBAuthentication Data\fR.  \fIdata\fR has a variable length,
-can be either a user-provided string (in hex, octal, decimal, or raw), or rN
-for N random or zN for N zero bytes. Default:\ 0
+Append the AH \fBAuthentication Data\fR.
+\fIdata\fR is limited to max. 8192 bytes and becomes part of the packet.
+Default:\ 0
 .TP
 \-ak\ \fIdata\fR
-Pass the given \fIdata\fR as AH \fBkey\fR (string, rN for N random or zN for
-N zero bytes) to the authentication module. Gets not transmitted in the packet.
+Pass the given \fBkey \fIdata\fR to the authentication module.
+Gets not transmitted in the packet.
 Default:\ none
 .TP
 \-am\ \fIname\fR
-Load and use the authentication \fBmodule\fR with the given \fIname\fR.
+Load and use the \fBauthentication module\fR with the given \fIname\fR.
 Default:\ none
 .TP
-\-an\ \fInum\fR|\fIproto\fR
-Set the AH \fBNext Header\fR field to \fInum\fR {0..0xffff}. If a \fIproto\fRcol
-name is given, sendip tries to determine the corresponding number automatically.
+\-an\ \fIrnum\fR|\fIproto\fR
+Set the AH \fBNext Header\fR field to \fIrnum\fR {0..0xffff}.
+If a \fIproto\fRcol name is given, sendip tries to determine the
+corresponding number automatically.
 Default:\ auto

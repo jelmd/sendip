@@ -1,4 +1,5 @@
 .SS "bgp MODULE OPTIONS"
+
 .TP
 \-bm\ \fIhex\fR[\fB:\fIhex\fR]...
 Set the \fBBGP Marker\fR field to the given value. Each \fIhex\fR value
@@ -11,13 +12,16 @@ that leading whitespaces get chomped and thus one may loose bounderies.
 Empty or invalid strings are handled as \fB0\fR, so e.g. '::'
 becomes '00:00:00'.
 Default:\ FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF
+
 .TP
-\-bl\ \fIdnum\fR
+\-bl\ \fInum\fR
 Set the total \fBMessage Length\fR to \fInum\fR {0..65535}. Default: auto
+
 .TP
-\-bt\ \fIrnum\fR
+\-bt\ \fInum\fR
 Set the \fBMessage Type\fR to \fInum\fR {0..255} (1 OPEN, 2 UPDATE,
-3 NOTIFICATION, 4 KEEPALIVE). Default: 4 (KEEPALIVE)
+3 NOTIFICATION, 4 KEEPALIVE). Default:\ 4
+
 .TP
 \-bo\ \fIversion\fB:\fIAS_number\fB:\fIhold_time\fB:\fIID\fB:\fIolength\fR
 Append the given \fBOPEN\fR message parameters to the message. Any parameter
@@ -25,43 +29,46 @@ can be omitted (empty string) to get the default. The parameters are:
 .RS
 .TP
 \fIversion\fR
-BGP version {0..255}. Default: 4
+BGP version {0..255} (\fIrnum\fR). Default:\ 4
 .TP
 \fIAS_number\fR
-Autonomous System number {0..0xffff}. Default: 1
+Autonomous System number {0..0xffff} (\fIrnum\fR). Default:\ 1
 .TP
 \fIhold_time\fR
-Hold Timer value in seconds {0..0xffff}. Default: 90
+Hold Timer value in seconds {0..0xffff} (\fIrnum\fR). Default:\ 90
 .TP
 \fIID\fR
-BGP Identifier. It can be a normal IP address or a number in the
+BGP Identifier. It can be a normal IPv4 address or a decimal number in the
 range of {0..0xffffffff}. Default:\ 127.0.0.1
 .TP
 \fIolength\fR
-The length of the Optional Parameters field {0..255}.  Default: auto
+The length of the Optional Parameters field {0..255} (\fIrnum\fR).
+Default:\ auto
 .RE
 
 .TP
 \-boo\ \fItype\fB:\fR[\fIlength\fR]\fB:\fIvalue\fR
-Append the given \fBOptional parameter\fR to the OPEN message. The parameters
+Append the given \fBOptional parameter\fR to the OPEN message. Any parameter
+can be omitted (empty string) to get the default. The parameters
 are:
 .RS
 .TP
 \fItype\fR
-The parameter type {0..255}.
+The parameter type {0..255} (\fIrnum\fR). Default:\ 0
 .TP
 \fIlength\fR
-The length of the parameter value in octets. Default:\ auto
+The length of the parameter value in octets {0..255} (\fIrnum\fR).
+Default:\ auto
 .TP
 \fIvalue\fR
 A sequence of max. 255 bytes given as \fIhex\fR values separated by a
-colon ('\fB:\fR').
+colon ('\fB:\fR'), or any other non-hex character.
 .RE
 
 .TP
 \-bul\ \fInum\fR
 Append the total length of \fBWithdrawn routes\fR {0..0xffff} to the UPDATE
-message. Default: auto
+message. Default:\ auto
 .TP
 \-buw\ \fIprefix\fR[\fB:\fIlength\fR]
 Append the given \fBWithdrawn route\fR to the UPDATE message. The parameters
@@ -72,7 +79,7 @@ are:
 An IP address prefix in CIDR notation, i.e. x.x.x.x/n .
 .TP
 \fIlength\fR
-The length of the prefix in octets {0..255}. Default: auto.
+The length of the prefix in octets {0..255} (\fIrnum\fR). Default:\ auto.
 .RE
 
 .TP
@@ -85,19 +92,19 @@ Append the given \fBAttribute\fR to the UPDATE message. The parameters are:
 .RS
 .TP
 \fIflags\fR
-The flags for the attribute entry {0..255}.
+The flags for the attribute entry {0..255} (\fIrnum\fR).
 .TP
 \fItype\fR
-The attribute type {0..255}.
+The attribute type {0..255} (\fIrnum\fR).
 .TP
 \fIlength\fR
 The length of the attribute data in octets, depending on flags {0..255}
-or {0..0xffff}. Default: auto
+or {0..0xffff} (\fIrnum\fR). Default:\ auto
 .TP
 \fIdata\fR
 The attribute data to set represented as sequence of \fIhex\fR bytes separated
-by a colon ('\fB:\fR'). Depending on flags max. 255 or 0xffff bytes will be
-read.
+by a colon ('\fB:\fR'), or any other non-hex character.
+Depending on \fIflags\fR max. 255 or 0xffff bytes will be read.
 .RE
 
 .TP
@@ -111,11 +118,12 @@ Append the given \fBNotification\fR to the message. The parameters are:
 .RS
 .TP
 \fIcode\fB
-The error code to set {0..255}.
+The error code to set {0..255} (\fIrnum\fR). Default:\ 0
 .TP
 \fIsubcode\fR
-The error subcode to set {0..255}.
+The error subcode to set {0..255} (\fIrnum\fR). Default:\ 0
 .TP
 \fIdata\fR
-The reason for the notification. Omit for no data.
+The reason for the notification - max. 4096 hex bytes. Omit for no data.
+Default:\ ""
 .RE

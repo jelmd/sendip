@@ -13,6 +13,7 @@
 #include "common.h"
 #include "sendip_module.h"
 #include "ipv6.h"
+#include "dump.h"
 
 /* Character that identifies our options */
 const char opt_char = '6';
@@ -54,38 +55,43 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 	struct in6_addr addr;
 
 	switch (opt[1]) {
-	case 'f':
-		/* TODO : This looks byte-order dependent */
-		hdr->ip6_flow |= opt2intn(arg, 4) & 0xFFF00000;
-		pack->modified |= IPV6_MOD_FLOW;
-		break;
-	case 't':
-		/* TODO : This looks byte-order dependent */
-		hdr->ip6_flow |= htonl((opt2inth(arg, 4) << 20) & 0x0F000000);
-		pack->modified |= IPV6_MOD_FLOW;
-		break;
 	case 'v':
 		hdr->ip6_vfc &= 0x0F;
-		hdr->ip6_vfc |= (u_int8_t) ((opt2intn(arg, 1) & 0x0F) << 4);
+		hdr->ip6_vfc |= (u_int8_t) ((opt2intn(arg, NULL, 1) & 0x0F) << 4);
 		pack->modified |= IPV6_MOD_VERSION;
 		break;
 	case 'p':
 		hdr->ip6_vfc &= 0xF0;
-		hdr->ip6_vfc |= (u_int8_t) (opt2intn(arg, 1) & 0x0F);
+		hdr->ip6_vfc |= (u_int8_t) (opt2intn(arg, NULL, 1) & 0x0F);
 		pack->modified |= IPV6_MOD_PRIORITY;
 		break;
+	case 't':
+		hdr->ip6_flow &= htonl(0xF03FFFFF);
+		hdr->ip6_flow |= htonl(((opt2inth(arg, NULL, 1) << 2) & 0xFC) << 20);
+		pack->modified |= IPV6_MOD_FLOW;
+		break;
+	case 'e':
+		hdr->ip6_flow &= htonl(0xFFCFFFFF);
+		hdr->ip6_flow |= htonl((opt2inth(arg, NULL, 1) & 3) << 20);
+		pack->modified |= IPV6_MOD_FLOW;
+		break;
+	case 'f':
+		// gmake ; ./sendip -D d -p ipv6 -6v 0 -6t 127 -6e 3 -6f 0x10101 q
+		hdr->ip6_flow &= htonl(0xFFF00000);
+		hdr->ip6_flow |= htonl(opt2inth(arg, NULL, 4) & 0x000FFFFF);
+		pack->modified |= IPV6_MOD_FLOW;
+		break;
 	case 'l':
-		hdr->ip6_plen = opt2intn(arg, 2);
+		hdr->ip6_plen = opt2intn(arg, NULL, 2);
 		pack->modified |= IPV6_MOD_PLEN;
 		break;
-	case 'h':
-		hdr->ip6_hlim = opt2intn(arg, 1);
-		pack->modified |= IPV6_MOD_HLIM;
-		break;
 	case 'n':
-		/* allow use of protocol names */
 		hdr->ip6_nxt = name_to_proto(arg);
 		pack->modified |= IPV6_MOD_NXT;
+		break;
+	case 'h':
+		hdr->ip6_hlim = opt2intn(arg, NULL, 1);
+		pack->modified |= IPV6_MOD_HLIM;
 		break;
 	case 's':
 		/* TODO: flexible address specification */

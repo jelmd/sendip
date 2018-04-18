@@ -1,47 +1,49 @@
 .SS "tcp MODULE OPTIONS"
 .TP
 \-ts\ \fInum\fR
-Set the TCP \fBsource port\fR to \fInum\fR {0..0xffff}. Default: 0
+Set the \fBsource port\fR to \fInum\fR {0..0xffff}. Default:\ 0
 .TP
 \-td\ \fInum\fR
-Set the TCP \fBdestination port\fR to \fInum\fR {0..0xffff}. Default: 0
+Set the \fBdestination port\fR to \fInum\fR {0..0xffff}. Default:\ 0
 .TP
 \-tn\ \fInum\fR
-Set the TCP \fBsequence number\fR to \fInum\fR {0..0xffffffff}. Default: random
+Set the \fBsequence number\fR to \fInum\fR {0..0xffffffff}. Default:\ random
 .TP
 \-ta\ \fInum\fR
-Set the TCP \fBACK sequence number\fR to \fInum\fR {0..0xffffffff}. Default: 0
+Set the next expected \fBACK number\fR to \fInum\fR {0..0xffffffff}.
+Also sets the ACK flag to 1, if it has not been set yet (see option -tfa).
+Default:\ 0
 .TP
 \-tt\ \fInum\fR
-Set the TCP \fBdata offset\fR to \fInum\fR {0..15}. Default: auto
+Set the \fBdata offset\fR to \fInum\fR {0..15}. Default:\ auto
 .TP
 \-tr\ \fInum\fR
-Set the TCP header \fBreserved field\fR EXCLUDING ECN and CWR bits
-to \fInum\fR {0..15}. Default: 0
+Set the header \fBreserved field\fR (includes ECN-nonce alias NS flag)
+to \fInum\fR {0..15}. Default:\ 0
 .TP
 \-tfe\ \fInum\fR
-Set the TCP \fBECN bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+Set the \fBECN\fR flag to \fInum\fR {0|1} (rfc2481). Default:\ 0
 .TP
 \-tfc\ \fInum\fR
-Set the TCP \fBCWR bit\fR to \fInum\fR {0|1} (rfc2481). Default: 0
+Set the \fBCWR\fR flag to \fInum\fR {0|1} (rfc2481). Default:\ 0
 .TP
 \-tfu\ \fInum\fR
-Set the TCP \fBURG bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -tu specified
+Set the \fBURG\fR flag to \fInum\fR {0|1}. Default:\ 0
 .TP
 \-tfa\ \fInum\fR
-Set the TCP \fBACK bit\fR to \fInum\fR {0|1}. Default: 0, or 1 if -ta specified
+Set the \fBACK\fR flag to \fInum\fR {0|1}. Default:\ 0
 .TP
 \-tfp\ \fInum\fR
-Set the TCP \fBPSH bit\fR to \fInum\fR {0|1}. Default: 0
+Set the \fBPSH\fR flag to \fInum\fR {0|1}. Default:\ 0
 .TP
 \-tfr\ \fInum\fR
-Set the TCP \fBRST bit\fR to \fInum\fR {0|1}. Default: 0
+Set the \fBRST\fR flag to \fInum\fR {0|1}. Default:\ 0
 .TP
 \-tfs\ \fInum\fR
-Set the TCP \fBSYN bit\fR to \fInum\fR {0|1}. Default: 1
+Set the \fBSYN\fR flag to \fInum\fR {0|1}. Default:\ 1
 .TP
 \-tff\ \fInum\fR
-Set the TCP \fBFIN bit\fR to \fInum\fR {0|1}. Default: 0
+Set the \fBFIN\fR flag to \fInum\fR {0|1}. Default:\ 0
 .TP
 \-tw\ \fInum\fR
 Set the TCP \fBwindow size\fR to \fInum\fR {0..0xffff}. Default: 65535
@@ -50,7 +52,10 @@ Set the TCP \fBwindow size\fR to \fInum\fR {0..0xffff}. Default: 65535
 Set the TCP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
 .TP
 \-tu\ \fInum\fR
-Set the TCP \fBurgent pointer\fR to \fInum\fR {0..0xffff}. Default: 0
+Set the TCP \fBurgent pointer\fR to \fInum\fR {0..0xffff}.
+Also sets the URG flag to 1, if it has not been set yet (see option -tfu).
+Default:\ 0
+
 .TP
 \-tonum\ \fIhex\fR
 Set the \fBTCP option\fR as string of \fIhex\fR bytes (length: auto).

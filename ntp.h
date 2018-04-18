@@ -10,13 +10,20 @@ typedef struct {
 
 /* NTP HEADER */
 typedef struct {
-	/* TODO BYTEORDER!!! */
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	u_int8_t mode:3;
+	u_int8_t version:3;
 	u_int8_t leap:2;     
-	u_int8_t status:6;  
-	u_int8_t type;
-	/* END TODO */
-
-	u_int16_t precision;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+	u_int8_t leap:2;
+	u_int8_t version:3;
+	u_int8_t mode:3;
+#else
+#  error "Adjust your <bits/endian.h> defines"
+#endif
+	u_int8_t stratum;
+	u_int8_t poll;
+	u_int8_t precision;
 	u_int32_t error;
 	u_int32_t drift;
 	union {
@@ -44,17 +51,19 @@ typedef struct {
 
 /* Options */
 sendip_option ntp_opts[] = {
-	{ "l", 1, "NTP Leap Indicator", "00 (no warning)" },
-	{ "s", 1, "NTP status", "0 (clock operating OK)" },
-	{ "t", 1, "NTP type", "0 (unspecified)" },
-	{ "p", 1, "NTP precision", "0" },
-	{ "e", 1, "NTP estimated error", "0.0" },
-	{ "d", 1, "NTP estimated drift rate", "0.0" },
-	{ "r", 1, "NTP reference clock ID (string or IP or number)", "0" },
-	{ "f", 1, "NTP reference timestamp", "0.0" },
-	{ "o", 1, "NTP originate timestamp", "0.0" },
-	{ "a", 1, "NTP arrival (receive) timestamp", "0.0" },
-	{ "x", 1, "NTP xmit (transmit) timestamp", "0.0" }
+	{ "l", 1, "Leap Indicator", "0" },
+	{ "v", 1, "Version", "4" },
+	{ "m", 1, "Mode", "0" },
+	{ "s", 1, "Stratum", "0" },
+	{ "P", 1, "Poll intervall", "6" },
+	{ "p", 1, "Precision of system clock", "0" },
+	{ "e", 1, "Root delay", "0.0" },
+	{ "d", 1, "Estimated drift rate", "0.0" },
+	{ "r", 1, "Reference clock ID", "0" },
+	{ "f", 1, "Reference timestamp", "0.0" },
+	{ "o", 1, "Originate timestamp", "0.0" },
+	{ "a", 1, "Receive timestamp", "0.0" },
+	{ "x", 1, "Transmit timestamp", "0.0" }
 };
 
 #endif  /* _SENDIP_NTP_H */

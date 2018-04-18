@@ -208,10 +208,10 @@ error:
 static void print_usage(void) {
 	sendip_mod_li *e;
 	int i;
-	char lbuf[LINE_MAX];
+	char lbuf[LINE_MAX], *p;
 
 	printf(
-"\nUsage: %s [-hVv] [-D otype] [-d data] [-f datafile] [-L count] [-T time]\\"
+"\nUsage: %s [-hVv] [-D otype] [-d data] [-f datafile] [-L count] [-T time] \\"
 "\n         \t[-S socket_opts] [-p module]... [module_option]... hostname\n"
 "\n"
 "Packet data, header fields:\n"
@@ -242,15 +242,23 @@ static void print_usage(void) {
 			shortname = mod->name;
 		else
 			++shortname;
-		printf("\n\nArguments for module %s:\n", shortname);
+		p = shortname;
+		for (i = 0; p[i] != '\0'; i++) {
+			lbuf[i] = toupper(p[i]);
+		}
+		lbuf[i] = '\0';
+		printf("\n\nArguments for module %s:\n", lbuf);
 		for (i = 0; i < e->num_opts; i++) {
+			const char *def =
+				mod->opts[i].def == NULL ? "none" : mod->opts[i].def;
 			snprintf(lbuf, LINE_MAX, "-%c%s %c", mod->optchar,
 				mod->opts[i].optname, mod->opts[i].arg ? 'x' : ' ');
-			printf("  %10s   %s.", lbuf, mod->opts[i].description);
-			if (mod->opts[i].def)
-				printf("  Default: %s\n", mod->opts[i].def);
-			else
-				printf("\n");
+			printf("  %11s   %s.", lbuf, mod->opts[i].description);
+			if (def[0] == '\n') {
+				printf("\n  %11s   Default: %s\n", " ", def+1);
+			} else {
+				printf("  Default: %s\n", def);
+			}
 		}
 	}
 
@@ -610,7 +618,7 @@ while (--loopcount >= 0) {
 		sendip_data d;
 
 		d.alloc_len = datalen;
-		d.data = (char *) packet.data+packet.alloc_len - datalen;
+		d.data = (char *) packet.data + packet.alloc_len - datalen;
 
 		for (i = 0, e = first; e != NULL; e = e->next, i++) {
 			hdrs[i] = e->mod->optchar;

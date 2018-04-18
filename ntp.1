@@ -1,42 +1,75 @@
 .SS "ntp MODULE OPTIONS"
+
+.P
+The packet header structure is based on RFC 5905,
+section "7.3. Packet Header Variables".
+
 The \fItimestamp\fR argument used below is a 64-bit value in the range
-of {0..0xffffffff[.0xffffffff]}.
+of {0..0xffffffff\fB.\fR0xffffffff} and
+represents seconds since 1900-01-01 00:00:00.0 (the integer part gets stored
+in the first 32-bit, the fractional part as number of 1/0xffffffff units
+in the second 32-bit). If the \fItimestamp\fR does not contain a dot (\fB.\fR),
+the value gets parsed as a 64-bit \fIrnum\fR (if you use a hex number, remember
+that on little endian machines the 1st 32-bit and 2nd 32-bit get swapped).
+If the \fItimestamp\fR contains a dot and starts with a plus (\fB+\fR), the
+time in seconds between 1900-01-01 00:00:00 and 1970-01-01 00:00:00 gets added
+to the integer part for convenience, so that one may use the output of
+UNIX timestamp utilities like GNU date or ksh directly,
+e.g. "printf\ '+%(%s)T.0'\ '2018\-04\-16\ 17:16:02\ UTC'".
+
 .TP
 -nl\ \fInum\fR
-Set the NTP \fBLeap Indicator\fR to \fInum\fR {0..3}. Default: 0 (no warning)
+Set the NTP \fBLeap Indicator\fR to \fInum\fR {0..3}. Default:\ 0 (no warning)
+.TP
+-nv\ \fInum\fR
+Set the NTP \fBversion\fR of this packet to \fInum\fR {0..7}. Default:\ 4
+.TP
+-nm\ \fInum\fR
+Set the NTP \fBmode\fR to \fInum\fR {0..7}. Default:\ 0
 .TP
 -ns\ \fInum\fR
-Set the NTP \fBstatus\fR to \fInum\fR {0..0x3f} OR NTP version (3 bit) and
-mode (3 bit). Default: 0 (clock operating OK)
+Set the \fBstratum\fR to \fInum\fR {0..255}.
+Default:\ 0 (unspecified)
 .TP
--nt\ \fInum\fR
-Set the NTP \fBtype\fR OR \fBstratum\fR to \fInum\fR {0..255}.
-Default: 0 (unspecified)
+-nP\ \fInum\fR
+Set the \fBpoll\fR interval to \fInum\fR {-128..127} (log2 seconds).
+Default:\ 6
 .TP
 -np\ \fInum\fR
-Set the NTP \fBprecision\fR field to \fInum\fR {0..255}. Default: 0
+Set the \fBprecision\fR of system clock field
+to \fInum\fR {-128..127} (log2 seconds).
+Default:\ 0
 .TP
--ne\ \fIdouble\fR
-Set the NTP \fBestimated error\fR (root delay) to the given \fIdouble\fR value.
-Default: 0.0
+-ne\ \fIdouble\fR|\fInum\fR
+Set the total round-trip delay to the reference clock (\fBroot delay\fB) to
+the given value.
+If the value contains a dot (\fB.\fR) than the value is expected to
+represent a \fIdouble\fR.
+Otherwise it gets parsed as a \fInum\fR {0..0xffffffff}.
+Default:\ 0.0
 .TP
--nd\ \fIdouble\fR
-Set the NTP \fBestimated drift\fR rate (root dispersion) to the
-given \fIdouble\fR value. Default: 0.0
+-nd\ \fIdouble\fR|\fInum\fR
+Set the estimated drift rate (\fBroot dispersion\fR) to the
+given value.
+If the value contains a dot (\fB.\fR) than the value is expected to
+represent a \fIdouble\fR.
+Otherwise it gets parsed as a \fInum\fR {0..0xffffffff}.
+Default:\ 0.0
 .TP
--nr\ \fIaddr\fR|\fIID\fR
-Set the NTP \fBreference clock\fR to the given IP \fIaddr\fRess
+-nr\ \fIv4addr\fR|\fIID\fR
+Set the NTP \fBreference clock\fR to the given IP \fIv4addr\fRess
 or \fIID\fR (string with max. 4 characters not starting with a digit).
 Default: 0
 .TP
 -nf\ \fItimestamp\fR
-Set the NTP \fBreference\fR \fItimestamp\fR. Default: 0.0
+Set the \fBreference\fR \fItimestamp\fR.
+Default: 0.0
 .TP
 -no\ \fItimestamp\fR
-Set the NTP \fBoriginate\fR \fItimestamp\fR. Default: 0.0
+Set the \fBoriginate\fR \fItimestamp\fR. Default: 0.0
 .TP
 -na\ \fItimestamp\fR
-Set the NTP \fBarrival (receive)\fR \fItimestamp\fR. Default: 0.0
+Set the arrival (\fBreceive\fR) \fItimestamp\fR. Default: 0.0
 .TP
 -nx\ \fItimestamp\fR
-Set the NTP \fBxmit (transmit)\fR \fItimestamp\fR. Default: 0.0
+Set the NTP xmit (\fBtransmit\fR) \fItimestamp\fR. Default: 0.0

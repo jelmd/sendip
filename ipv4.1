@@ -1,11 +1,18 @@
 .SS "ipv4 MODULE OPTIONS"
 .TP
-\-iv\ \fInum\fR
-Set the IP \fBversion\fR to \fInum\fR {0..15}.
-You almost definitely don't want to change this. Default: 4
+\-is\ \fIv4addr\fR
+Set the \fBsource IP\fR address to \fIv4addr\fR. Default: 127.0.0.1
+.TP
+\-id\ \fIv4addr\fR
+Set the \fBdestination IP\fR address to \fIv4addr\fR.
+Default: \fIhostname\fR (CLI operand)
 .TP
 \-ih\ \fInum\fR
 Set the IP \fBheader length\fR to \fInum\fR {0..15}. Default: auto
+.TP
+\-iv\ \fInum\fR
+Set the IP \fBversion\fR to \fInum\fR {0..15}.
+You almost definitely don't want to change this. Default: 4
 .TP
 \-iy\ \fInum\fR
 Set the type of service (\fBTOS\fR) to \fInum\fR {0..255}. Default: 0
@@ -37,44 +44,39 @@ Default: auto, or set by underlying protocol.
 .TP
 \-ic\ \fInum\fR
 Set the IP \fBchecksum\fR to \fInum\fR {0..0xffff}. Default: auto
-.TP
-\-is\ \fIsrc\fR
-Set the \fBsource IP\fR address to \fIsrc\fR. Default: 127.0.0.1
-.TP
-\-id\ \fIdst\fR
-Set the \fBdestination IP\fR address to \fIdst\fR.
-Default: \fIhostname\fR operand
 
 .TP
-\-ionum\ \fIhex\fR
-Set the IP \fBoption\fR to the value given as the \fIhex\fR string (length is
-always correct). Do not use a 0x or 0X prefix!  Default: (no options)
+\-ionum\ \fIhex\ data\fR
+Add an IP \fBoption\fR using the given \fIhex\ data\fR
+string (length is always correct).  Do not use a 0x or 0X prefix!
+Default: (no options)
 .TP
 \-ioeol
-Set IP option \fBend of list\fR.
+Add the IP option \fBend of list\fR.
 .TP
 \-ionop
-Set IP option \fBno-op\fR.
+Add the IP option \fBno-op\fR.
 .TP
-\-iosid\ \fIID\fR
-Set IP option \fBstream identifier\fR to \fIID\fR {0..0xffff}.
+\-iorr\ \fIpointer\fB:\fIv4addr\fR[\fB:\fIv4addr\fR]...
+Add the IP option \fBrecord route\fR using the given values. \fIpointer\fR is
+hex {00..ff}, and \fIv4addr\fR is a normal IPv4 address.
 .TP
-\-iots\ \fIpointer\fB:\fIoverflow\fB:\fIflag\fR[[\fB:\fIip\fR]\fB:\fIts\fR]...
-Set IP option \fBtimestamp\fR. \fIpointer\fR is hex {00..ff}, \fIoverflow\fR
-is {0..15}, \fIflag\fR is {0|3}, \fIip\fR a normal IPv4 address and the
-timestamp \fIts\fR {0..0xffff}.
+\-iossr\ \fIpointer\fB:\fIv4addr\fR[\fB:\fIv4addr\fR]...
+Set IP option \fBstrict source route\fR. \fIpointer\fR is hex {00..ff},
+and \fIv4addr\fR is a normal IPv4 address.
 .TP
-\-iorr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
-Set IP option \fBrecord route\fR. \fIpointer\fR is hex {00..ff},
-and \fIaddr\fR is a normal IPv4 address.
-.TP
-\-iolsr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
+\-iolsr\ \fIpointer\fB:\fIv4addr\fR[\fB:\fIv4addr\fR]...
 Set IP option \fBloose source route\fR. \fIpointer\fR is hex {00..ff},
-and \fIaddr\fR is a normal IPv4 address.
+and \fIv4addr\fR is a normal IPv4 address.
 .TP
-\-iossr\ \fIpointer\fB:\fIaddr\fR[\fB:\fIaddr\fR]...
-Set IP option \fBstrict source route\fR. \fIpointer\fR is hex {00..ff}, 
-and \fIaddr\fR is a normal IPv4 address.
+\-iots\ \fIpointer\fB:\fIoverflow\fB:\fIflag\fR[[\fB:\fIv4addr\fR]\fB:\fInum\fR]...
+Add the IP option \fBtimestamp\fR. \fIpointer\fR is hex {00..ff}, \fIoverflow\fR
+is a \fInum\fR {0..15} as well as \fIflag\fR is {0|3}, \fIv4addr\fR a
+normal IPv4 address and the timestamp value get set to \fInum\fR {0..0xffff}.
+.TP
+\-iosid\ \fInum\fR
+Add the IP option \fBstream identifier\fR using the given \fInum\fR {0..0xffff}
+as ID.
 
 .TP
 .B

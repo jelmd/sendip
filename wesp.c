@@ -58,7 +58,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	switch (opt[1]) {
 	case 'v':	/* WESP version number (2 bits) */
 		pack->modified |= WESP_MOD_VERSION;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > DUO_MAX) {
 			DERROR("wesp - version value too big (%d > %d)", svalue, DUO_MAX)
 			return FALSE;
@@ -67,7 +67,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'e':	/* Encrypted payload flag */
 		pack->modified |= WESP_MOD_ENCRYPTED;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > 1) {
 			ERROR("wesp - there's only one bit!")
 			return FALSE;
@@ -75,7 +75,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		wesp->encrypted = svalue;
 		break;
 	case 'p':	/* Padded flag */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > 1) {
 			ERROR("wesp there's only one bit!")
 			return FALSE;
@@ -87,7 +87,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'r':	/* WESP reserved (4 bits) */
 		pack->modified |= WESP_MOD_RESERVED;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > QUARTET_MAX) {
 			DERROR("wesp - resv value to big (%d > %d)", svalue, QUARTET_MAX)
 			return FALSE;
@@ -96,7 +96,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'h':	/* Header length */
 		pack->modified |= WESP_MOD_HDRLEN;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > OCTET_MAX) {
 			DERROR("wesp - header length too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
@@ -105,7 +105,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 't':	/* Trailer length */
 		pack->modified |= WESP_MOD_TRLRLEN;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > OCTET_MAX) {
 			DERROR("wesp - trailer length (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;

@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <ctype.h>
 
 #include "sendip_module.h"
 #include "common.h"
@@ -18,56 +19,40 @@
 /* Character that identifies our options */
 const char opt_char = 'n';
 
-u_int32_t
-make_fixed_point(double n, bool issigned, int totbits, int intbits) {
-	u_int32_t intpart;
-	u_int32_t fracpart;
-	u_int32_t result;
-	bool signbit;
-	double intpartd, fracpartd;
-	int fracbits;
+#define FRIC 65536.								/* 2^16 as a double */
+#define FRAC 4294967296.						/* 2^32 as a double */
+#define JAN_1970	2208988800UL				/* 1970 - 1900 in seconds */
 
-	if (issigned)
-		totbits--;
-	fracbits = totbits - intbits;
-	signbit = (issigned && n < 0); /* signbit used */
-	n = fabs(n);
+#define D2PN(x)	htonl((int) roundl((x) * FRIC))
+#define D2LPN(x) htonl((unsigned long) roundl((x) * FRAC))
 
-	/* fracpartd = floor(ldexp(modf(n, &intpartd), ldexp(2.0, fracbits))); */
-	fracpartd = floor(ldexp(modf(n, &intpartd), 32));
-	intpart = (u_int32_t) intpartd;
-	fracpart = (u_int32_t) fracpartd;
-
-	result = (issigned && signbit) ? 1 << totbits : 0;
-	if (intbits != 0) {
-		intpart &= (1 << intbits) - 1;
-		intpart <<= (totbits - intbits);
-		result |= intpart;
-	}
-	if (intbits != totbits) {
-		if (fracbits != 32) {
-			fracpart &= ((1 << fracbits) - 1) << intbits;
-			fracpart >>= intbits;
-		}
-		result |= fracpart;
-	}
-	return htonl(result);
-}
+#ifdef __linux
+#define htonll(x)	htobe64(x);
+#endif
 
 bool
 make_ts(ntp_ts *dest, const char *src) {
-	const char *intpart;
+	unsigned long val;
 	char *fracpart;
 
-	intpart = src;
-	fracpart = strchr(intpart, '.');
-	dest->intpart = *intpart ? (u_int32_t) strtoul(intpart, &fracpart, 0) : 0;
-	fracpart++;  // skip the .
-	if (fracpart && *fracpart) {
-		double d;
-		d = strtod(fracpart - 1, NULL);
-		dest->fracpart = make_fixed_point(d, FALSE, 32, 0);
+	if (src == NULL)
+		return FALSE;
+
+	while (*src != '\0' && isspace(*src))
+		src++;
+
+	if ((fracpart = strchr(src, '.')) == NULL) {
+		unsigned long long int lval = htonll(strtoull(src, &fracpart, 0));
+		dest->intpart = (lval >> 32) & 0xFFFFFFFF;
+		dest->fracpart = (lval & 0xFFFFFFFF);
+		return TRUE;
 	}
+
+	val = strtoul(src, &fracpart, 0);
+	if (*src == '+')
+		val += JAN_1970;
+	dest->intpart = htonl(val);
+	dest->fracpart = D2LPN(strtold(fracpart, NULL));
 	return TRUE;
 }
 
@@ -75,6 +60,8 @@ sendip_data *initialize(void) {
 	sendip_data *ret = malloc(sizeof(sendip_data));
 	ntp_header *ntp = malloc(sizeof(ntp_header));
 	memset(ntp, 0, sizeof(ntp_header));
+	ntp->version = 4;
+	ntp->poll = 6;
 	ret->alloc_len = sizeof(ntp_header);
 	ret->data = ntp;
 	ret->modified = 0;
@@ -87,28 +74,38 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch (opt[1]) {
 	case 'l':  /* Leap Indicator (2 bits) */
-		ntp->leap = (u_int8_t) strtoul(arg, NULL, 0) & 3;
+		ntp->leap = opt2inth(arg, NULL, 1) & 3;
 		pack->modified |= NTP_MOD_LEAP;
 		break;
-	case 's':  /* Status (6 bits, values 0-4 defined */
-		ntp->status = (u_int8_t) strtoul(arg, NULL, 0) & 0x3F;
+	case 'v':  /* Version (3 bits) */
+		ntp->version = opt2inth(arg, NULL, 1) & 7;
 		pack->modified |= NTP_MOD_STATUS;
 		break;
-	case 't':  /* Type (8 bits, values 0-4 defined */
-		ntp->type = (u_int8_t) strtoul(arg, NULL, 0) & 0xFF;
+	case 'm':  /* Mode (3 bits)  */
+		ntp->mode = opt2inth(arg, NULL, 1) & 7;
 		pack->modified |= NTP_MOD_TYPE;
 		break;
-	case 'p':  /* precision (16 bits, range +32 to -32) */
-		ntp->precision = htons((int8_t) strtol(arg, NULL, 0));
+	case 's':  /* Stratum */
+		ntp->stratum = opt2inth(arg, NULL, 1);
+		pack->modified |= NTP_MOD_STATUS;
+		break;
+	case 'P':  /* Poll */
+		ntp->poll = opt2inth(arg, NULL, 1);
+		pack->modified |= NTP_MOD_PRECISION;
+		break;
+	case 'p':  /* precision (8 bits, range +32 to -32) */
+		ntp->precision = opt2inth(arg, NULL, 1);
 		pack->modified |= NTP_MOD_PRECISION;
 		break;
 	case 'e':  /* esitmated error (32 bits, fixed point between bits 15/16) */
-		ntp->error = make_fixed_point(strtod(arg, NULL), FALSE, 32, 16);
+		ntp->error = strchr(arg, '.') != NULL
+				? D2PN(strtold(arg, NULL))
+				: opt2intn(arg, NULL, 4);
 		pack->modified |= NTP_MOD_ERROR;
 		break;
 	case 'd':  /* estimated drift rate (32 bits, signed fixed point left of
 				  high order bit) */
-		ntp->drift = make_fixed_point(strtod(arg, NULL), TRUE, 32, 0);
+		ntp->drift = D2PN(strtold(arg, NULL));
 		pack->modified |= NTP_MOD_DRIFT;
 		break;
 	case 'r':  /* reference clock id (32 bits or a 4 byte string).  Can be:
@@ -198,6 +195,25 @@ char
 get_optchar() {
 	return opt_char;
 }
+
+/*
+   ./sendip -D h -p ipv4 -p udp -us 123 -ud 123 -p ntp -nm 5 -ns 3 \
+   -nP 6 -np -22 -ne 0.0004425048828125 -nd 0.0650634765625 -nr 127.0.0.1 \
+   -nf 3732887762.94529517274349927902 -nx 3732889545.94502960937097668647 \
+   localhost
+
+   Final packet data:
+	    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F
+
+	 0: 45 00 00 4c 6a 56 00 00  ff 11 2d 0f 7f 00 00 01  E..LjV....-.....
+	10: 8d 2c 18 0e 00 7b 00 7b  00 38 71 e1 25 03 06 ea  .,...{.{.8b.%...
+	20: 00 00 00 1d 00 00 10 a8  7f 00 00 01 de 7f 58 d2  .........,....X.
+	30: f1 fe dd 4c 00 00 00 00  00 00 00 00 00 00 00 00  ...L............
+	40: 00 00 00 00 de 7f 5f c9  f1 ed 75 e2              ......_...u.
+
+	ts alternative:
+	-nf +1523898962.94529517274349927902 -nx +1523900745.94502960937097668647 \
+ */
 
 /* vim: ts=4 sw=4 filetype=c
  */

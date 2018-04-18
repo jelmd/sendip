@@ -85,7 +85,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ROUTE_MOD_NEXTHDR;
 		break;
 	case 't':	/* Type */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 1);
 		if (svalue > OCTET_MAX) {
 			DERROR("route - type value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
@@ -94,7 +94,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ROUTE_MOD_TYPE;
 		break;
 	case 's':	/* Segments left */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 1);
 		if (svalue > OCTET_MAX) {
 			DERROR("route - segments left value too big (%d > %d)",
 				svalue, OCTET_MAX)
@@ -104,7 +104,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= ROUTE_MOD_SEGMENTS;
 		break;
 	case 'r':	/* Reserved field (4 bytes) */
-		rt->reserved = opt2intn(arg, 4);
+		rt->reserved = opt2intn(arg, NULL, 4);
 		pack->modified |= ROUTE_MOD_RESV;
 		break;
 	case 'a':	/* address list */

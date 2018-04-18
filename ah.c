@@ -51,11 +51,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 
 	switch (opt[1]) {
 	case 's':	/* SPI (32 bits) */
-		ah->spi = opt2intn(arg, 4);
+		ah->spi = opt2intn(arg, NULL, 4);
 		pack->modified |= AH_MOD_SPI;
 		break;
 	case 'q':	/* Sequence number (32 bits) */
-		ah->seq_no = opt2intn(arg, 4);
+		ah->seq_no = opt2intn(arg, NULL, 4);
 		pack->modified |= AH_MOD_SEQUENCE;
 		break;
 	case 'd':	/* Authentication data (variable length) */

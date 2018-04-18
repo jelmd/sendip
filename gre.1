@@ -4,7 +4,7 @@
 Set the GRE \fBsupplied checksum\fR to \fInum\fR (0..0xffff). Default:\ none
 .TP
 \-gC
-Add the \fBactual checksum\fR.
+Automatically calculate and add \fBchecksum\fR when the packet gets finalized.
 .TP
 \-gr\ \fInum\fR
 Set the GRE \fBrouting\fR field to \fInum\fR (0..0xffffffff). Default:\ 0
@@ -26,7 +26,7 @@ Set the GRE \fBversion number\fR to \fInum\fR (0..7}. Default:\ 0
 .TP
 \-gp\ \fInum\fR
 Set the GRE \fBencapsulated protocol\fR to \fInum\fR (0..0xffff).
-Default:\ auto (if known, IPv4 and IPv6 only)
+Default:\ auto (i.e. IPv4 or IPv6, if known)
 .TP
 \-go\ \fInum\fR
 Set the GRE \fBoffset\fR to \fInum\fR (0..0xffff). Default:\ none

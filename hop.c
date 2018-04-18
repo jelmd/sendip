@@ -137,7 +137,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'p':	/* pad N - pad with N bytes */
 		pack->modified |= HOP_MOD_PADN;
-		sval = strtoul(arg, NULL, 0);
+		sval = opt2inth(arg, NULL, 2);
 		if (sval < 2) {
 			DERROR("hop/dst - pad value too small (%d < 2)", sval)
 			return FALSE;
@@ -157,7 +157,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'r':	/* router alert */
 		pack->modified |= HOP_MOD_RA;
-		sval = opt2intn(arg, 2);
+		sval = opt2intn(arg, NULL, 2);
 		hopt = (struct ipv6_hopopt *) malloc(sizeof(struct ipv6_hopopt) + 2);
 		hopt->hopt_type = IPV6_TLV_ROUTERALERT;
 		hopt->hopt_len = 2;
@@ -168,7 +168,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'j':	/* jumbo frame length */
 		pack->modified |= HOP_MOD_JUMBO;
-		val = opt2intn(arg, 4);
+		val = opt2intn(arg, NULL, 4);
 		hopt = (struct ipv6_hopopt *) malloc(sizeof(struct ipv6_hopopt) + 4);
 		hopt->hopt_type = IPV6_TLV_JUMBO;
 		hopt->hopt_len = 4;
@@ -196,7 +196,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	case 'a':	/* arbitrary tlv data */
 		pack->modified |= HOP_MOD_TLV;
 		/* The argument passed in should be t.l.v, that is, type.length.value */
-		sval = strtoul(arg, NULL, 0);
+		sval = opt2inth(arg, NULL, 2);
 		if (sval > OCTET_MAX) {
 			DERROR("hop/dst - type value too big (%d > %d)", sval, OCTET_MAX)
 			return FALSE;
@@ -204,7 +204,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		type = sval;
 
 		arg = index(arg, '.');
-		sval = arg ? strtoul(arg, NULL, 0) : 0;
+		sval = arg ?  opt2inth(arg, NULL, 2) : 0;
 		if (sval > OCTET_MAX) {
 			DERROR("hop/dst - length value too big (%d > %d)", sval, OCTET_MAX)
 			return FALSE;

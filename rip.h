@@ -26,15 +26,13 @@ typedef struct {
 
 /* Options */
 sendip_option rip_opts[] = {
-	{ "v", 1, "version", "2" },
-	{ "c", 1, "command (1=request, 2=response, 3=traceon (obsolete),\n"
-		"               4=traceoff (obsolete), 5=poll (undocumented),\n"
-		"               6=poll entry (undocumented)", "1" },
-	{ "e", 1,"add entry - family|tag|address|subnet_mask|next_hop|metric",
-		"2:0:0.0.0.0:255.255.255.0:0.0.0.0:16" },
-	{ "a", 1, "add auth entry - type:password", NULL },
-	{ "d", 0, "default request (router's entire routing table)", NULL },
-	{ "r", 1, "reserved field", "0" }
+	{ "v", 1, "Version", "2" },
+	{ "c", 1, "Command", "1" },
+	{ "e", 1, "Add entry (family|tag|address|subnet_mask|next_hop|metric)",
+		"\n2|0|0.0.0.0|255.255.255.0|0.0.0.0|16" },
+	{ "a", 1, "Add auth entry (type|password)", NULL },
+	{ "d", 0, "Create a default request", NULL },
+	{ "r", 1, "Reserved field", "0" }
 };
 
 /* Helpful macros */

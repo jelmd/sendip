@@ -19,11 +19,11 @@ typedef struct ipv6_rt_hdr	route_header;
 
 /* Options */
 sendip_option route_opts[] = {
-	{ "n", 1, "Routing next header", "Correct" },
-	{ "t", 1, "Routing header type", "0" },
-	{ "s", 1, "Routing segments left", "0" },
-	{ "r", 1, "Routing reserved field", "0" },
-	{ "a", 1, "Routing list of addresses (comma separated)", "none" },
+	{ "n", 1, "Next header protocol", "Correct" },
+	{ "t", 1, "Header type", "0" },
+	{ "s", 1, "Segments left", "0" },
+	{ "r", 1, "Reserved field", "0" },
+	{ "a", 1, "Comma separated list of addresses", "none" },
 };
 
 #endif  /* _SENDIP_ROUTE_H */

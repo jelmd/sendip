@@ -23,11 +23,11 @@ typedef struct {
 
 /* Options */
 sendip_option rip_opts[] = {
-	{ "v", 1, "version", "1"},
-	{ "c", 1, "command (1=request, 2=response)", "1" },
-	{ "r", 1, "reserved field", "0" },
-	{ "e", 1, "add entry - address|tag|len|metric", "::|0|128|1"},
-	{ "d", 0, "default request (get router's entire routing table", NULL }
+	{ "v", 1, "Version", "1"},
+	{ "c", 1, "Command", "1" },
+	{ "r", 1, "Reserved field", "0" },
+	{ "e", 1, "Add entry (address|tag|len|metric)", "::|0|128|1"},
+	{ "d", 0, "Add a default request", NULL }
 };
 
 /* Helpful macros */

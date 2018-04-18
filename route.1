@@ -1,7 +1,10 @@
 .SS "route MODULE OPTIONS"
 .TP
-\-on\ \fInum\fR
-Set the Routing \fBnext header\fR to \fInum\fR (0..0xffff). Default:\ auto
+\-on\ \fIrnum\fR|\fIproto\fR
+Set the Routing \fBNext Header\fR field to \fIrnum\fR (0..0xffff).
+If a \fIproto\fRcol name is given, sendip tries to determine the
+corresponding number automatically.
+Default:\ auto
 .TP
 \-ot\ \fInum\fR
 Set the Routing \fBheader type\fR to \fInum\fR (0..7). Default:\ 0

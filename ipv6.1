@@ -2,33 +2,38 @@
 .TP
 \-6v\ \fInum\fR
 Set IPv6 \fBversion\fR to \fInum\fR {0..15}.
-You almost definitely don't want to change this. Default: 6
+You almost definitely don't want to change this. Default:\ 6
 .TP
 \-6p\ \fInum\fR
-Set the IPv6 \fBpriority\fR to \fInum\fR {0..15}. This is actually the first nibble
-of the traffic class field. Default: 0
+Set the IPv6 \fBpriority\fR to \fInum\fR {0..15}.
+This is actually the first nibble of the traffic class. So setting this value
+changes implicitly the traffic class value and vice versa! Note, that for IPv6
+there is actually no "standalone" priority field defined.
+Default:\ 0
 .TP
 \-6t\ \fInum\fR
-Set the IPv6 \fBtraffic class\fR to \fInum\fR {0..15}. This is actually the second
-nibble of the traffic class field. Default: 0
+Set the IPv6 \fBtraffic class\fR to \fInum\fR {0..63}. Default:\ 0
+.TP
+\-6e\ \fInum\fR
+Set the IPv6 \fBECN\fR value to \fInum\fR {0..3). Default:\ 0
 .TP
 \-6f\ \fInum\fR
-Set the IPv6 \fBflow label\fR to \fInum\fR {0..0xfffff). Default: 0
+Set the IPv6 \fBflow label\fR to \fInum\fR {0..0xfffff). Default:\ 0
 .TP
 \-6l\ \fInum\fR
-Set the IPv6 \fBpayload length\fR to \fInum\fR {0..255}. Default: auto
+Set the IPv6 \fBpayload length\fR to \fInum\fR {0..255}. Default:\ auto
 .TP
-\-6n\ \fInum\fR|\fIproto\fR
-Set the IPv6 \fBnext header\fR field to \fInum\fR {0..255}. If a \fIproto\fRcol
+\-6n\ \fIrnum\fR|\fIproto\fR
+Set the IPv6 \fBnext header\fR field to \fIrnum\fR {0..255}. If a \fIproto\fRcol
 name is given, sendip tries to determine the corresponding number automatically.
 Default:\ auto
 .TP
 \-6h\ \fInum\fR
-Set the IPv6 \fBhop limit\fR to \fInum\fR {0..255}. Default: 32
+Set the IPv6 \fBhop limit\fR to \fInum\fR {0..255}. Default:\ 32
 .TP
 \-6s\ \fIsrc\fR
-Set the \fBsource IPv6\fR address to \fIsrc\fR. Default: ::1
+Set the \fBsource IPv6\fR address to \fIsrc\fR. Default:\ ::1
 .TP
 \-6d\ \fIdst\fR
 Set the \fBdestination IPv6\fR address to \fIdst\fR.
-Default: \fIhostname\fR operand
+Default:\ \fIhostname\fR\ operand

@@ -21,9 +21,9 @@ typedef struct {
 
 /* Options */
 sendip_option icmp_opts[] = {
-	{ "t", 1, "ICMP message type","ICMP_ECHO (8), or ICMP6_ECHO_REQUEST (128) if embedded in an IPv6 packet" },
-	{ "d", 1, "ICMP code", "0" },
-	{ "c", 1, "ICMP checksum", "Correct" }
+	{ "t", 1, "Message type", "8 for IPv4, 128 for IPv6" },
+	{ "d", 1, "Code", "0" },
+	{ "c", 1, "Checksum", "Correct" }
 };
 
 #endif  /* _SENDIP_ICMP_H */

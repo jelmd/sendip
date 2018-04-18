@@ -34,11 +34,9 @@ tcpcsum(sendip_data *ip_hdr, sendip_data *tcp_hdr, sendip_data *data) {
 	memcpy(temp, &(ip->saddr), sizeof(u_int32_t));
 	memcpy(&(temp[4]), &(ip->daddr), sizeof(u_int32_t));
 	temp[8] = 0;
-	temp[9] = (u_int16_t) ip->protocol;
-	temp[10] = (u_int16_t)
-		((tcp_hdr->alloc_len + data->alloc_len) & 0xFF00) >> 8;
-	temp[11] = (u_int16_t)
-		((tcp_hdr->alloc_len + data->alloc_len) & 0x00FF);
+	temp[9] = ip->protocol;
+	temp[10] = ((tcp_hdr->alloc_len + data->alloc_len) & 0xFF00) >> 8;
+	temp[11] = ((tcp_hdr->alloc_len + data->alloc_len) & 0x00FF);
 	/* Copy the TCP header and data */
 	memcpy(temp + 12, tcp_hdr->data, tcp_hdr->alloc_len);
 	memcpy(temp + 12 + tcp_hdr->alloc_len, data->data, data->alloc_len);
@@ -110,19 +108,19 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 
 	switch (opt[1]) {
 	case 's':
-		tcp->source = opt2intn(arg, 2);
+		tcp->source = opt2intn(arg, NULL, 2);
 		pack->modified |= TCP_MOD_SOURCE;
 		break;
 	case 'd':
-		tcp->dest = opt2intn(arg, 2);
+		tcp->dest = opt2intn(arg, NULL, 2);
 		pack->modified |= TCP_MOD_DEST;
 		break;
 	case 'n':
-		tcp->seq = opt2intn(arg, 4);
+		tcp->seq = opt2intn(arg, NULL, 4);
 		pack->modified |= TCP_MOD_SEQ;
 		break;
 	case 'a':
-		tcp->ack_seq = opt2intn(arg, 4);
+		tcp->ack_seq = opt2intn(arg, NULL, 4);
 		pack->modified |= TCP_MOD_ACKSEQ;
 		if (!(pack->modified & TCP_MOD_ACK)) {
 			tcp->ack = 1;
@@ -130,11 +128,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		}
 		break;
 	case 't':
-		tcp->off = opt2intn(arg, 1) & 0xF;
+		tcp->off = opt2intn(arg, NULL, 1) & 0xF;
 		pack->modified |= TCP_MOD_OFF;
 		break;
 	case 'r':
-		tcp->res = opt2intn(arg, 1) & 0xF;
+		tcp->res = opt2intn(arg, NULL, 1) & 0xF;
 		pack->modified |= TCP_MOD_RES;
 		break;
 	case 'f':
@@ -177,15 +175,15 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		}
 		break;
 	case 'w':
-		tcp->window = opt2intn(arg, 2);
+		tcp->window = opt2intn(arg, NULL, 2);
 		pack->modified |= TCP_MOD_WINDOW;
 		break;
 	case 'c':
-		tcp->check = opt2intn(arg, 2);
+		tcp->check = opt2intn(arg, NULL, 2);
 		pack->modified |= TCP_MOD_CHECK;
 		break;
 	case 'u':
-		tcp->urg_ptr = opt2intn(arg, 2);
+		tcp->urg_ptr = opt2intn(arg, NULL, 2);
 		pack->modified |= TCP_MOD_URGPTR;
 		if (!(pack->modified & TCP_MOD_URG)) {
 			tcp->urg = 1;
@@ -220,11 +218,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			addoption(1, 1, NULL, pack);
 		} else if (strcmp(opt + 2, "mss") == 0) {
 			/* Maximum segment size RFC 793 kind 2 */
-			u_int16_t mss = opt2intn(arg, 2);
+			u_int16_t mss = opt2intn(arg, NULL, 2);
 			addoption(2, 4, (u_int8_t *) &mss, pack);
 		} else if (strcmp(opt + 2, "wscale") == 0) {
 			/* Window scale rfc1323 */
-			u_int8_t wscale = opt2inth(arg, 1);
+			u_int8_t wscale = opt2inth(arg, NULL, 1);
 			addoption(3, 3, &wscale, pack);
 		} else if (strcmp(opt + 2, "sackok") == 0) {
 			/* Selective Acknowledge permitted rfc1323 */
@@ -232,7 +230,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 		} else if (strcmp(opt + 2, "sack") == 0) {
 		   /* Selective Acknowledge rfc1323 */
 			char *s, *p, *q, c;
-			u_int32_t le, re, e = 0;
+			u_int32_t le = 0, re, e = 0;
 			u_int8_t *comb, *cpos;
 			int count = 1;
 			size_t len, i;
@@ -267,16 +265,22 @@ do_opt(const char *opt, const char *arg, sendip_data *pack) {
 			p = q = s;
 			while (*p != '\0') {
 				if (*q == ':') {
-					if (e != 0) { SACKERR }
+					if (e != 0) {
+						SACKERR
+					}
 					q = '\0';
-					le = opt2intn(p, 4);
+					le = opt2intn(p, NULL, 4);
 					p = ++q;
 					e++;
 				} else if (*q == ',' || *q == '\0') {
-					if (e == 0) { le = 0; } else if (e > 1) { SACKERR }
+					if (e == 0) {
+						le = 0;
+					} else if (e > 1) {
+						SACKERR
+					}
 					c = *q;
 					q = '\0';
-					re = opt2intn(p, 4);
+					re = opt2intn(p, NULL, 4);
 					memcpy(cpos, &le, 4);
 					cpos += 4;
 					memcpy(cpos, &re, 4);

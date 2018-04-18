@@ -61,28 +61,18 @@ const u_int32_t  BGP_BUFLEN = 1400;
 
 /* Options */
 sendip_option bgp_opts[] = {
-	{ "m", TRUE, "BGP Marker field (format is <hex byte>:<hex byte>:...)",
-		"FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF" },
-	{ "l", TRUE, "Packet length", "Correct" },
-	{ "t", TRUE, "Message Type (1 OPEN, 2 UPDATE, 3 NOTIFICATION, 4 KEEPALIVE)",
-		"4 (KEEPALIVE)" },
-	{ "o", TRUE, "Open message.  Format is <version>:<AS number>:"
-		"<Hold time>:<BGP Identifier>:<Options length>",
-		"4:1:90:127.0.0.1:Correct  (Any parameter can be omitted to get "
-		"the default)" },
-	{ "oo", TRUE, "Optional OPEN parameter.  Format is <Type>:<Length>:"
-	"<Value>   - value is in hex bytes separated by :s",
-	"None, though length may be omitted to get correct value" },
-	{ "ul", TRUE, "Withdrawn routes length", "Correct" },
-	{ "uw", TRUE, "Withdrawn route.  Format is x.x.x.x/n:<bytes for prefix>",
-	"Bytes field may be omitted to use the correct number" },
-	{ "us", TRUE, "Attributes length", "Correct" },
-	{ "ua", TRUE, "Attribute.  Format is <flags>:<type>:"
-		"<length length (1 or 2):<length>:<data>",
-		"The length fields may be omitted to use the correct value" },
-	{ "un", TRUE, "NLRI Prefix.  Format is as for -buw", "As for -buw" },
-	{ "n", TRUE, "Notification.  Format is <code>:<subcode>:<data>",
-		"Data may be omitted for no data" },
+	{ "m", 1, "Marker field (16 byte)", "FF:FF:FF:FF..." },
+	{ "l", 1, "Packet length", "Correct" },
+	{ "t", 1, "Message type", "4 (KEEPALIVE)" },
+	{ "o", 1, "Open message (vers:AS:time:ID:olen)",
+				"\n4:1:90:127.0.0.1:Correct" },
+	{ "oo", 1, "Optional OPEN parameter. (type:length:value)", "0::0" },
+	{ "ul", 1, "Withdrawn routes length", "Correct" },
+	{ "uw", 1, "Withdrawn route (x.x.x.x/n:length)", "0:0:" },
+	{ "us", 1, "Attributes length", "Correct" },
+	{ "ua", 1, "Attribute (flags:type:length:data)", NULL },
+	{ "un", 1, "NLRI (x.x.x.x/n:length)", "0:0:" },
+	{ "n", 1, "Notification  (code:subcode:data)", "0:0:" },
 };
 #endif
 

@@ -9,12 +9,12 @@ Set the RIP \fBcommand\fR {0..15} with 1=request, 2=response,
 and 6=poll entry (undocumented).
 Default:\ 1
 .TP
-\-ra\ [\fIauth_type\fB:\fR]\fIpassword\fR
+\-ra\ [\fIauth_type\fB|\fR]\fIpassword\fR
 Add a RIP \fBauthentication\fR entry using the given \fIpassword\fR (max.
 16 characters) and \fIauth_type\fB.
 For default basic authentication \fIauth_type\fR is optional (defaults to 2),
-but because a colon (\fB:\fR) is used as value delimiter, it is
-mandatory if the password contains a colon!
+but because a bar (\fB|\fR) is used as value delimiter, it is
+mandatory if the password contains a bar!
 Also note, that for RIP-2 requests this should be the first entry in the
 request.
 .TP

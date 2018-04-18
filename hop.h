@@ -62,13 +62,13 @@ struct ipv6_hopopt {
 
 /* Options */
 sendip_option hop_opts[] = {
-	{ "n", 1, "next header", "Correct" },
-	{ "0", 0, "pad 0 (1 byte padding)", NULL },
-	{ "p", 1, "pad N bytes", "2" },
-	{ "r", 1, "router alert", "0" },
-	{ "j", 1, "jumbo frame length", "0" },
-	{ "h", 1, "home address (Destination)", "::1" },
-	{ "t", 1, "arbitrary t.l.v option", "0.0.0" },
+	{ "n", 1, "Next header protocol", "Correct" },
+	{ "0", 0, "Use 1 byte padding", NULL },
+	{ "p", 1, "Use N byte padding", "2" },
+	{ "r", 1, "Router alert value", "0" },
+	{ "j", 1, "Jumbo frame length", "0" },
+	{ "h", 1, "Destination", "::1" },
+	{ "a", 1, "Arbitrary t.l.v option", "0.0.0" },
 };
 
 #endif  /* _SENDIP_HOP_H */

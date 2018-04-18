@@ -36,8 +36,8 @@ size_t timestamp(size_t length, char *output);
 size_t str2val(char *output, const char *input, size_t outlen);
 size_t opt2val(char *output, const char *input, size_t outlen);
 
-u_int32_t opt2intn(const char *input, int length);
-u_int32_t opt2inth(const char *input, int length);
+u_int32_t opt2intn(const char *input, char **, size_t length);
+u_int32_t opt2inth(const char *input, char **, size_t length);
 
 in_addr_t cidr2addr(const char *input, char *slashpoint);
 in_addr_t opt2v4(const char *input, int length);

@@ -11,25 +11,17 @@ Set the ESP \fBSequence Number\fR to \fInum\fR (0..0xffff). Default:\ 0
 Set the ESP \fBPadding Length\fR to \fInum\fR {0.255} (the minimum needed for
 alignment). Default:\ auto
 .TP
-\-en\ \fInum\fR|\fIproto\fR
-Set the ESP \fBNext Header\fR field to \fInum\fR {0..0xffff}. If
-a \fIproto\fRcol name is given, sendip tries to determine the corresponding
-number automatically.  Default:\ auto
-.TP
 \-ei\ \fIdata\fR
-Set the ESP \fBIV\fR \fIdata\fR (string, rN for N random or zN for N zero
-bytes) - max. 8192 bytes.
+Set the ESP \fBIV\fR \fIdata\fR - max. 8192 bytes.
 Default:\ none
 .TP
 \-eI\ \fIdata\fR
-Set the ESP \fBICV\fR \fIdata\fR (string, rN for N random or zN for N zero
-bytes) - max. 8192 bytes.
+Set the ESP \fBICV\fR \fIdata\fR - max. 8192 bytes.
 Default:\ none
 .TP
 \-ek\ \fIdata\fR
-Pass the given ESP \fBKey\fR \fIdata\fR (string, rN for N random or zN for
-N zero bytes) to the cryptographic module(s). Gets not transmitted in the
-packet.
+Pass the given ESP \fBKey\fR \fIdata\fR to the cryptographic module(s).
+Gets \fBnot transmitted\fR in the packet.
 Default:\ none
 .TP
 \-ea\ \fIname\fR
@@ -39,3 +31,8 @@ Default:\ none
 \-ec\ \fIname\fR
 Load and use the \fBcrypto module\fR with the given \fIname\fR.
 Default:\ none
+.TP
+\-en\ \fIrnum\fR|\fIproto\fR
+Set the ESP \fBNext Header\fR field to \fIrnum\fR {0..0xffff}. If
+a \fIproto\fRcol name is given, sendip tries to determine the corresponding
+number automatically.  Default:\ auto

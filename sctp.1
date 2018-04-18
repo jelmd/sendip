@@ -2,33 +2,53 @@
 See RFC 4960 and RFC 3309.
 .TP
 \-ss\ \fInum\fR
-Set the SCTP \fBsource port\fR {0..65535}. Default:\ 0
+Set the \fBsource port\fR {0..65535}. Default:\ 0
 .TP
 \-sd\ \fInum\fR
-Set the SCTP \fBdestination port\fR {0..65535}. Default:\ 0
+Set the \fBdestination port\fR {0..65535}. Default:\ 0
 .TP
-\-sv\ \fItag\fR
-Set the SCTP \fBvtag\fR. The \fItag\fR may be specified as number, string, or rN for N random bytes. Not more than 4 bytes are copied over, others get silently ignored. Default:\ 0\ if\ init\ chunk,\ 1\ otherwise.
+\-sv\ \fIdata\fR
+Set the \fBverification tag\fR to \fIdata\fR. Not more than 4 bytes are
+copied over, others get silently ignored.
+Default:\ auto, i.e. 0 if the current chunk is a init chunk, 1 otherwise.
 .TP
 \-sc\ \fInum\fR
-Set the SCTP CRC \fBchecksum\fR to \fInum\fR {0..0xffffffff}. Default:\ auto
+Set the \fBchecksum\fR to \fInum\fR {0..0xffffffff}.
+Default:\ auto
 .TP
 \-sT\ \fInum\fR
-Set the SCTP \fBchunk type\fR to the given \fInum\fR {0..255}. Note that multiple chunks may be included. Each chunk type begins a new chunk; subsequent chunk-related fields are applied to that chunk.  Default:\ 0\ (i.e.\ a\ data\ chunk)
+Set the \fBchunk type\fR to the given \fInum\fR {0..255}.
+Note that multiple chunks may be included. Each chunk type begins a new chunk;
+subsequent chunk-related fields are applied to that chunk.
+Default:\ 0\ (i.e.\ a\ data\ chunk)
 .TP
 \-sF\ \fInum\fR
-Set the SCTP \fBchunk flags\fR to \fInum\fR {0..0xffff}. Default:\ 0
+Set the \fBflags\fR of the current chunk to \fInum\fR {0..0xffff}. If no chunk
+has been added so far, a new one gets created and added first.
+Default:\ 0
 .TP
 \-sL\ \fInum\fR
-Set the SCTP \fBchunk length\fR to \fInum\fR {0..65535}. Default:\ auto
+Set the current \fBchunk length\fR to \fInum\fR {0..65535}. If no chunk has
+been added so far, a new one gets created and added first.
+Default:\ auto
 .TP
 \-sD\ \fIdata\fR
-Add a SCTP \fBchunk\fR using the given \fIdata\fR (hex, octal, decimal, literal, zN for N zero bytes or rN for N random bytes). Default:\ 0
+Append the given \fIdata\fR to the current chunk. If no chunk has
+been added so far, a new one gets created and added first.
+Default:\ 0
 .TP
-\-sI\ [\fItag\fR[\fB:\fIrwnd\fR[\fB:\fInout\fR[\fB:\fInin\fR[\fB:\fItsn\fR]]]]]
-Create and add a complete SCTP \fBINIT chunk\fR according to the given parameters. Each parameter may be specified as number, string, or rN for N (should be 2 or 4) random bytes. Missing parameters are set to the corresponding values shown as Default below. Other variable parameters may be appended to this chunk. Beside the colon (\fB:\fR) the following characters can be used as parameter delimiters as well: dot (\fB.\fR), comma (\fB,\fR) and space (\fB \fR).
+\-sI\ [\fItag\fR[\fB|\fIrwnd\fR[\fB|\fInout\fR[\fB|\fInin\fR[\fB|\fItsn\fR]]]]]
+Create and add a complete \fBINIT chunk\fR according to the given parameters.
+Each parameter is a \fInum\fR in the range as shown below. Missing trailing
+parameters are set to the corresponding values shown as Default below.
+However note, that \fIval\fR|| would result into \fIval\fR|0|0|\fIdefaults\fR !
+Beside the bar (\fB|\fR) the following characters can be used as parameter
+delimiters as well:
+colon (\fB:\fR), dot (\fB.\fR), comma (\fB,\fR) and space (\fB \fR).
 
-Default:\ 1.0x1000.1.1.1
+Other variable parameters may be appended to this chunk.
+
+Default:\ 1|1000|1|1|1
 
 The parameters are:
 .RS
@@ -37,7 +57,7 @@ The parameters are:
 the initiate tag {0..0xffffffff},
 .TP
 \fIrwnd\fR
-the receiver window credit {0..0xffffffff},
+the advertised receiver window credit {0..0xffffffff},
 .TP
 \fInout\fR
 the number of outbound streams {0..65535},
@@ -46,30 +66,40 @@ the number of outbound streams {0..65535},
 the number of inbound streams {0..65535},
 .TP
 \fItsn\fR
-the initial TSN {0..0xffffffff}.
+the initial Transmission Sequence Number (TSN) {0..0xffffffff}.
 .RE
 
 .TP
 \-s4\ \fIv4addr\fR
-Add the SCTP \fBIPv4\fR address TLV using the given IP \fIv4addr\fRess.
+Add a \fBIPv4\fR address of sending endpoint parameter using the given
+IP \fIv4addr\fRess (type and length get set automatically).
 .TP
 \-s6\ \fIv6addr\fR
-Set the SCTP \fBIPv6\fR address TLV using the given IP \fIv6addr\fRess.
+Add a \fBIPv6\fR address of sending endpoint parameter using the given
+IP \fIv6addr\fRess. (type and length get set automatically).
 .TP
 \-sC\ \fInum\fR
-Add the SCTP \fBcookie\fR preservative TLV using the given \fInum\fR {0..0xffffffff} to the current chunk.
+Add a suggested \fBcookie\fR  life-span increment parameter using the
+given \fInum\fR {0..0xffffffff} (ms).
 .TP
 \-sH\ \fIhostname\fR
-Add a SCTP \fBhost name\fR address TLV using the given \fIhostname\fR (arbitrary string).
+Add a \fBhost name\fR parameter using the given \fIhostname\fR (arbitrary
+string of max. 65352 bytes).
 .TP
-\-sA\ \fItype\fR[\fB:\fItype\fR]...
-Add the SCTP supported \fBaddress types\fR TLV using the given \fItype\fRs. For now this utility supports max. 8 types. Beside the colon (\fB:\fR) the following characters can be used as parameter delimiters as well: dot (\fB.\fR), comma (\fB,\fR) and space (\fB \fR).
+\-sA\ \fInum\fR[\fB|\fInum\fR]...
+Add a supported \fBaddress types\fR parameter using the given \fInum\fRs.
+For now this utility supports max. 8 types, whereby 3 are officially defined,
+only (5..IPv4, 6..IPv6, 11..hostname).
+Beside the bar (\fB|\fR) the following characters can be used as parameter
+delimiters as well:
+colon (\fB:\fR), dot (\fB.\fR), comma (\fB,\fR) and space (\fB \fR).
 .TP
 \-sE
-Add the SCTP \fBECN capable\fR parameter.
+Add the \fBECN capable\fR parameter.
 .TP
 \-sW
-Add the SCTP \fBforward TSN supported\fR parameter.
+Add the \fBforward TSN supported\fR parameter.
 .TP
 \-sY\ \fInum\fR
-Add the SCTP \fBadaptation layer indication\fR parameter using the given \fInum\fR {0..0xffffffff}.
+Add the \fBadaptation layer indication\fR parameter using the given
+\fInum\fR {0..0xffffffff}.

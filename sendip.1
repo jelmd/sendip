@@ -134,11 +134,13 @@ bytes will be all zero (nul) bytes.
 \fB0x\fIS\fR or \fB0X\fIS\fR
 hex. Ignore the first two charcaters (zero and letter X or x) and interprete
 all others (\fIS\fR) as a hex representation of the data to use. Non-digits
-are handled in a case-insensitive manner.
+are handled in a case-insensitive manner. If a non-hex character occurs, an
+error will be raised.
 .TP
 \fB0\fIS\fR
 octal. Ignore the first character (zero) and interprete all others (\fIS\fR)
-as a octal representation of the data to use.
+as a octal representation of the data to use. If a non-octal character occurs,
+an error will be raised.
 .TP
 \fIdata\fR
 The \fIdata\fR string is taken literally.
@@ -156,14 +158,18 @@ mentioned above, e.g. one may use
 The following terms are used for the value specifications of the module options
 below:
 .RS 2
+\fIdata\fI
+Same as desribed above for option "\-f\ \fIdata\fI".
 .TP
 \fIdnum\fR
 A decimal number, which may start with a sequence of white-space
 characters (which gets get usually ignored), followed by an optional
 '+' or '\-' followed by a sequence of one or more digits from 0 to 9.
-Using anythig else usually results into an error, or the trailing invalid part
-gets ignored, or gets resolved to 0. If a number is not in the expected range,
-it results either in an error, or the spare bytes in front get silently dropped.
+If any invalid character is found, the parser usually stops without throwing an
+error and converts the string accumulated so far, which might be an empty
+string, which in turn gets resolved to 0.  If a number is not in the expected
+range, it results either in an error, or the spare bytes in front get silently
+dropped.
 .TP
 \fIrnum\fR
 A "real" number accepts hex (prefix \fB0x\fR or \fB0X\fR),

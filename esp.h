@@ -52,20 +52,15 @@ typedef struct ip_esp_private {		/* keep track of things privately */
 #ifdef _ESP_MAIN
 /* Options */
 sendip_option esp_opts[] = {
-	{ "s", 1, "ESP Security Parameters Index", "0" },
-	{ "q", 1, "ESP Sequence Number", "0" },
-	{ "p", 1, "ESP Padding Length", "Minimum needed for alignment" },
-	{ "n", 1, "ESP Next Header", "Correct" },
-	{ "i", 1, "ESP IV (string, zN for N zero bytes, or rN for N random bytes)",
-		"None" },
-	{ "I", 1, "ESP ICV (string, zN for N zero bytes, or rN for N random bytes)",
-		"None" },
-	{ "k", 1, "ESP Key (string, zN for N zero bytes, or rN for N random bytes) "
-		"Not transmitted in the packet, but passed to the cryptographic "
-		"module(s), if any.",
-		"none" },
-	{ "a", 1, "ESP authentication module", "none" },
-	{ "c", 1, "ESP cryptographic (encryption/privacy) module", "none" },
+	{ "s", 1, "Security parameters index", "0" },
+	{ "q", 1, "Sequence number", "0" },
+	{ "p", 1, "Padding length (min needed for alignment)", "Correct" },
+	{ "i", 1, "IV data", NULL },
+	{ "I", 1, "ICV data", NULL },
+	{ "k", 1, "Key data for crypto module", NULL },
+	{ "a", 1, "Authentication module name", NULL },
+	{ "c", 1, "Cryptographic (encryption/privacy) module name", NULL },
+	{ "n", 1, "Next header protocol", "Correct" },
 };
 #endif
 

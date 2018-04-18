@@ -228,7 +228,7 @@ opt2val(char *output, const char *input, size_t outlen)
  * 4 will be used instead of @length, if it is bigger than that, and @size
  * overrules X if it is smaller than X. The idea is you can just do:
  *
- * 	field = opt2intn(input, sizeof(field));
+ * 	field = opt2intn(input, NULL, sizeof(field));
  *
  * @input	the stream to read.
  * @size	the size in bytes of the expected integer.
@@ -236,20 +236,22 @@ opt2val(char *output, const char *input, size_t outlen)
  *		byte order.
  */
 u_int32_t
-opt2intn(const char *input, int sz)
+opt2intn(const char *input, char **endpoint, size_t sz)
 {
 	if (input == NULL || sz < 1)
 		return 0;
 
 	/* Special case for f*, rN, zN strings */
-	if (*input == 'f')
-		return opt2intn(fileargument(input + 1), sz);
-
+	if (*input == 'f') {
+		if (endpoint != NULL)
+			*endpoint = ((char *) (unsigned long) input) + strlen(input);
+		return opt2intn(fileargument(input + 1), NULL, sz);
+	}
 	if (*input == 'r' && isdigit(*(input + 1))) {
 		u_int32_t r;
-		int len = atoi(input + 1);
+		unsigned long len = strtoul(input + 1, endpoint, 10);
 		if (len > sz) {
-			DWARN("Reducing number of random bytes for an int from %d to %d",
+			DWARN("Reducing number of random bytes for an int from %ld to %ld",
 				len, sz)
 			len = sz;
 		}
@@ -272,30 +274,39 @@ opt2intn(const char *input, int sz)
 
 	/* Everything else, just use strtoul, then cast and swap */
 	if (sz == 1)
-		return (u_int8_t) strtoul(input, NULL, 0);
+		return (u_int8_t) strtoul(input, endpoint, 0);
 
 	return (sz == 2)
-		? htons((u_int16_t) strtoul(input, NULL, 0))
-		: htonl(strtoul(input, NULL, 0));
+		? htons((u_int16_t) strtoul(input, endpoint, 0))
+		: htonl(strtoul(input, endpoint, 0));
 }
 
 
 /* same as above, except the result is in __host__ byte order */
 u_int32_t
-opt2inth(const char *input, int sz)
+opt2inth(const char *input, char **endpoint, size_t sz)
 {
+
 	if (input == NULL || sz < 1)
 		return 0;
 
+	while (*input != '\0' && isspace(*input))
+		input++;
+	if (*input == '\0')
+		return 0;
+
 	/* Special case for f*, rN, zN strings */
-	if (*input == 'f')
-		return opt2inth(fileargument(input + 1), sz);
+	if (*input == 'f') {
+		if (endpoint != NULL)
+			*endpoint = ((char *) (unsigned long) input) + strlen(input);
+		return opt2intn(fileargument(input + 1), NULL, sz);
+	}
 
 	if (*input == 'r' && isdigit(*(input + 1))) {
 		u_int32_t r;
-		int len = atoi(input + 1);
+		unsigned long len = strtoul(input + 1, endpoint, 10);
 		if (len > sz) {
-			DWARN("Reducing number of random bytes for an int from %d to %d",
+			DWARN("Reducing number of random bytes for an int from %ld to %ld",
 				len, sz)
 			len = sz;
 		}
@@ -318,11 +329,11 @@ opt2inth(const char *input, int sz)
 
 	/* Everything else, just use strtoul, then cast */
 	if (sz == 1)
-		return (u_int8_t) strtoul(input, NULL, 0);
+		return strtoul(input, endpoint, 0) & 0xFF;
 
 	return (sz == 2)
-		? (u_int16_t) strtoul(input, NULL, 0)
-		: strtoul(input, NULL, 0);
+		? (u_int16_t) strtoul(input, endpoint, 0)
+		: strtoul(input, endpoint, 0);
 }
 
 /* IPv4 dotted decimal arguments can be specified in several ways.
@@ -375,13 +386,13 @@ cidr2addr(const char *input, char *slashpos)
 	/* Get the random host part */
 	do {
 		if (bits < 8) {
-			host = opt2intn("r4", 4);
+			host = opt2intn("r4", NULL, 4);
 		} else if (bits < 16) {
-			host = opt2intn("r3", 3);
+			host = opt2intn("r3", NULL, 3);
 		} else if (bits < 24) {
-			host = opt2intn("r2", 2);
+			host = opt2intn("r2", NULL, 2);
 		} else {
-			host = opt2intn("r1", 1);
+			host = opt2intn("r1", NULL, 1);
 		}
 		host &= hmask;
 	} while (host == 0 || host == hmask); /* Don't allow all 0 or all 0xff */
@@ -421,33 +432,33 @@ opt2v4(const char *input, int length)
 
 	/* This covers the rN and fixed methods of address specification */
 	if ((dotpoint = strchr(input, '.')) == NULL)	/* aaaaaaaa */
-		return opt2intn(input, 4);	/* in network order */
+		return opt2intn(input, NULL, 4);	/* in network order */
 
-	a = opt2inth(input, 1);
+	a = opt2inth(input, NULL, 1);
 	input = dotpoint;
 	++input;
 	length -= dotpoint - input;
 	if ((dotpoint = strchr(input, '.')) == NULL) {	/* aa.bbbbbb */
-		b = opt2inth(input, 3);
+		b = opt2inth(input, NULL, 3);
 		sprintf(ipv4space, "%d.%d", a, b);
 		return inet_addr(ipv4space);
 	}
 
-	b = opt2inth(input, 1);
+	b = opt2inth(input, NULL, 1);
 	input = dotpoint;
 	++input;
 	length -= dotpoint - input;
 	if ((dotpoint = strchr(input, '.')) == NULL) {	/* aa.bb.cccc */
-		c = opt2inth(input, 2);
+		c = opt2inth(input, NULL, 2);
 		sprintf(ipv4space, "%d.%d.%d", a, b, c);
 		return inet_addr(ipv4space);
 	}
 
-	c = opt2inth(input, 1);
+	c = opt2inth(input, NULL, 1);
 	input = dotpoint;
 	++input;
 	length -= dotpoint - input;
-	d = opt2inth(input, 1);
+	d = opt2inth(input, NULL, 1);
 	sprintf(ipv4space, "%d.%d.%d.%d", a, b, c, d);
 	return inet_addr(ipv4space);
 }
@@ -516,11 +527,16 @@ printargs(char *args[], int n)
 	printf("\n");
 }
 
+int
 main(int argc, char **argv)
 {
 	int i, n;
 	char buffer[BUFSIZ];
-	char *args[BUFSIZ];
+	char *args[BUFSIZ], *e;
+	char foo[] = "12345end";
+
+	n = opt2inth(foo, &e, 4);
+	fprintf(stderr, "i == %d  e == %s\n", n, e);
 
 	if (argc > 1) {
 		if (argc > 2) {

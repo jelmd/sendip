@@ -153,8 +153,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_CSUM));
 		gre->gre_flag |= htons(GRE_CSUM);
 		/* There's only one place for the checksum field to go! */
-		gre->gre_info.sixteen[GRE_CHECKSUM_FIELD] =
-			htons((u_int16_t) strtoul(arg, NULL, 0));
+		gre->gre_info.sixteen[GRE_CHECKSUM_FIELD] = opt2intn(arg, NULL, 2);
 		pack->modified |= GRE_MOD_CHECKSUM;
 		break;
 	case 'C':
@@ -172,21 +171,21 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	case 'r':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_ROUTING));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_ROUTING))] =
-			htonl((u_int32_t) strtoul(arg, NULL, 0));
+			opt2intn(arg, NULL, 4);
 		gre->gre_flag |= htons(GRE_ROUTING);
 		pack->modified |= GRE_MOD_ROUTING;
 		break;
 	case 'k':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_KEY));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_KEY))] =
-			htonl((u_int32_t) strtoul(arg, NULL, 0));
+			opt2intn(arg, NULL, 4);
 		gre->gre_flag |= htons(GRE_KEY);
 		pack->modified |= GRE_MOD_KEY;
 		break;
 	case 's':
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_SEQ));
 		gre->gre_info.thirtytwo[gre_where(gre->gre_flag, htons(GRE_SEQ))] =
-			htonl((u_int32_t) strtoul(arg, NULL, 0));
+			opt2intn(arg, NULL, 4);
 		gre->gre_flag |= htons(GRE_SEQ);
 		pack->modified |= GRE_MOD_SEQUENCE;
 		break;
@@ -197,7 +196,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= GRE_MOD_STRICT;
 		break;
 	case 'e':
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > GRE_MAX_REC) {
 			DERROR("gre - recursion limit too big (%d > %d)",
 				svalue, GRE_MAX_REC)
@@ -208,7 +207,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= GRE_MOD_RECURSION;
 		break;
 	case 'v':
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2intn(arg, NULL, 2);
 		if (svalue > GRE_MAX_VERSION) {
 			DERROR("gre - version number too big (%d > %d)",
 				svalue, GRE_MAX_VERSION)
@@ -219,7 +218,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		pack->modified |= GRE_MOD_VERSION;
 		break;
 	case 'p':
-		gre->gre_protocol = opt2intn(arg, 2);
+		gre->gre_protocol = opt2intn(arg, NULL, 2);
 		pack->modified |= GRE_MOD_PROTOCOL;
 		break;
 	case 'o':
@@ -233,8 +232,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		 */
 		gre = gre_resize(pack, gre->gre_flag, htons(GRE_CSUM));
 		/* There's only one place for the offset field to go! */
-		gre->gre_info.sixteen[GRE_OFFSET_FIELD] =
-			htonl((u_int16_t) strtoul(arg, NULL, 0));
+		gre->gre_info.sixteen[GRE_OFFSET_FIELD] = htonl(opt2inth(arg, NULL, 2));
 		pack->modified |= GRE_MOD_OFFSET;
 		break;
 	}

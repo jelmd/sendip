@@ -65,16 +65,16 @@ typedef struct {
  * 	upper case - doesn't need value
  */
 sendip_option gre_opts[] = {
-	{ "c", 1, "supplied checksum", "none" },
-	{ "C", 0, "add actual checksum", NULL },
-	{ "r", 1, "routing field", "none" },
-	{ "k", 1, "key field", "none" },
-	{ "s", 1, "sequence number", "none" },
-	{ "S", 0, "strict source routing flag on", NULL },
-	{ "e", 1, "recursion encapsulation limit", "0" },
-	{ "v", 1, "version number", "0" },
-	{ "p", 1, "encapsulated protocol", "Correct (if known)" },
-	{ "o", 1, "offset", "none" },
+	{ "c", 1, "Checksum", NULL },
+	{ "C", 0, "Calulate and add checksum when finalizing", "0" },
+	{ "r", 1, "Routing field", NULL },
+	{ "k", 1, "Key", NULL },
+	{ "s", 1, "Sequence number", NULL },
+	{ "S", 0, "Strict source routing flag on", "0" },
+	{ "e", 1, "Recursion encapsulation limit", "0" },
+	{ "v", 1, "Version number", "0" },
+	{ "p", 1, "Encapsulated protocol", "Correct (if known)" },
+	{ "o", 1, "Offset", NULL },
 };
 
 #endif  /* _SENDIP_GRE_H */

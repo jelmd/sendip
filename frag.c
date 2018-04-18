@@ -95,8 +95,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'r':	/* Fragment reserved (1 byte) */
 		pack->modified |= FRAG_MOD_RESV;
-		svalue = strtoul(arg, NULL, 0);
-
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > OCTET_MAX) {
 			DERROR("frag - resv value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
@@ -105,7 +104,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'o':	/* Fragment offset */
 		pack->modified |= FRAG_MOD_OFFSET;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 
 		if (svalue > IPV6_FRAG_MAXOFFSET) {
 			DERROR("frag -  offset value too big (%d > %d)",
@@ -116,7 +115,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'f':	/* Fragment flags (more fragments+2 reserved) */
 		pack->modified |= FRAG_MOD_FLAGS;
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > IPV6_FRAG_FLAGS) {
 			ERROR("frag - only three flags can be set, hotshot")
 			return FALSE;
@@ -125,7 +124,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'i':	/* Fragment identification */
 		pack->modified |= FRAG_MOD_ID;
-		frag->identification = htonl(strtoul(arg, NULL, 0));
+		frag->identification = opt2intn(arg, NULL, 4);
 		break;
 	}
 	return TRUE;

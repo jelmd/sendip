@@ -68,7 +68,7 @@ grow_chunk(sendip_data *pack, sctp_chunk_header *chunk,
 
 	pack->data = sctp = (sctp_header *)
 		realloc((void *) sctp, pack->alloc_len + length);
-	chunk = (sctp_chunk_header *)((u_int8_t *) sctp + offset);
+	chunk = (sctp_chunk_header *) ((u_int8_t *) sctp + offset);
 	pack->alloc_len += length;
 	offset = ntohs(chunk->length);
 	chunk->length = htons(offset + length);
@@ -130,7 +130,6 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 {
 	sctp_header *sctp = (sctp_header *) pack->data;
 	u_int16_t svalue;
-	u_int32_t lvalue;
 	char temp[BUFSIZ];
 	u_int32_t length;
 	static sctp_chunk_header *currentchunk;
@@ -139,11 +138,11 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 	/* Overall header arguments are lowercase; chunk args are upper */
 	case 's':	/* SCTP source port (16 bits) */
 		pack->modified |= SCTP_MOD_SOURCE;
-		sctp->source = opt2intn(arg, 2);
+		sctp->source = opt2intn(arg, NULL, 2);
 		break;
 	case 'd':	/* SCTP destination port (16 bits) */
 		pack->modified |= SCTP_MOD_DEST;
-		sctp->dest = opt2intn(arg, 2);
+		sctp->dest = opt2intn(arg, NULL, 2);
 		break;
 	case 'v':	/* SCTP vtag (32 bits) */
 		pack->modified |= SCTP_MOD_VTAG;
@@ -159,10 +158,10 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		break;
 	case 'c':	/* SCTP checksum (32 bits) */
 		pack->modified |= SCTP_MOD_CHECKSUM;
-		sctp->dest = opt2intn(arg, 4);
+		sctp->dest = opt2intn(arg, NULL, 4);
 		break;
 	case 'T':	/* SCTP chunk type (8 bits) */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > OCTET_MAX) {
 			DERROR("sctp - type value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
@@ -175,7 +174,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 		break;
 	case 'F':	/* SCTP chunk flags (8 bits) */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2inth(arg, NULL, 2);
 		if (svalue > OCTET_MAX) {
 			DERROR("sctp - flags value too big (%d > %d)", svalue, OCTET_MAX)
 			return FALSE;
@@ -186,7 +185,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		currentchunk->flags = svalue;
 		break;
 	case 'L':	/* SCTP chunk length (16 bits) */
-		svalue = strtoul(arg, NULL, 0);
+		svalue = opt2intn(arg, NULL, 2);
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
@@ -194,10 +193,12 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		 * the packet, but may affect the placement of later data. If you're
 		 * going to muck with the length, do it after all the other fields.
 		 */
-		currentchunk->length = htons(svalue);
+		currentchunk->length = svalue;
 		break;
 	case 'D':	/* arbitrary SCTP chunk data */
 		length = opt2val(temp, arg, BUFSIZ);
+		if (length == 0)
+			break;
 		if (!currentchunk ) {
 			currentchunk = add_chunk(pack, 0);
 		}
@@ -223,21 +224,22 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		init.num_inbound_streams = htons(1);
 		init.initial_tsn = htonl(1);
 
-		nargs = parsenargs(args, strargs, INITFIELDS, " ,:.");
+		nargs = parsenargs(args, strargs, INITFIELDS, " ,:.|");
 		/* Note the cheesy reverse fallthrough */
 		switch (nargs) {
 		case 5:
-			init.initial_tsn = opt2intn(strargs[4], sizeof(init.initial_tsn));
+			init.initial_tsn =
+				opt2intn(strargs[4], NULL, sizeof(init.initial_tsn));
 		case 4:
 			init.num_inbound_streams =
-				opt2intn(strargs[3], sizeof(init.num_inbound_streams));
+				opt2intn(strargs[3], NULL, sizeof(init.num_inbound_streams));
 		case 3:
 			init.num_outbound_streams =
-				opt2intn(strargs[2], sizeof(init.num_outbound_streams));
+				opt2intn(strargs[2], NULL, sizeof(init.num_outbound_streams));
 		case 2:
-			init.a_rwnd = opt2intn(strargs[1], sizeof(init.a_rwnd));
+			init.a_rwnd = opt2intn(strargs[1], NULL, sizeof(init.a_rwnd));
 		case 1:
-			init.init_tag = opt2intn(strargs[0], sizeof(init.init_tag));
+			init.init_tag = opt2intn(strargs[0], NULL, sizeof(init.init_tag));
 		}
 
 		currentchunk = grow_chunk(pack, currentchunk,
@@ -257,6 +259,32 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 		currentchunk = grow_chunk(pack, currentchunk,
 			sizeof(sctp_ipv4addr_param_t), &v4param);
+		}
+		break;
+	case '6':	/* IPv6 address parameter */
+		{
+		sctp_ipv6addr_param_t v6param;
+
+		v6param.param_hdr.type = htons(SCTP_PARAM_IPV6_ADDRESS);
+		v6param.param_hdr.length = htons(sizeof(sctp_ipv6addr_param_t));
+		if (inet_pton(AF_INET6, arg, &v6param.addr) == 0) {
+			DERROR("sctp - couldn't parse v6 address '%s'", arg)
+			return FALSE;
+		}
+		currentchunk = grow_chunk(pack, currentchunk,
+			sizeof(sctp_ipv6addr_param_t), &v6param);
+		}
+		break;
+	case 'C':	/* Cookie preservative */
+		{
+		sctp_cookie_preserve_param_t cookieparam;
+
+		cookieparam.param_hdr.type = htons(SCTP_PARAM_STATE_COOKIE);
+		cookieparam.param_hdr.length =
+			htons(sizeof(sctp_cookie_preserve_param_t));
+		cookieparam.lifespan_increment = opt2intn(arg, NULL, 4);
+		currentchunk = grow_chunk(pack, currentchunk,
+			sizeof(sctp_cookie_preserve_param_t), &cookieparam);
 		}
 		break;
 	case 'H':	/* Host name address */
@@ -297,7 +325,7 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		}
 		supportedaddrs.param_hdr.type =
 			htons(SCTP_PARAM_SUPPORTED_ADDRESS_TYPES);
-		naddrs = parsenargs(args, straddrs, MAXSUPPORTEDADDRS, " ,:.");
+		naddrs = parsenargs(args, straddrs, MAXSUPPORTEDADDRS, " ,:.|");
 		for (i = 0; i < naddrs; ++i)
 			addrs[i] = htons(atoi(straddrs[i]));
 		addrs[i] = 0;
@@ -344,37 +372,9 @@ do_opt(const char *opt, const char *arg, sendip_data *pack)
 		adaptationparam.param_hdr.type = htons(SCTP_PARAM_ADAPTATION_LAYER_IND);
 		adaptationparam.param_hdr.length =
 			htons(sizeof(sctp_adaptation_ind_param_t));
-		lvalue = strtoul(arg, NULL, 0);
-		adaptationparam.adaptation_ind = htonl(lvalue);
+		adaptationparam.adaptation_ind = opt2intn(arg, NULL, 4);
 		currentchunk = grow_chunk(pack, currentchunk,
 			sizeof(sctp_adaptation_ind_param_t), &adaptationparam);
-		}
-		break;
-	case '6':	/* IPv6 address parameter */
-		{
-		sctp_ipv6addr_param_t v6param;
-
-		v6param.param_hdr.type = htons(SCTP_PARAM_IPV6_ADDRESS);
-		v6param.param_hdr.length = htons(sizeof(sctp_ipv6addr_param_t));
-		if (inet_pton(AF_INET6, arg, &v6param.addr) == 0) {
-			DERROR("sctp - couldn't parse v6 address '%s'", arg)
-			return FALSE;
-		}
-		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_ipv6addr_param_t), &v6param);
-		}
-		break;
-	case 'C':	/* Cookie preservative */
-		{
-		sctp_cookie_preserve_param_t cookieparam;
-
-		cookieparam.param_hdr.type = htons(SCTP_PARAM_STATE_COOKIE);
-		cookieparam.param_hdr.length =
-			htons(sizeof(sctp_cookie_preserve_param_t));
-		lvalue = strtoul(arg, NULL, 0);
-		cookieparam.lifespan_increment = htonl(lvalue);
-		currentchunk = grow_chunk(pack, currentchunk,
-			sizeof(sctp_cookie_preserve_param_t), &cookieparam);
 		}
 		break;
 	}
