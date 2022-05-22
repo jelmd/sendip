@@ -29,6 +29,7 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
    	char *p, *e;
 	size_t d, max, i;
 	uint8_t c;
+	size_t offset = (hex == 0 || hex == 2) ? 14 : 0;
 
 	const char H2C[] = "0123456789abcdef";
 
@@ -40,7 +41,7 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
 		fmt_head = "          00 01 02 03 04 05 06 07  08 09 19 11 12 13 14 15";
 	}
 
-	max = (buflen - strlen(fmt_head) - 2 - 1) / BPL * 16;	/* "\n\n\0" */
+	max = (buflen - strlen(fmt_head) - 2 - 1) / BPL * 16 - offset;/* "\n\n\0" */
 	if (max == 0) {
 		DWARN("Dump buffer too small - expecting at least %ld",
 			strlen(fmt_head) + 3 + BPL)
@@ -52,9 +53,9 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
 		dlen = max;
 	}
 	/* No one wants to dump 16 MiB+ */
-	if (dlen > 0xFFFFFF) {
+	if (dlen > (0xFFFFFF - offset)) {
 		WARN("Reducing dump size to 16 MiB");
-		dlen = 0xFFFFFF;
+		dlen = 0xFFFFFF - offset;
 	}
 	dend = data + dlen;
 
@@ -63,22 +64,28 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
 	p = buf + max;
 	e = p + (BPL - 16 - 1);				/* offset for char decoding */
 	q = data;
-	for (d = 0; d < dlen; d += 16) {
+	max = offset;
+	for (d = 0; d < (dlen + offset); d += 16) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 		p += sprintf(p, fmt, d);
 #pragma GCC diagnostic pop
-		for (i = 0; i < 16 && q < dend; i++, q++) {
-			c = *q;
-			if (c < 15) {
-				*p++ = '0';
-				*p++ = H2C[c];
-				*e++ = '.';
+		for (i = 0; i < 16 && q < dend; i++) {
+			if (max != 0) {
+				*p++ = ' '; *p++ = ' '; *e++ = ' ';
+				max--;
 			} else {
-				*p++ = H2C[(c >> 4) & 0x0F];
-				*p++ = H2C[c & 0x0F];
-				// UTF-8 terminals print a wc for 127, so we skip it
-				 *e++ =  (c < 32 || c > 126) ? '.' : c;
+				c =	*q++;
+				if (c < 15) {
+					*p++ = '0';
+					*p++ = H2C[c];
+					*e++ = '.';
+				} else {
+					*p++ = H2C[(c >> 4) & 0x0F];
+					*p++ = H2C[c & 0x0F];
+					// UTF-8 terminals print a wc for 127, so we skip it
+					*e++ =  (c < 32 || c > 126) ? '.' : c;
+				}
 			}
 			*p++ = ' ';
 			if (i == 7)
@@ -92,7 +99,7 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
 		}
 	}
 	/* finish the line (may contain garbage) */
-	max = dlen & 0xF;
+	max = (dlen + offset) & 0xF;
 	if (max != 0) {
 		if (max < 8 )
 			*p++ = ' ';
@@ -101,6 +108,8 @@ bdump(const uint8_t *data, size_t dlen, char *buf, size_t buflen, int hex) {
 		}
 		*p++ = ' ';
 		*e++ = '\n';
+	} else {
+		e -= (BPL - 16 - 1);
 	}
 	*e = '\0';
 	return e - buf;

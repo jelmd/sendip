@@ -58,8 +58,10 @@ Be verbose.
 .TP
 \-D\ \fIotype\fR
 Print a hex dump from each packet before sending it out. \fIotype\fR determines
-how the byte offset gets printed. Use \fBh\fR for hexadecimal, \fBd\fR or
-anything else for decimal.
+how the byte offset gets printed. Use \fBh\fR for hexadecimal, \fBd\fR
+for decimal dump starting at dump offset 14 (which makes it easier to compare
+with full package dumps). If \fIotype\fR is in upper-case, dump offset 0
+will be used instead.
 .TP
 \-L\ \fInum\fR
 After all general options have been read and modules initialized, run the

@@ -203,3 +203,8 @@ Changes between sendip-2.6.0-jel and sendip-3.0.0-jel
 * optn2intn(), opt2inth(): add endpointer parameter
 * ntp: fix endianess, fix double and timestamp serialization
 * sync man OPTIONS and help output with src code; make help output _short_
+
+Changes between sendip-3.0.0-jel and sendip-3.0.1-jel
+* fix dump wrt. trailing garbage
+* add dump types 'H' and 'D' (no offset). 'h' and 'd' cause a dump offset of 14.
+* add a dhcp discover contrib example

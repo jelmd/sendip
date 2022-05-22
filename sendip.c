@@ -92,21 +92,29 @@ sendpacket(sendip_data *data, char *hostname, int af_type, bool verbose,
 		memcpy(&to4->sin_addr, host->h_addr, host->h_length);
 		tolen = sizeof(struct sockaddr_in);
 		sethdrincl = TRUE;
+		af_type = PF_INET;
 		break;
 	case AF_INET6:
 		to6->sin6_family = host->h_addrtype;
 		memcpy(&to6->sin6_addr, host->h_addr, host->h_length);
 		tolen = sizeof(struct sockaddr_in6);
 		setipv6opts = TRUE;
+		af_type = PF_INET6;
 		break;
 	default:
 		return -2;
 	}
 
 	if (dump) {
-		char buf[BUFSIZ];
-
-		bdump(data->data, data->alloc_len, buf, BUFSIZ, dump == 'h');
+		char buf[128 * BUFSIZ];
+		int dtype = 0;
+		switch (dump) {
+			case 'd': dtype = 0; break;
+			case 'D': dtype = 1; break;
+			case 'h': dtype = 2; break;
+			case 'H': dtype = 3; break;
+		}
+		bdump(data->data, data->alloc_len, buf, sizeof(buf), dtype);
 		printf("Final packet data:\n%s\n", buf);
 	}
 
@@ -371,7 +379,11 @@ main(int argc, char **const argv) {
 			verbosity = TRUE;
 			break;
 		case 'D':
-			dump = gnuoptarg[0] == 'h' ? 'h' : 'd';
+			dump = gnuoptarg[0];
+			if (dump != 'h' && dump != 'H' && dump != 'd' && dump != 'D') {
+				DWARN("Unknown dump type '%c' - using 'd' instead.", dump);
+				dump = 'd';
+			}
 			break;
 		case 'd':
 			if (datafile == -1) {
@@ -458,7 +470,7 @@ while (--loopcount >= 0) {
 		}
 	}
 	if (verbosity)
-		printf("Added %d options\n", num_opts);
+		printf("%d module options found\n", num_opts);
 
 	/* Initialize all */
 	for (e = first; e != NULL; e = e->next) {
